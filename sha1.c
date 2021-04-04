@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "mysha1.h"
+#include "sha1.h"
 
 //#define DEBUG
 
@@ -11,17 +11,15 @@
 #define DBG(...)
 #endif
 
-#define SHA1_BLOCK_SIZE	64	/* 512 bits = 64 Bytes */
-#define SHA1_LEN_SIZE	 8	/* 64 bits = 8 bytes */
-#define SHA1_LEN_OFFSET (SHA1_BLOCK_SIZE - SHA1_LEN_SIZE)
+#define SHA1_BLOCK_SIZE		64	/* 512 bits = 64 Bytes */
+#define SHA1_LEN_SIZE	 	8	/* 64 bits = 8 bytes */
+#define SHA1_LEN_OFFSET 	(SHA1_BLOCK_SIZE - SHA1_LEN_SIZE)
+#define SHA1_DIGEST_SIZE	20 /* 160 bits = 20 bytes */
 
-#if 0
-typedef unsigned char uint8_t;
-typedef unsigned int uint32_t;
-typedef unsigned long long uint64_t;
-#endif
+#define SHA1_PADDING_PATTERN 	0x80
+#define SHA1_ROUND_NUM			80
+
 typedef uint32_t (*sha1_func)(uint32_t x, uint32_t y, uint32_t z);
-
 
 /* SHA1 Constants */
 static uint32_t K[4] = 
@@ -35,6 +33,7 @@ static uint32_t ROTL(uint32_t x, uint8_t shift)
 	return (x << shift) | (x >> (32 - shift));
 }
 
+#if 0
 /* ROTate Right (cirular right shift) */
 static uint32_t ROTR(uint32_t x, uint8_t shift)
 {
@@ -46,32 +45,33 @@ static uint32_t SHR(uint32_t x, uint8_t shift)
 {
 	return (x >> shift);
 }
+#endif
 
 /* Ch ... choose */
-static uint32_t CHOOSE(uint32_t x, uint32_t y, uint32_t z)
+static uint32_t Ch(uint32_t x, uint32_t y, uint32_t z)
 {
-	DBG("  CHOOSE(0x%08x, 0x%08x, 0x%08x);\n", x, y, z);
+	DBG("    Ch(0x%08x, 0x%08x, 0x%08x);\n", x, y, z);
 	return (x & y) ^ (~x & z) ;
 }
 
 /* Par ... parity */
-static uint32_t PARITY(uint32_t x, uint32_t y, uint32_t z)
+static uint32_t Parity(uint32_t x, uint32_t y, uint32_t z)
 {
-	DBG("  PARITY(0x%08x, 0x%08x, 0x%08x);\n", x, y, z);
+	DBG("Parity(0x%08x, 0x%08x, 0x%08x);\n", x, y, z);
 	return x ^ y ^ z;
 }
 
 /* Maj ... majority */
-static uint32_t MAJORITY(uint32_t x, uint32_t y, uint32_t z)
+static uint32_t Maj(uint32_t x, uint32_t y, uint32_t z)
 {
-	DBG("MAJORITY(0x%08x, 0x%08x, 0x%08x);\n", x, y, z);
+	DBG("   Maj(0x%08x, 0x%08x, 0x%08x);\n", x, y, z);
 	return (x & y) ^ (x & z) ^ (y & z);
 }
 
 /* SHA1 Functions */
 static sha1_func F[4] =
 {
-	CHOOSE, PARITY, MAJORITY, PARITY
+	Ch, Parity, Maj, Parity
 };
 
 static uint64_t swap64(uint64_t a)
@@ -94,27 +94,6 @@ static uint32_t swap32(uint32_t a)
          ((a & 0xFF000000) >> 24);
 }
 
-static uint32_t calc_length_bytes(uint64_t len)
-{
-	int i;
-
-	if (len == 0)
-	{
-		i = 0;
-	}
-	else
-	{
-		i = 1;
-		while (len / 256 > 0)
-		{
-			len = len / 256;
-			i++;
-		}
-	}
-
-	return i;
-}
-
 #define DUMP_LINE_SIZE 16
 int print_buffer(void *buf, uint32_t len)
 {
@@ -134,38 +113,6 @@ int print_buffer(void *buf, uint32_t len)
 	return 0;
 }
 
-static int get_padding_block(uint8_t *out, const uint8_t *in, uint64_t len)
-{
-	int left, padding;
-	int i;
-
-	/* 64 bytes = 512 bits / 8 */
-	left = len % SHA1_BLOCK_SIZE;
-	padding = SHA1_BLOCK_SIZE - left - SHA1_LEN_SIZE;
-
-	printf("len: %lld bytes, padding %d bytes\n", len, padding);
-
-	memcpy(out, &in[len-left], left);
-
-	for (i=0; i<padding; i++)
-	{
-		if (i==0)
-		{
-			out[left+i] = 0x80;
-		}
-		else
-		{
-			out[left+i] = 0x00;
-		}
-	}
-
-	*(uint64_t *)&out[SHA1_LEN_OFFSET] = swap64(len * 8);
-
-	return 0;
-}
-
-
-
 /*
  * "abc" -->   0x61,     0x62,     0x63
  *   Origin: 0b0110 0001 0110 0010 0110 0011
@@ -184,7 +131,7 @@ struct sha1_context {
 	uint32_t processed_blocks;
 
 	uint32_t rest; /* rest size in last block */
-	uint8_t last_block[64];
+	uint8_t last_block[SHA1_BLOCK_SIZE];
 
 };
 
@@ -209,7 +156,6 @@ int sha1_init(void)
 	context->e = 0xC3D2E1F0;
 
 	context->processed_blocks = 0;
-
 	context->rest = 0;
 
 	return 0;
@@ -219,57 +165,20 @@ int sha1_init(void)
 static uint32_t prepare_schedule_word(const void *block, uint32_t *w)
 {
 	uint32_t i;
-	for (i=0; i<80; i++)
+	for (i=0; i<SHA1_ROUND_NUM; i++)
 	{
 		if (i<=15)
 			w[i] = swap32(WORD(block, i));
 		else
-			//w[i] = swap32(ROTL(swap32(w[i-3]) ^ swap32(w[i-8]) ^ swap32(w[i-14]) ^ swap32(w[i-16]), 1));
 			w[i] = ROTL(w[i-3] ^ w[i-8] ^ w[i-14] ^ w[i-16], 1);
 	}
 
 	return 0;
 }
 
-static uint32_t get_schedule_word(const void *block, int index)
-{
-#if 1
-	uint32_t w[80], i;
-	static uint8_t flag = 0;
-
-	if (!flag)
-	{
-		flag = 1;
-		for (i=0; i<80; i++)
-		{
-			if (i<=15)
-			{
-				w[i] = WORD(block, i);
-			}
-			else
-			{
-				w[i] = ROTL(w[i-3] ^ w[i-8] ^ w[i-14] ^ w[i-16], 1);
-			}
-		}
-	}
-
-	return w[index];
-#else
-	if (index <= 15)
-	{
-		return WORD(block, index);
-	}
-	else
-	{
-		return ROTL(WORD(block, index-3) ^ WORD(block, index-8) 
-			      ^ WORD(block, index-14) ^ WORD(block, index-16), 1);
-	}
-#endif
-}
-
 static uint32_t sha1_process_block(const void *block)
 {
-	uint32_t W[80];
+	uint32_t W[SHA1_ROUND_NUM];
 	uint32_t t, T;
 	uint32_t a, b, c, d, e;
 	struct sha1_context *context;
@@ -278,7 +187,7 @@ static uint32_t sha1_process_block(const void *block)
 
 #ifdef DEBUG
 	printf("block: %d\n", context->processed_blocks);
-	print_buffer(block, 64);
+	print_buffer(block, SHA1_BLOCK_SIZE);
 #endif
 
 	/* prepare schedule word */
@@ -290,7 +199,7 @@ static uint32_t sha1_process_block(const void *block)
 	d = context->d;
 	e = context->e;
 
-	for (t=0; t<80; t++)
+	for (t=0; t<SHA1_ROUND_NUM; t++)
 	{
 		T = ROTL(a, 5) + (F[t/20])(b, c, d) + e + K[t/20] + W[t];
 		e = d;
@@ -299,9 +208,11 @@ static uint32_t sha1_process_block(const void *block)
 		b = a;
 		a = T;
 
+#if 0 //def DEBUG
 		DBG("%02d:\n", t);
 		DBG("T=0x%08x, W=0x%08x\n", T, W[t]);
 		DBG("e=0x%08x, d=0x%08x, c=0x%08x, b=0x%02x, a=0x%08x\n", e, d, c, b, a);
+#endif
 	}
 
 	context->a += a;
@@ -312,8 +223,10 @@ static uint32_t sha1_process_block(const void *block)
 
 	context->processed_blocks++;
 
+#if 0 //def DEBUG
 	DBG("hash:\n");
 	DBG("%08x%08x%08x%08x%08x\n", context->a, context->b, context->c, context->d, context->e);
+#endif
 
 	return 0;
 }
@@ -321,7 +234,7 @@ static uint32_t sha1_process_block(const void *block)
 int sha1_update(const void *data, uint64_t size)
 {
 	uint64_t len = 0;
-	
+
 	struct sha1_context *context;
 
 	context = get_sha1_context();
@@ -358,7 +271,7 @@ int sha1_update(const void *data, uint64_t size)
 	{
 		memcpy(&context->last_block[context->rest], data, size);
 		context->rest += size;
-		
+
 		return 0;
 	}
 	else
@@ -380,9 +293,10 @@ int sha1_update(const void *data, uint64_t size)
 	return 0;
 }
 
-int sha1_final(char *hash)
+int sha1_final(uint8_t *hash)
 {
 	uint64_t total;
+	uint32_t *buf;
 
 	struct sha1_context *context;
 
@@ -392,7 +306,7 @@ int sha1_final(char *hash)
 	if (context->rest >= (SHA1_BLOCK_SIZE - SHA1_LEN_SIZE))
 	{
 		/* one more block */
-		context->last_block[context->rest] = 0x80;
+		context->last_block[context->rest] = SHA1_PADDING_PATTERN;
 
 		/* Note:
 		 *      processed_blocks will be updated in sha1_process_block,
@@ -407,31 +321,34 @@ int sha1_final(char *hash)
 
 		context->rest = 0;
 
-		memset(&context->last_block[0], 0, SHA1_BLOCK_SIZE-SHA1_LEN_SIZE);
-		*(uint64_t *)&context->last_block[SHA1_LEN_OFFSET] = swap64(total);
+		memset(&context->last_block[0], 0, SHA1_BLOCK_SIZE - SHA1_LEN_SIZE);
+		*(uint64_t *)&(context->last_block[SHA1_LEN_OFFSET]) = swap64(total);
 		sha1_process_block(&context->last_block);
 	}
 	else /* 0 <= rest < SHA1_BLOCK_SIZE - SHA1_LEN_SIZE */
 	{
 		/* one more block */
-		context->last_block[context->rest] = 0x80;
+		context->last_block[context->rest] = SHA1_PADDING_PATTERN;
 
 		/* calc */
 		total = context->processed_blocks * 512 + context->rest * 8;
-		
+
 		context->rest++;
 
-		memset(&context->last_block[context->rest], 0, SHA1_BLOCK_SIZE-SHA1_LEN_SIZE-context->rest);
+		memset(&context->last_block[context->rest], 0, SHA1_BLOCK_SIZE - SHA1_LEN_SIZE - context->rest);
 
 		*(uint64_t *)&context->last_block[SHA1_LEN_OFFSET] = swap64(total);
 		sha1_process_block(&context->last_block);
 	}
 
-	sprintf(hash, "%08x%08x%08x%08x%08x", context->a, context->b, context->c, context->d, context->e);
-
 	DBG("%08x %08x %08x %08x %08x\n", context->a, context->b, context->c, context->d, context->e);
-	
+	//snprintf(hash, SHA1_DIGEST_SIZE, "%08x%08x%08x%08x%08x", context->a, context->b, context->c, context->d, context->e);
+	buf = (uint32_t *)hash;
+	buf[0] = swap32(context->a);
+	buf[1] = swap32(context->b);
+	buf[2] = swap32(context->c);
+	buf[3] = swap32(context->d);
+	buf[4] = swap32(context->e);
+
 	return 0;
 }
-
-

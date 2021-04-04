@@ -2,15 +2,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "mysha1.h"
+#include "sha1.h"
 
 int main(int argc, char * argv[])
 {
-	uint8_t data[]="abc";
-	//uint8_t data[]="abcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+	//char data[]="abc";
+	char data[]="abcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 	//uint8_t buf[SHA1_BLOCK_SIZE];
-	uint8_t hash[160];
-	uint32_t len = 0;
+	uint8_t hash[20];
+	uint32_t i, len = 0;
+
+	memset(hash, 0, sizeof(hash));
 
 	sha1_init();
 
@@ -19,13 +21,28 @@ int main(int argc, char * argv[])
 
 	sha1_update(data, len);
 
-	sha1_final(&hash);
+	sha1_final(hash);
 
 	printf("sha1 result:\n");
 
-	printf("%20s\n", hash);
+	//print_buffer(hash, 20);
+	for (i=0; i<20; i++)
+		printf("%02x", hash[i]);
+	printf("\n");
 
-#if 1
+	sha1_init();
+	sha1_update("abc", 3);
+	sha1_update("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", 55);
+	sha1_final(hash);
+
+	printf("sha1 result:\n");
+
+	//print_buffer(hash, 20);
+	for (i=0; i<20; i++)
+		printf("%02x", hash[i]);
+	printf("\n");
+
+#if 0
 	printf("openssl dgst -sha1 abc.txt\n");
 	system("openssl dgst -sha1 abc.txt");
 #else

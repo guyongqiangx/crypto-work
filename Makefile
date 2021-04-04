@@ -10,7 +10,7 @@ CFLAGS = -Wall -g -Os
 INCLUDE = -I ./
  
  
-OBJ := mysha1.o 
+OBJ := sha1.o 
 OBJ += test.o 
  
 TARGET = sha 
@@ -21,7 +21,7 @@ all: $(OBJ)
  
 # --strip-unneeded 
  
-SHA1.o : mysha1.c 
+SHA1.o : sha1.c 
 	$(CC) $(CFLAGS) -c $< -o $@ 
  
 test.o : test.c 
