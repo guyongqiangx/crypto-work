@@ -19,7 +19,7 @@ all: SHA1 SHA512
 SHA1_OBJ := sha1.o
 SHA1_OBJ += sha1_test.o
 
-SHA1_TARGET = sha1
+SHA1_TARGET = sha1_test
 
 SHA1: $(SHA1_OBJ)
 	$(CC) $(CFLAGS) $(SHA1_OBJ) -o $(SHA1_TARGET) $(LIBS) $(INCLUDE)
@@ -39,7 +39,7 @@ sha1_test.o : sha1_test.c
 SHA512_OBJ := sha512.o
 SHA512_OBJ += sha512_test.o
 
-SHA512_TARGET = sha512
+SHA512_TARGET = sha512_test
 
 SHA512: $(SHA512_OBJ)
 	$(CC) $(CFLAGS) $(SHA512_OBJ) -o $(SHA512_TARGET) $(LIBS) $(INCLUDE)
