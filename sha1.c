@@ -128,7 +128,7 @@ struct sha1_context {
 	uint32_t d;
 	uint32_t e;
 
-	uint32_t processed_blocks;
+	uint64_t processed_bits;
 
 	uint32_t rest; /* rest size in last block */
 	uint8_t last_block[SHA1_BLOCK_SIZE];
@@ -155,7 +155,7 @@ int sha1_init(void)
 	context->d = 0x10325476;
 	context->e = 0xC3D2E1F0;
 
-	context->processed_blocks = 0;
+	context->processed_bits = 0;
 	context->rest = 0;
 
 	return 0;
@@ -186,7 +186,7 @@ static uint32_t sha1_process_block(const void *block)
 	context = get_sha1_context();
 
 #ifdef DEBUG
-	printf("block: %d\n", context->processed_blocks);
+	printf("block: %d\n", context->processed_bits >> 9); /* block size: 2^9 = 512 */
 	print_buffer(block, SHA1_BLOCK_SIZE);
 #endif
 
@@ -221,7 +221,7 @@ static uint32_t sha1_process_block(const void *block)
 	context->d += d;
 	context->e += e;
 
-	context->processed_blocks++;
+	context->processed_bits += 512;
 
 #if 0 //def DEBUG
 	DBG("hash:\n");
@@ -309,10 +309,11 @@ int sha1_final(uint8_t *hash)
 		context->last_block[context->rest] = SHA1_PADDING_PATTERN;
 
 		/* Note:
-		 *      processed_blocks will be updated in sha1_process_block,
-		 *      need to calc total here
+		 *      processed_bits will be updated in sha1_process_block,
+		 *      need to calc total here,
+		 *      don't need to accumulate the padding block
 		 */
-		total = context->processed_blocks * 512 + context->rest * 8;
+		total = context->processed_bits + context->rest * 8;
 
 		context->rest++;
 
@@ -330,8 +331,8 @@ int sha1_final(uint8_t *hash)
 		/* one more block */
 		context->last_block[context->rest] = SHA1_PADDING_PATTERN;
 
-		/* calc */
-		total = context->processed_blocks * 512 + context->rest * 8;
+		/* calc, don't need to accumulate the padding block */
+		total = context->processed_bits + context->rest * 8;
 
 		context->rest++;
 
