@@ -9,7 +9,7 @@ int sha512_init(void);
 int sha512_update(const void *data, uint64_t size);
 int sha512_final(uint8_t *hash);
 
-int print_buffer(void *buf, uint32_t len);
+int print_buffer(const void *buf, uint32_t len);
 
 #endif
 
