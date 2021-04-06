@@ -95,7 +95,7 @@ static uint32_t swap32(uint32_t a)
 }
 
 #define DUMP_LINE_SIZE 16
-int print_buffer(void *buf, uint32_t len)
+int print_buffer(const void *buf, uint32_t len)
 {
 	uint32_t i;
 	for (i=0; i<len; i++)
