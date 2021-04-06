@@ -92,7 +92,7 @@ static uint64_t Maj(uint64_t x, uint64_t y, uint64_t z)
 /* Sigma0 */
 static uint64_t Sigma0(uint64_t x)
 {
-	return ROTR(x, 28) ^ ROTR(x, 34) ^ ROTR(x, 29);
+	return ROTR(x, 28) ^ ROTR(x, 34) ^ ROTR(x, 39);
 }
 
 /* Sigma1 */
@@ -206,9 +206,9 @@ int sha512_init(void)
 	context->c = U64(0x3c6ef372fe94f82b);
 	context->d = U64(0xa54ff53a5f1d36f1);
 	context->e = U64(0x510e527fade682d1);
-	context->c = U64(0x9b05688c2b3e6c1f);
-	context->d = U64(0x1f83d9abfb41bd6b);
-	context->e = U64(0x5be0cd19137e2179);
+	context->f = U64(0x9b05688c2b3e6c1f);
+	context->g = U64(0x1f83d9abfb41bd6b);
+	context->h = U64(0x5be0cd19137e2179);
 
 	context->processed_bits.i.l = 0;
 	context->processed_bits.i.h = 0;
@@ -254,7 +254,7 @@ static int update_length_field(uint8_t *buffer, uint128_t *length)
 
 	for (i=0; i<SHA512_LEN_SIZE; i++)
 	{
-		buffer[i] = length->d[SHA512_LEN_SIZE-i-1];
+		buffer[i] = length->d[SHA512_LEN_SIZE-1-i];
 	}
 
 	return 0;
@@ -262,15 +262,16 @@ static int update_length_field(uint8_t *buffer, uint128_t *length)
 
 static uint32_t sha512_process_block(const void *block)
 {
+	uint32_t t;
 	uint64_t W[SHA512_ROUND_NUM];
-	uint64_t t, T1, T2;
+	uint64_t T1, T2;
 	uint64_t a, b, c, d, e, f, g, h;
 	struct sha512_context *context;
 
 	context = get_sha512_context();
 
 #ifdef DEBUG
-	//printf("block: %d\n", context->processed_bits >> 10);
+	//printf("block: %d\n", context->processed_bits >> 10);  /* block size: 2^10 = 1024 */
 	print_buffer(block, SHA512_BLOCK_SIZE);
 #endif
 
@@ -285,6 +286,10 @@ static uint32_t sha512_process_block(const void *block)
 	f = context->f;
 	g = context->g;
 	h = context->h;
+
+	//DBG("block: \n");
+	//DBG("a=0x%016llx, b=0x%016llx, c=0x%016llx, d=0x%016llx, e=0x%016llx, f=0x%016llx, g=0x%016llx, h=0x%016llx\n", 
+	//	a, b, c, d, e, f, g, h);
 
 	for (t=0; t<SHA512_ROUND_NUM; t++)
 	{
@@ -301,9 +306,9 @@ static uint32_t sha512_process_block(const void *block)
 
 #ifdef DEBUG
 		DBG("%02d:\n", t);
-		DBG("T=0x%016llx, W=0x%016llx\n", T, W[t]);
-		DBG("h=0x%016llx, g=0x%016llx, f=0x%016llx, e=0x%016llx, d=0x%016llx, c=0x%016llx, b=0x%016llx, a=0x%016llx\n", 
-			h, g, f, e, d, c, b, a);
+		DBG("T1=0x%016llx, T2=0x%016llx, W=0x%016llx\n", T1, T2, W[t]);
+		DBG(" a=0x%016llx,  b=0x%016llx, c=0x%016llx, d=0x%016llx,\n e=0x%016llx,  f=0x%016llx, g=0x%016llx, h=0x%016llx\n", 
+			a, b, c, d, e, f, g, h);
 #endif
 	}
 
@@ -317,8 +322,8 @@ static uint32_t sha512_process_block(const void *block)
 	context->h += h;
 
 #ifdef DEBUG
-	DBG("hash:\n");
-	DBG("%016llx %016llx %016llx %016llx\n%016llx %016llx %016llx %016llx\n", 
+	DBG("block hash:\n");
+	DBG("   %016llx %016llx %016llx %016llx\n   %016llx %016llx %016llx %016llx\n", 
 		context->a, context->b, context->c, context->d, context->e, context->f, context->g, context->h);
 #endif
 
