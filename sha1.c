@@ -19,6 +19,14 @@
 #define SHA1_PADDING_PATTERN 	0x80
 #define SHA1_ROUND_NUM			80
 
+#define HASH_BLOCK_SIZE		SHA1_BLOCK_SIZE
+#define HASH_LEN_SIZE		SHA1_LEN_SIZE
+#define HASH_LEN_OFFSET		SHA1_LEN_OFFSET
+#define HASH_DIGEST_SIZE	SHA1_DIGEST_SIZE
+
+#define HASH_PADDING_PATTERN	SHA1_PADDING_PATTERN
+#define HASH_ROUND_NUM			SHA1_ROUND_NUM
+
 typedef uint32_t (*sha1_func)(uint32_t x, uint32_t y, uint32_t z);
 
 /* SHA1 Constants */
@@ -131,7 +139,7 @@ struct sha1_context {
 	uint64_t processed_bits;
 
 	uint32_t rest; /* rest size in last block */
-	uint8_t last_block[SHA1_BLOCK_SIZE];
+	uint8_t last_block[HASH_BLOCK_SIZE];
 
 };
 
@@ -164,13 +172,13 @@ int sha1_init(void)
 #define WORD(b,i) (((uint32_t *)b)[i])
 static uint32_t prepare_schedule_word(const void *block, uint32_t *w)
 {
-	uint32_t i;
-	for (i=0; i<SHA1_ROUND_NUM; i++)
+	uint32_t t;
+	for (t=0; t<HASH_ROUND_NUM; t++)
 	{
-		if (i<=15)
-			w[i] = swap32(WORD(block, i));
-		else
-			w[i] = ROTL(w[i-3] ^ w[i-8] ^ w[i-14] ^ w[i-16], 1);
+		if (t<=15) /*  0 <= t <= 15 */
+			w[t] = swap32(WORD(block, t));
+		else	   /* 16 <= t <= 79 */
+			w[t] = ROTL(w[t-3] ^ w[t-8] ^ w[t-14] ^ w[t-16], 1);
 	}
 
 	return 0;
@@ -178,8 +186,9 @@ static uint32_t prepare_schedule_word(const void *block, uint32_t *w)
 
 static uint32_t sha1_process_block(const void *block)
 {
-	uint32_t W[SHA1_ROUND_NUM];
-	uint32_t t, T;
+	uint32_t t;
+	uint32_t W[HASH_ROUND_NUM];
+	uint32_t T;
 	uint32_t a, b, c, d, e;
 	struct sha1_context *context;
 
@@ -187,7 +196,7 @@ static uint32_t sha1_process_block(const void *block)
 
 #ifdef DEBUG
 	printf("block: %d\n", context->processed_bits >> 9); /* block size: 2^9 = 512 */
-	print_buffer(block, SHA1_BLOCK_SIZE);
+	print_buffer(block, HASH_BLOCK_SIZE);
 #endif
 
 	/* prepare schedule word */
@@ -199,7 +208,7 @@ static uint32_t sha1_process_block(const void *block)
 	d = context->d;
 	e = context->e;
 
-	for (t=0; t<SHA1_ROUND_NUM; t++)
+	for (t=0; t<HASH_ROUND_NUM; t++)
 	{
 		T = ROTL(a, 5) + (F[t/20])(b, c, d) + e + K[t/20] + W[t];
 		e = d;
@@ -243,7 +252,7 @@ int sha1_update(const void *data, uint64_t size)
 	if (context->rest != 0)
 	{
 		/* less than 1 block in total, combine data */
-		if (context->rest + size < SHA1_BLOCK_SIZE)
+		if (context->rest + size < HASH_BLOCK_SIZE)
 		{
 			memcpy(&context->last_block[context->rest], data, size);
 			context->rest += size;
@@ -253,7 +262,7 @@ int sha1_update(const void *data, uint64_t size)
 		else /* more than 1 block */
 		{
 			/* process the block in context buffer */
-			len = SHA1_BLOCK_SIZE - context->rest;
+			len = HASH_BLOCK_SIZE - context->rest;
 			memcpy(&context->last_block[context->rest], data, len);
 			sha1_process_block(&context->last_block);
 
@@ -261,13 +270,13 @@ int sha1_update(const void *data, uint64_t size)
 			size -= len;
 
 			/* reset context buffer */
-			memset(&context->last_block[0], 0, SHA1_BLOCK_SIZE);
+			memset(&context->last_block[0], 0, HASH_BLOCK_SIZE);
 			context->rest = 0;
 		}
 	}
 
 	/* less than 1 block, copy to context buffer */
-	if (size < SHA1_BLOCK_SIZE)
+	if (size < HASH_BLOCK_SIZE)
 	{
 		memcpy(&context->last_block[context->rest], data, size);
 		context->rest += size;
@@ -277,12 +286,12 @@ int sha1_update(const void *data, uint64_t size)
 	else
 	{
 		/* process data blocks */
-		while (size > SHA1_BLOCK_SIZE)
+		while (size > HASH_BLOCK_SIZE)
 		{
 			sha1_process_block(data);
 
-			data = (uint8_t *)data + SHA1_BLOCK_SIZE;
-			size -= SHA1_BLOCK_SIZE;
+			data = (uint8_t *)data + HASH_BLOCK_SIZE;
+			size -= HASH_BLOCK_SIZE;
 		}
 
 		/* copy the reset to context buffer */
@@ -302,11 +311,11 @@ int sha1_final(uint8_t *hash)
 
 	context = get_sha1_context();
 
-	/* Last block should be less thant SHA1_BLOCK_SIZE - SHA1_LEN_SIZE */
-	if (context->rest >= (SHA1_BLOCK_SIZE - SHA1_LEN_SIZE))
+	/* Last block should be less thant HASH_BLOCK_SIZE - HASH_LEN_SIZE */
+	if (context->rest >= (HASH_BLOCK_SIZE - HASH_LEN_SIZE))
 	{
 		/* one more block */
-		context->last_block[context->rest] = SHA1_PADDING_PATTERN;
+		context->last_block[context->rest] = HASH_PADDING_PATTERN;
 
 		/* Note:
 		 *      processed_bits will be updated in sha1_process_block,
@@ -317,33 +326,33 @@ int sha1_final(uint8_t *hash)
 
 		context->rest++;
 
-		memset(&context->last_block[context->rest], 0, SHA1_BLOCK_SIZE - context->rest);
+		memset(&context->last_block[context->rest], 0, HASH_BLOCK_SIZE - context->rest);
 		sha1_process_block(&context->last_block);
 
 		context->rest = 0;
 
-		memset(&context->last_block[0], 0, SHA1_BLOCK_SIZE - SHA1_LEN_SIZE);
-		*(uint64_t *)&(context->last_block[SHA1_LEN_OFFSET]) = swap64(total);
+		memset(&context->last_block[0], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE);
+		*(uint64_t *)&(context->last_block[HASH_LEN_OFFSET]) = swap64(total);
 		sha1_process_block(&context->last_block);
 	}
-	else /* 0 <= rest < SHA1_BLOCK_SIZE - SHA1_LEN_SIZE */
+	else /* 0 <= rest < HASH_BLOCK_SIZE - HASH_LEN_SIZE */
 	{
 		/* one more block */
-		context->last_block[context->rest] = SHA1_PADDING_PATTERN;
+		context->last_block[context->rest] = HASH_PADDING_PATTERN;
 
 		/* calc, don't need to accumulate the padding block */
 		total = context->processed_bits + context->rest * 8;
 
 		context->rest++;
 
-		memset(&context->last_block[context->rest], 0, SHA1_BLOCK_SIZE - SHA1_LEN_SIZE - context->rest);
+		memset(&context->last_block[context->rest], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE - context->rest);
 
-		*(uint64_t *)&context->last_block[SHA1_LEN_OFFSET] = swap64(total);
+		*(uint64_t *)&context->last_block[HASH_LEN_OFFSET] = swap64(total);
 		sha1_process_block(&context->last_block);
 	}
 
 	DBG("%08x %08x %08x %08x %08x\n", context->a, context->b, context->c, context->d, context->e);
-	//snprintf(hash, SHA1_DIGEST_SIZE, "%08x%08x%08x%08x%08x", context->a, context->b, context->c, context->d, context->e);
+	//snprintf(hash, HASH_DIGEST_SIZE, "%08x%08x%08x%08x%08x", context->a, context->b, context->c, context->d, context->e);
 	buf = (uint32_t *)hash;
 	buf[0] = swap32(context->a);
 	buf[1] = swap32(context->b);
