@@ -3,7 +3,7 @@
 
 #include "md5.h"
 
-//#define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
 #define DBG(...) printf(__VA_ARGS__)
@@ -71,25 +71,25 @@ static uint32_t SHR(uint32_t x, uint8_t shift)
 
 static uint32_t F(uint32_t x, uint32_t y, uint32_t z)
 {
-	DBG("F(0x%08x, 0x%08x, 0x%08x);\n", x, y, z);
+	//DBG("F(0x%08x, 0x%08x, 0x%08x);\n", x, y, z);
 	return (x & y) | ((~x) & z);
 }
 
 static uint32_t G(uint32_t x, uint32_t y, uint32_t z)
 {
-	DBG("G(0x%08x, 0x%08x, 0x%08x);\n", x, y, z);
+	//DBG("G(0x%08x, 0x%08x, 0x%08x);\n", x, y, z);
 	return (x & z) | (y & (~z));
 }
 
 static uint32_t H(uint32_t x, uint32_t y, uint32_t z)
 {
-	DBG("H(0x%08x, 0x%08x, 0x%08x);\n", x, y, z);
+	//DBG("H(0x%08x, 0x%08x, 0x%08x);\n", x, y, z);
 	return x ^ y ^ z;
 }
 
 static uint32_t I(uint32_t x, uint32_t y, uint32_t z)
 {
-	DBG("I(0x%08x, 0x%08x, 0x%08x);\n", x, y, z);
+	//DBG("I(0x%08x, 0x%08x, 0x%08x);\n", x, y, z);
 	return x ^ (x | (~z));;
 }
 
@@ -221,7 +221,7 @@ static uint32_t md5_process_block(const void *block)
 	context = get_md5_context();
 
 #ifdef DEBUG
-	printf("block: %d\n", context->processed_bits >> 9); /* block size: 2^9 = 512 */
+	printf("block: %ld\n", context->processed_bits >> 9); /* block size: 2^9 = 512 */
 	print_buffer(block, HASH_BLOCK_SIZE);
 #endif
 
@@ -229,7 +229,7 @@ static uint32_t md5_process_block(const void *block)
 	// prepare_schedule_word(block, X);
     for (i=0; i<16; i++)
     {
-        X[i] = WORD(block, i);
+        X[i] = swap32(WORD(block, i));
     }
 
 	a = context->a;
