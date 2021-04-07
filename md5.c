@@ -69,28 +69,28 @@ static uint32_t SHR(uint32_t x, uint8_t shift)
 }
 #endif
 
-static uint32_t F(uint32_t b, uint32_t c, uint32_t d)
+static uint32_t F(uint32_t x, uint32_t y, uint32_t z)
 {
-	DBG("F(0x%08x, 0x%08x, 0x%08x);\n", b, c, d);
-	return (b & c) | ((~b) & d);
+	DBG("F(0x%08x, 0x%08x, 0x%08x);\n", x, y, z);
+	return (x & y) | ((~x) & z);
 }
 
-static uint32_t G(uint32_t b, uint32_t c, uint32_t d)
+static uint32_t G(uint32_t x, uint32_t y, uint32_t z)
 {
-	DBG("G(0x%08x, 0x%08x, 0x%08x);\n", b, c, d);
-	return (b & d) | (c & (~d));
+	DBG("G(0x%08x, 0x%08x, 0x%08x);\n", x, y, z);
+	return (x & z) | (y & (~z));
 }
 
-static uint32_t H(uint32_t b, uint32_t c, uint32_t d)
+static uint32_t H(uint32_t x, uint32_t y, uint32_t z)
 {
-	DBG("H(0x%08x, 0x%08x, 0x%08x);\n", b, c, d);
-	return b ^ c ^ d;
+	DBG("H(0x%08x, 0x%08x, 0x%08x);\n", x, y, z);
+	return x ^ y ^ z;
 }
 
-static uint32_t I(uint32_t b, uint32_t c, uint32_t d)
+static uint32_t I(uint32_t x, uint32_t y, uint32_t z)
 {
-	DBG("I(0x%08x, 0x%08x, 0x%08x);\n", b, c, d);
-	return c ^ (b & (~d));
+	DBG("I(0x%08x, 0x%08x, 0x%08x);\n", x, y, z);
+	return x ^ (x | (~z));;
 }
 
 
@@ -200,12 +200,22 @@ static uint32_t prepare_schedule_word(const void *block, uint32_t *w)
 	return 0;
 }
 
+#if 0
+#define MD5_OP(a,b,c,d,k,s,i) \
+    a = b + ((a + (g[(i-1)/16])(b, c, d) + X[k] + T[i-1])<<(s))
+#else
+#define MD5_OP(a,b,c,d,k,s,i) \
+    a = b + ROTL(a + (g[(i-1)/16])(b, c, d) + X[k] + T[i-1], s)
+#endif
+
 static uint32_t md5_process_block(const void *block)
 {
-	uint32_t t;
-	uint32_t W[HASH_ROUND_NUM];
-	uint32_t T;
-	uint32_t a, b, c, d, e;
+    uint32_t i;
+	//uint32_t t;
+	uint32_t X[16];
+	//uint32_t T;
+    //uint32_t AA, BB, CC, DD;
+	uint32_t a, b, c, d;
 	struct md5_context *context;
 
 	context = get_md5_context();
@@ -216,13 +226,43 @@ static uint32_t md5_process_block(const void *block)
 #endif
 
 	/* prepare schedule word */
-	prepare_schedule_word(block, W);
+	// prepare_schedule_word(block, X);
+    for (i=0; i<16; i++)
+    {
+        X[i] = WORD(block, i);
+    }
 
 	a = context->a;
 	b = context->b;
 	c = context->c;
 	d = context->d;
 
+    /* Round 1 */
+    MD5_OP(a, b, c, d,  0,  7,  1); MD5_OP(d, a, b, c,  1, 12,  2); MD5_OP(c, d, a, b,  2, 17,  3); MD5_OP(b, c, d, a,  3, 22,  4);
+    MD5_OP(a, b, c, d,  4,  7,  5); MD5_OP(d, a, b, c,  5, 12,  6); MD5_OP(c, d, a, b,  6, 17,  7); MD5_OP(b, c, d, a,  7, 22,  8);
+    MD5_OP(a, b, c, d,  8,  7,  9); MD5_OP(d, a, b, c,  9, 12, 10); MD5_OP(c, d, a, b, 10, 17, 11); MD5_OP(b, c, d, a, 11, 22, 12);
+    MD5_OP(a, b, c, d, 12,  7, 13); MD5_OP(d, a, b, c, 13, 12, 14); MD5_OP(c, d, a, b, 14, 17, 15); MD5_OP(b, c, d, a, 15, 22, 16);
+
+
+    /* Round 2 */
+    MD5_OP(a, b, c, d,  1,  5, 17); MD5_OP(d, a, b, c,  6,  9, 18); MD5_OP(c, d, a, b, 11, 14, 19); MD5_OP(b, c, d, a,  0, 20, 20);
+    MD5_OP(a, b, c, d,  5,  5, 21); MD5_OP(d, a, b, c, 10,  9, 22); MD5_OP(c, d, a, b, 15, 14, 23); MD5_OP(b, c, d, a,  4, 20, 24);
+    MD5_OP(a, b, c, d,  9,  5, 25); MD5_OP(d, a, b, c, 14,  9, 26); MD5_OP(c, d, a, b,  3, 14, 27); MD5_OP(b, c, d, a,  8, 20, 28);
+    MD5_OP(a, b, c, d, 13,  5, 29); MD5_OP(d, a, b, c,  2,  9, 30); MD5_OP(c, d, a, b,  7, 14, 31); MD5_OP(b, c, d, a, 12, 20, 32);
+
+    /* Round 3 */
+    MD5_OP(a, b, c, d,  5,  4, 33); MD5_OP(d, a, b, c,  8, 11, 34); MD5_OP(c, d, a, b, 11, 16, 35); MD5_OP(b, c, d, a, 14, 23, 36);
+    MD5_OP(a, b, c, d,  1,  4, 37); MD5_OP(d, a, b, c,  4, 11, 38); MD5_OP(c, d, a, b,  7, 16, 39); MD5_OP(b, c, d, a, 10, 23, 40);
+    MD5_OP(a, b, c, d, 13,  4, 41); MD5_OP(d, a, b, c,  0, 11, 42); MD5_OP(c, d, a, b,  3, 16, 43); MD5_OP(b, c, d, a,  6, 23, 44);
+    MD5_OP(a, b, c, d,  9,  4, 45); MD5_OP(d, a, b, c, 12, 11, 46); MD5_OP(c, d, a, b, 15, 16, 47); MD5_OP(b, c, d, a,  2, 23, 48);
+
+    /* Round 4 */
+    MD5_OP(a, b, c, d,  0,  6, 49); MD5_OP(d, a, b, c,  7, 10, 50); MD5_OP(c, d, a, b, 14, 15, 51); MD5_OP(b, c, d, a,  5, 21, 52);
+    MD5_OP(a, b, c, d, 12,  6, 53); MD5_OP(d, a, b, c,  3, 10, 54); MD5_OP(c, d, a, b, 10, 15, 55); MD5_OP(b, c, d, a,  1, 21, 56);
+    MD5_OP(a, b, c, d,  8,  6, 57); MD5_OP(d, a, b, c, 15, 10, 58); MD5_OP(c, d, a, b,  6, 15, 59); MD5_OP(b, c, d, a, 13, 21, 60);
+    MD5_OP(a, b, c, d,  4,  6, 61); MD5_OP(d, a, b, c, 11, 10, 62); MD5_OP(c, d, a, b,  2, 15, 63); MD5_OP(b, c, d, a,  9, 21, 64);
+
+#if 0
 	for (t=0; t<HASH_ROUND_NUM; t++)
 	{
 	    T= b + ((a + (g[t/16])(b, c, d) + X[k] + T[t])<<<s)
@@ -238,6 +278,7 @@ static uint32_t md5_process_block(const void *block)
 		DBG("a=0x%08x, b=0x%08x, c=0x%02x, d=0x%08x\n", a, b, c, d);
 #endif
 	}
+#endif
 
 	context->a += a;
 	context->b += b;
@@ -331,7 +372,7 @@ int md5_final(uint8_t *hash)
 	/* Last block should be less thant HASH_BLOCK_SIZE - HASH_LEN_SIZE */
 	if (context->rest >= (HASH_BLOCK_SIZE - HASH_LEN_SIZE))
 	{
-	    total = context->processed_bits + context->rest << 3;
+	    total = context->processed_bits + (context->rest << 3);
 
 		/* one more block */
 		context->last_block[context->rest] = HASH_PADDING_PATTERN;
@@ -349,7 +390,7 @@ int md5_final(uint8_t *hash)
 	else /* 0 <= rest < HASH_BLOCK_SIZE - HASH_LEN_SIZE */
 	{
 		/* calc, don't need to accumulate the padding block */
-		total = context->processed_bits + context->rest << 3;
+		total = context->processed_bits + (context->rest << 3);
 
 		/* one more block */
 		context->last_block[context->rest] = HASH_PADDING_PATTERN;

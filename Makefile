@@ -9,7 +9,7 @@ STRIP = $(CROSS_COMPILE)strip
 CFLAGS = -Wall -g -Os
 INCLUDE = -I ./
 
-.PHONY: all SHA1 SHA512
+.PHONY: all SHA1 SHA512 MD5
 
 all: SHA1 SHA512
 
@@ -51,7 +51,25 @@ SHA512.o : sha512.c
 sha512_test.o : sha512_test.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-OBJ = $(SHA1_OBJ) $(SHA1_TARGET) $(SHA512_OBJ) $(SHA512_TARGET)
+#
+# rules for md5
+#
+MD5_OBJ := md5.o
+MD5_OBJ += md5_test.o
+
+MD5_TARGET = md5_test
+
+MD5: $(MD5_OBJ)
+	$(CC) $(CFLAGS) $(MD5_OBJ) -o $(MD5_TARGET) $(LIBS) $(INCLUDE)
+	$(STRIP) --strip-unneeded $(MD5_TARGET)
+
+md5.o : md5.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+md5_test.o : md5_test.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+OBJ = $(SHA1_OBJ) $(SHA1_TARGET) $(SHA512_OBJ) $(SHA512_TARGET) $(MD5_OBJ) $(MD5_TARGET)
 
 clean:
 	rm -rf $(OBJ) $(TARGET)
