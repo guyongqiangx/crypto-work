@@ -205,7 +205,8 @@ static uint32_t prepare_schedule_word(const void *block, uint32_t *w)
     a = b + ((a + (g[(i-1)/16])(b, c, d) + X[k] + T[i-1])<<(s))
 #else
 #define MD5_OP(a,b,c,d,k,s,i) \
-    a = b + ROTL(a + (g[(i-1)/16])(b, c, d) + X[k] + T[i-1], s)
+    a = b + ROTL(a + (g[(i-1)/16])(b, c, d) + X[k] + T[i-1], s); \
+    DBG("a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x, X=0x%08x, T=0x%08x\n", a, b, c, d, X[k], T[i-1]);
 #endif
 
 static uint32_t md5_process_block(const void *block)
@@ -229,8 +230,12 @@ static uint32_t md5_process_block(const void *block)
 	// prepare_schedule_word(block, X);
     for (i=0; i<16; i++)
     {
-        X[i] = swap32(WORD(block, i));
+        //X[i] = swap32(WORD(block, i));
+        X[i] = WORD(block, i);
     }
+
+    //print_buffer(block, 64);
+    //print_buffer(&X, 64);
 
 	a = context->a;
 	b = context->b;

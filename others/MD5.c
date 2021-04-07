@@ -28,25 +28,33 @@ typedef struct
           a += F(b,c,d) + x + ac; \
           a = ROTATE_LEFT(a,s); \
           a += b; \
-          }
+          }; \
+    DBG("a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x, X=0x%08x, T=0x%08x\n", a, b, c, d, x, ac);
+
 #define GG(a,b,c,d,x,s,ac) \
           { \
           a += G(b,c,d) + x + ac; \
           a = ROTATE_LEFT(a,s); \
           a += b; \
-          }
+    }; \
+    DBG("a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x, X=0x%08x, T=0x%08x\n", a, b, c, d, x, ac);
+
 #define HH(a,b,c,d,x,s,ac) \
           { \
           a += H(b,c,d) + x + ac; \
           a = ROTATE_LEFT(a,s); \
           a += b; \
-          }
+    }; \
+    DBG("a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x, X=0x%08x, T=0x%08x\n", a, b, c, d, x, ac);
+
 #define II(a,b,c,d,x,s,ac) \
           { \
           a += I(b,c,d) + x + ac; \
           a = ROTATE_LEFT(a,s); \
           a += b; \
-          }                                            
+            }; \
+DBG("a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x, X=0x%08x, T=0x%08x\n", a, b, c, d, x, ac);
+                                           
 void MD5Init(MD5_CTX *context);
 void MD5Update(MD5_CTX *context,unsigned char *input,unsigned int inputlen);
 void MD5Final(MD5_CTX *context,unsigned char digest[16]);
@@ -56,24 +64,9 @@ void MD5Decode(unsigned int *output,unsigned char *input,unsigned int len);
  
 #endif
 
-#define DUMP_LINE_SIZE 16
-int print_buffer(const void *buf, uint32_t len)
-{
-	uint32_t i;
-	for (i=0; i<len; i++)
-	{
-		if (i%DUMP_LINE_SIZE == 0)
-			printf("%04X:", i);
 
-		printf(" %02x", ((uint8_t *)buf)[i]);
+int print_buffer(const void *buf, int len);
 
-		if (i%DUMP_LINE_SIZE == (DUMP_LINE_SIZE-1))
-			printf("\n");
-	}
-	printf("\n");
-
-	return 0;
-}
 
 
 #include <memory.h>
@@ -278,4 +271,25 @@ int main(int argc, char *argv[])
 	
 	return 0;
 }
+
+
+#define DUMP_LINE_SIZE 16
+int print_buffer(const void *buf, int len)
+{
+	int i;
+	for (i=0; i<len; i++)
+	{
+		if (i%DUMP_LINE_SIZE == 0)
+			printf("%04X:", i);
+
+		printf(" %02x", ((char *)buf)[i]);
+
+		if (i%DUMP_LINE_SIZE == (DUMP_LINE_SIZE-1))
+			printf("\n");
+	}
+	printf("\n");
+
+	return 0;
+}
+
 
