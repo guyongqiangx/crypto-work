@@ -3,7 +3,7 @@
 
 #include "md5.h"
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #define DBG(...) printf(__VA_ARGS__)
@@ -100,6 +100,7 @@ static md5_func g[4] =
 	F, G, H, I
 };
 
+#if 0
 static uint64_t swap64(uint64_t a)
 {
   return ((a & 0x00000000000000FFULL) << 56) |
@@ -119,6 +120,7 @@ static uint32_t swap32(uint32_t a)
          ((a & 0x00FF0000) >> 8) |
          ((a & 0xFF000000) >> 24);
 }
+#endif
 
 #define DUMP_LINE_SIZE 16
 int print_buffer(const void *buf, uint32_t len)
@@ -185,21 +187,19 @@ int md5_init(void)
 	return 0;
 }
 
-#if 0
+#define WORD(b,i) (((uint32_t *)b)[i])
 static uint32_t prepare_schedule_word(const void *block, uint32_t *w)
 {
-	uint32_t t;
-	for (t=0; t<HASH_ROUND_NUM; t++)
-	{
-		if (t<=15) /*  0 <= t <= 15 */
-			w[t] = swap32(WORD(block, t));
-		else	   /* 16 <= t <= 79 */
-			w[t] = ROTL(w[t-3] ^ w[t-8] ^ w[t-14] ^ w[t-16], 1);
-	}
+	uint32_t i;
+    for (i=0; i<16; i++)
+    {
+        //w[i] = swap32(WORD(block, i));
+        w[i] = WORD(block, i);
+        //printf("0x%08x ", w[i]);
+    }
 
 	return 0;
 }
-#endif
 
 #if 0
 #define MD5_OP(a,b,c,d,k,s,i) \
@@ -210,11 +210,9 @@ static uint32_t prepare_schedule_word(const void *block, uint32_t *w)
     DBG("%02d: a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x, X=0x%08x, T=0x%08x\n", i-1, a, b, c, d, X[k], T[i-1]);
 #endif
 
-#define WORD(b,i) (((uint32_t *)b)[i])
-
 static uint32_t md5_process_block(const void *block)
 {
-    uint32_t i;
+    //uint32_t i;
 	//uint32_t t;
 	uint32_t X[16];
 	//uint32_t T;
@@ -229,8 +227,10 @@ static uint32_t md5_process_block(const void *block)
 	print_buffer(block, HASH_BLOCK_SIZE);
 #endif
 
+#if 1
 	/* prepare schedule word */
-	// prepare_schedule_word(block, X);
+	prepare_schedule_word(block, X);
+#else
 	printf("\n");
     for (i=0; i<16; i++)
     {
@@ -239,9 +239,7 @@ static uint32_t md5_process_block(const void *block)
         printf("0x%08x ", X[i]);
     }
     printf("\n");
-
-    //print_buffer(block, 64);
-    print_buffer(&X, 64);
+#endif
 
 	a = context->a;
 	b = context->b;
