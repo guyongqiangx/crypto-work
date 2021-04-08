@@ -29,7 +29,7 @@ typedef struct
           a = ROTATE_LEFT(a,s); \
           a += b; \
           }; \
-    DBG("a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x, X=0x%08x, T=0x%08x\n", a, b, c, d, x, ac);
+    DBG("%02d: a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x, X=0x%08x, T=0x%08x\n", t++, a, b, c, d, x, ac);
 
 #define GG(a,b,c,d,x,s,ac) \
           { \
@@ -37,7 +37,7 @@ typedef struct
           a = ROTATE_LEFT(a,s); \
           a += b; \
     }; \
-    DBG("a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x, X=0x%08x, T=0x%08x\n", a, b, c, d, x, ac);
+    DBG("%02d: a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x, X=0x%08x, T=0x%08x\n", t++, a, b, c, d, x, ac);
 
 #define HH(a,b,c,d,x,s,ac) \
           { \
@@ -45,7 +45,7 @@ typedef struct
           a = ROTATE_LEFT(a,s); \
           a += b; \
     }; \
-    DBG("a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x, X=0x%08x, T=0x%08x\n", a, b, c, d, x, ac);
+    DBG("%02d: a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x, X=0x%08x, T=0x%08x\n", t++, a, b, c, d, x, ac);
 
 #define II(a,b,c,d,x,s,ac) \
           { \
@@ -53,7 +53,7 @@ typedef struct
           a = ROTATE_LEFT(a,s); \
           a += b; \
             }; \
-DBG("a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x, X=0x%08x, T=0x%08x\n", a, b, c, d, x, ac);
+DBG("%02d: a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x, X=0x%08x, T=0x%08x\n", t++, a, b, c, d, x, ac);
                                            
 void MD5Init(MD5_CTX *context);
 void MD5Update(MD5_CTX *context,unsigned char *input,unsigned int inputlen);
@@ -65,9 +65,12 @@ void MD5Decode(unsigned int *output,unsigned char *input,unsigned int len);
 #endif
 
 
-int print_buffer(const void *buf, int len);
+int print_buffer(const char *buf, int len);
 
 
+
+#include <stdio.h>
+#include <stdlib.h>
 
 #include <memory.h>
 //#include "md5.h"
@@ -137,6 +140,7 @@ void MD5Encode(unsigned char *output,unsigned int *input,unsigned int len)
 void MD5Decode(unsigned int *output,unsigned char *input,unsigned int len)
 {
      unsigned int i = 0,j = 0;
+     printf("\n");
      while(j < len)
      {
            output[i] = (input[j]) |
@@ -145,16 +149,34 @@ void MD5Decode(unsigned int *output,unsigned char *input,unsigned int len)
                        (input[j+3] << 24);
            i++;
            j+=4; 
+           printf("%02d: input: 0x%08x, --> output: 0x%08x\n", i, ((unsigned int *)input)[i], output[i]);
      }
+     printf("\n");
 }
 void MD5Transform(unsigned int state[4],unsigned char block[64])
 {
+     unsigned int t=0;
      unsigned int a = state[0];
      unsigned int b = state[1];
      unsigned int c = state[2];
      unsigned int d = state[3];
      unsigned int x[64];
+
+     printf("data: \n");
+     //print_buffer(block, 64);
+     for (t=0; t<64; t++)
+    {
+        printf(" %02x", (unsigned int)block[t]);
+        if (t % 16 == 15)
+            printf("\n");
+    }
+     printf("\n");
+
+     t = 0;
+     
      MD5Decode(x,block,64);
+     //print_buffer((const char*)x, 64);
+     
      FF(a, b, c, d, x[ 0], 7, 0xd76aa478); /* 1 */
  FF(d, a, b, c, x[ 1], 12, 0xe8c7b756); /* 2 */
  FF(c, d, a, b, x[ 2], 17, 0x242070db); /* 3 */
@@ -274,7 +296,7 @@ int main(int argc, char *argv[])
 
 
 #define DUMP_LINE_SIZE 16
-int print_buffer(const void *buf, int len)
+int print_buffer(const char *buf, int len)
 {
 	int i;
 	for (i=0; i<len; i++)
@@ -282,7 +304,7 @@ int print_buffer(const void *buf, int len)
 		if (i%DUMP_LINE_SIZE == 0)
 			printf("%04X:", i);
 
-		printf(" %02x", ((char *)buf)[i]);
+		printf(" %02x", buf[i]);
 
 		if (i%DUMP_LINE_SIZE == (DUMP_LINE_SIZE-1))
 			printf("\n");
