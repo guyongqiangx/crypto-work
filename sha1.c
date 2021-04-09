@@ -17,6 +17,7 @@
 #define DUMP_ROUND_DATA 0
 #endif
 
+#if 0
 #define SHA1_BLOCK_SIZE		64	/* 512 bits = 64 Bytes */
 #define SHA1_LEN_SIZE	 	8	/* 64 bits = 8 bytes */
 #define SHA1_LEN_OFFSET 	(SHA1_BLOCK_SIZE - SHA1_LEN_SIZE)
@@ -32,6 +33,15 @@
 
 #define HASH_PADDING_PATTERN	SHA1_PADDING_PATTERN
 #define HASH_ROUND_NUM			SHA1_ROUND_NUM
+#else
+#define HASH_BLOCK_SIZE		    64	/* 512 bits = 64 Bytes */
+#define HASH_LEN_SIZE	 	    8	/* 64 bits = 8 bytes */
+#define HASH_LEN_OFFSET         (HASH_BLOCK_SIZE - HASH_LEN_SIZE)
+#define HASH_DIGEST_SIZE        20 /* 160 bits = 20 bytes */
+
+#define HASH_PADDING_PATTERN 	0x80
+#define HASH_ROUND_NUM			80
+#endif
 
 typedef uint32_t (*sha1_func)(uint32_t x, uint32_t y, uint32_t z);
 
@@ -343,9 +353,9 @@ int sha1_final(uint8_t *hash)
 		memset(&context->last.buf[context->last.size], 0, HASH_BLOCK_SIZE - context->last.size);
 		sha1_process_block(&context->last.buf);
 
-		context->last.size = 0;
-
 		memset(&context->last.buf[0], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE);
+        context->last.size = 0;
+ 
 		*(uint64_t *)&(context->last.buf[HASH_LEN_OFFSET]) = swap64(context->total_bits);
 		sha1_process_block(&context->last.buf);
 	}
