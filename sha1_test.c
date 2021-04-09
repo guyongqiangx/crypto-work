@@ -6,8 +6,8 @@
 
 int main(int argc, char * argv[])
 {
-	//char data[]="abc";
-	char data[]="abcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+	char data[]="abc";
+	//char data[]="abcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 	//uint8_t buf[SHA1_BLOCK_SIZE];
 	uint8_t hash[20];
 	uint32_t i, len = 0;
@@ -30,6 +30,7 @@ int main(int argc, char * argv[])
 		printf("%02x", hash[i]);
 	printf("\n");
 
+#if 0
 	sha1_init();
 	sha1_update("abc", 3);
 	sha1_update("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", 55);
@@ -41,8 +42,9 @@ int main(int argc, char * argv[])
 	for (i=0; i<20; i++)
 		printf("%02x", hash[i]);
 	printf("\n");
+#endif
 
-#if 0
+#if 1
 	printf("openssl dgst -sha1 abc.txt\n");
 	system("openssl dgst -sha1 abc.txt");
 #else
