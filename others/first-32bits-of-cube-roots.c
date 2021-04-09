@@ -46,10 +46,11 @@ int main() {
     int i;
     double intpart, fractpart;
 
-    for (i=1; i<25; i++)
+    for (i=0; i<25; i++)
         {
         fractpart = modf(pow(x[i],1/3.0), &intpart);
-        printf("0x%08lx\n", (unsigned long)(fabs(fractpart * 4294967296UL)));
+        //printf("0x%08lx\n", (unsigned long)(fabs(fractpart * 4294967296UL)));
+        printf("0x%08lx\n", (unsigned long)(fabs(fractpart * (1UL << 32))));
         }
     return 0;
 }
