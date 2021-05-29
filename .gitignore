@@ -1,11 +1,6 @@
 sha
 sha1
-sha1_test
-sha1_test.o
-sha1.o
-test.o
-
 sha512
-sha512.o
-sha512_test.o
-sha512_test
+hmac
+*.o
+*_test
