@@ -9,9 +9,13 @@ STRIP = $(CROSS_COMPILE)strip
 CFLAGS = -Wall -g -Os
 INCLUDE = -I ./
 
-.PHONY: all SHA1 SHA512 SHA3 MD5
+.PHONY: all SHA1 SHA512 SHA3 MD5 HMAC help
 
-all: SHA1 SHA512
+all: MD5 SHA1 SHA512 SHA3 HMAC
+
+help:
+	@echo "Support Targets: MD5 SHA1 SHA512 SHA3 HMAC"
+	@echo "make MD5 SHA1 SHA512 SHA4 HMAC"
 
 #
 # rules for sha1
@@ -87,10 +91,29 @@ SHA3.o : sha3.c
 sha3_test.o : sha3_test.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
+#
+# rules for HMAC
+#
+HMAC_OBJ := hmac.o
+HMAC_OBJ += hmac_test.o
+
+HMAC_TARGET = hmac_test
+
+HMAC: $(HMAC_OBJ)
+	$(CC) $(CFLAGS) $(HMAC_OBJ) -o $(HMAC_TARGET) $(LIBS) $(INCLUDE)
+	$(STRIP) --strip-unneeded $(HMAC_TARGET)
+
+HMAC.o : hmac.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+hmac_test.o : hmac_test.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
 OBJ = $(SHA1_OBJ) $(SHA1_TARGET)
 OBJ += $(SHA512_OBJ) $(SHA512_TARGET)
 OBJ += $(SHA3_OBJ) $(SHA3_TARGET)
 OBJ += $(MD5_OBJ) $(MD5_TARGET)
+OBJ += $(HMAC_OBJ) $(HMAC_TARGET)
 
 clean:
 	rm -rf $(OBJ) $(TARGET)
