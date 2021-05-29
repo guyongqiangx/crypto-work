@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "utils.h"
 #include "sha512.h"
 
 #define DEBUG
@@ -150,25 +151,6 @@ static uint64_t swap64(uint64_t a)
          ((a & 0x0000FF0000000000ULL) >> 24) |
          ((a & 0x00FF000000000000ULL) >> 40) |
          ((a & 0xFF00000000000000ULL) >> 56);
-}
-
-#define DUMP_LINE_SIZE 16
-int print_buffer(const void *buf, uint32_t len)
-{
-	uint32_t i;
-	for (i=0; i<len; i++)
-	{
-		if (i%DUMP_LINE_SIZE == 0)
-			printf("%04X:", i);
-
-		printf(" %02x", ((uint8_t *)buf)[i]);
-
-		if (i%DUMP_LINE_SIZE == (DUMP_LINE_SIZE-1))
-			printf("\n");
-	}
-	printf("\n");
-
-	return 0;
 }
 
 /*
