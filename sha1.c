@@ -99,26 +99,6 @@ static sha1_func F[4] =
 	Ch, Parity, Maj, Parity
 };
 
-static uint64_t swap64(uint64_t a)
-{
-  return ((a & 0x00000000000000FFULL) << 56) |
-         ((a & 0x000000000000FF00ULL) << 40) |
-         ((a & 0x0000000000FF0000ULL) << 24) |
-         ((a & 0x00000000FF000000ULL) <<  8) |
-         ((a & 0x000000FF00000000ULL) >>  8) |
-         ((a & 0x0000FF0000000000ULL) >> 24) |
-         ((a & 0x00FF000000000000ULL) >> 40) |
-         ((a & 0xFF00000000000000ULL) >> 56);
-}
-
-static uint32_t swap32(uint32_t a)
-{
-  return ((a & 0x000000FF) << 24) |
-         ((a & 0x0000FF00) << 8) |
-         ((a & 0x00FF0000) >> 8) |
-         ((a & 0xFF000000) >> 24);
-}
-
 struct sha1_context {
     /* message length in bits */
     uint64_t total_bits;
@@ -177,7 +157,7 @@ static int prepare_schedule_word(const void *block, uint32_t *w)
 	for (t=0; t<HASH_ROUND_NUM; t++)
 	{
 		if (t<=15) /*  0 <= t <= 15 */
-			w[t] = swap32(WORD(block, t));
+			w[t] = be32toh(WORD(block, t));
 		else	   /* 16 <= t <= 79 */
 			w[t] = ROTL(w[t-3] ^ w[t-8] ^ w[t-14] ^ w[t-16], 1);
 	}
@@ -336,7 +316,7 @@ int sha1_final(uint8_t *hash)
 		memset(&context->last.buf[0], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE);
         context->last.size = 0;
  
-		*(uint64_t *)&(context->last.buf[HASH_LEN_OFFSET]) = swap64(context->total_bits);
+		*(uint64_t *)&(context->last.buf[HASH_LEN_OFFSET]) = htobe64(context->total_bits);
 		sha1_process_block(&context->last.buf);
 	}
 	else /* 0 <= last.size < HASH_BLOCK_SIZE - HASH_LEN_SIZE */
@@ -350,16 +330,16 @@ int sha1_final(uint8_t *hash)
         /* padding 0s */
 		memset(&context->last.buf[context->last.size], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE - context->last.size);
 
-		*(uint64_t *)&context->last.buf[HASH_LEN_OFFSET] = swap64(context->total_bits);
+		*(uint64_t *)&context->last.buf[HASH_LEN_OFFSET] = htobe64(context->total_bits);
 		sha1_process_block(&context->last.buf);
 	}
 
 	buf = (uint32_t *)hash;
-	buf[0] = swap32(context->hash.a);
-	buf[1] = swap32(context->hash.b);
-	buf[2] = swap32(context->hash.c);
-	buf[3] = swap32(context->hash.d);
-	buf[4] = swap32(context->hash.e);
+	buf[0] = htobe32(context->hash.a);
+	buf[1] = htobe32(context->hash.b);
+	buf[2] = htobe32(context->hash.c);
+	buf[3] = htobe32(context->hash.d);
+	buf[4] = htobe32(context->hash.e);
 
 	return ERR_OK;
 }

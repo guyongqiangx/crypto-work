@@ -141,18 +141,6 @@ static void *swap128(void *data)
 }
 #endif
 
-static uint64_t swap64(uint64_t a)
-{
-  return ((a & 0x00000000000000FFULL) << 56) |
-         ((a & 0x000000000000FF00ULL) << 40) |
-         ((a & 0x0000000000FF0000ULL) << 24) |
-         ((a & 0x00000000FF000000ULL) <<  8) |
-         ((a & 0x000000FF00000000ULL) >>  8) |
-         ((a & 0x0000FF0000000000ULL) >> 24) |
-         ((a & 0x00FF000000000000ULL) >> 40) |
-         ((a & 0xFF00000000000000ULL) >> 56);
-}
-
 /*
  * "abc" -->   0x61,     0x62,     0x63
  *   Origin: 0b0110 0001 0110 0010 0110 0011
@@ -215,7 +203,7 @@ static uint32_t prepare_schedule_word(const void *block, uint64_t *w)
 	for (t=0; t<HASH_ROUND_NUM; t++)
 	{
 		if (t<=15) /*  0 <= t <= 15 */
-			w[t] = swap64(WORD(block, t));
+			w[t] = be64toh(WORD(block, t));
 		else	   /* 16 <= t <= 79 */
 			w[t] = sigma1(w[t-2]) + w[t-7] + sigma0(w[t-15]) + w[t-16];
 	}
@@ -431,14 +419,14 @@ int sha512_final(uint8_t *hash)
 		context->a, context->b, context->c, context->d, context->e, context->f, context->g, context->h);
 
 	buf = (uint64_t *)hash;
-	buf[0] = swap64(context->a);
-	buf[1] = swap64(context->b);
-	buf[2] = swap64(context->c);
-	buf[3] = swap64(context->d);
-	buf[4] = swap64(context->e);
-	buf[5] = swap64(context->f);
-	buf[6] = swap64(context->g);
-	buf[7] = swap64(context->h);
+	buf[0] = htobe64(context->a);
+	buf[1] = htobe64(context->b);
+	buf[2] = htobe64(context->c);
+	buf[3] = htobe64(context->d);
+	buf[4] = htobe64(context->e);
+	buf[5] = htobe64(context->f);
+	buf[6] = htobe64(context->g);
+	buf[7] = htobe64(context->h);
 
 	return 0;
 }

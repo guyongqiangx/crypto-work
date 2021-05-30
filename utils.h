@@ -62,6 +62,25 @@ static union { char c[4]; unsigned long l; } endian_test = { { 'l', '?', '?', 'b
 #endif
 
 /*
+ * big endian to host
+ */
+
+#ifndef be16toh
+#define be16toh(x) \
+	((ENDIANNESS == ENDIAN_LITTLE) ? __bswap_constant_16(x) : (x))
+#endif
+
+#ifndef be32toh
+#define be32toh(x) \
+	((ENDIANNESS == ENDIAN_LITTLE) ? __bswap_constant_32(x) : (x))
+#endif
+
+#ifndef be64toh
+#define be64toh(x) \
+	((ENDIANNESS == ENDIAN_LITTLE) ? __bswap_constant_64(x) : (x))
+#endif
+
+/*
  * unsigned short int htobe16(unsigned short int x)
  * {
  * 	return (ENDIANNESS == ENDIAN_LITTLE) ? __bswap_constant_16(x) : (x);
