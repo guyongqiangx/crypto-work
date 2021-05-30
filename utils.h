@@ -1,6 +1,8 @@
 #ifndef __UTILS__H
 #include <stdlib.h>
 
+/* Only needed if htobexx is not defined */
+#ifndef htobe32
 /*
  * from: linux/arch/arm/kernel/setup.c
  */
@@ -9,9 +11,10 @@ static union { char c[4]; unsigned long l; } endian_test = { { 'l', '?', '?', 'b
 #define ENDIANNESS ((char)endian_test.l)
 #define ENDIAN_LITTLE 'l'
 #define ENDIAN_BIG    'b'
+#endif
 
 /*
- * from: /usr/include/x86_64-linux-gnu/bits/byteswap.h
+ * from: linux/usr/include/x86_64-linux-gnu/bits/byteswap.h
  */
 /* Swap bytes in 16 bit value.  */
 #ifndef __bswap_constant_16
@@ -64,7 +67,6 @@ static union { char c[4]; unsigned long l; } endian_test = { { 'l', '?', '?', 'b
 /*
  * big endian to host
  */
-
 #ifndef be16toh
 #define be16toh(x) \
 	((ENDIANNESS == ENDIAN_LITTLE) ? __bswap_constant_16(x) : (x))
@@ -79,23 +81,6 @@ static union { char c[4]; unsigned long l; } endian_test = { { 'l', '?', '?', 'b
 #define be64toh(x) \
 	((ENDIANNESS == ENDIAN_LITTLE) ? __bswap_constant_64(x) : (x))
 #endif
-
-/*
- * unsigned short int htobe16(unsigned short int x)
- * {
- * 	return (ENDIANNESS == ENDIAN_LITTLE) ? __bswap_constant_16(x) : (x);
- * }
- *
- * unsigned int htobe32(unsigned int x)
- * {
- * 	return (ENDIANNESS == ENDIAN_LITTLE) ? __bswap_constant_32(x) : (x);
- * }
- *
- * unsigned long long htobe64(unsigned long long x)
- * {
- * 	return (ENDIANNESS == ENDIAN_LITTLE) ? __bswap_constant_64(x) : (x);
- * }
- */
 
 int print_buffer(const void *buf, size_t len);
 

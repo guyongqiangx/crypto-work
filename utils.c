@@ -9,10 +9,7 @@ int print_buffer(const void *buf, size_t len)
 	{
 		if (i%DUMP_LINE_SIZE == 0)
 		{
-			if (sizeof(size_t) == 8)
-				printf("%04lX:", i);
-			else /* if (sizeof(size_t) == 4) */
-				printf("%04X:", i);
+			printf((sizeof(size_t) == 8)?"%04lX:":"%04X:", i);
 		}
 
 		printf(" %02x", ((char *)buf)[i]);
