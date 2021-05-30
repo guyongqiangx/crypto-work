@@ -31,7 +31,7 @@ typedef struct sha256_context {
     /* last block */
     struct {
         uint32_t size;        	/* size in bytes */
-        uint8_t  buf[64];  		/* block data buffer */
+        unsigned char buf[64];  		/* block data buffer */
     }last;
 }SHA256_CTX;
 

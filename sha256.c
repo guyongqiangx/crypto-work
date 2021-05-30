@@ -307,7 +307,9 @@ int SHA256_Final(unsigned char *md, SHA256_CTX *c)
 		memset(&c->last.buf[0], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE);
         c->last.size = 0;
  
-		*(uint64_t *)&(c->last.buf[HASH_LEN_OFFSET]) = htobe64(c->total_bits);
+		//*(uint64_t *)&(c->last.buf[HASH_LEN_OFFSET]) = htobe64(c->total_bits);
+		htobe64c(&c->last.buf[HASH_LEN_OFFSET], c->total_bits);
+
 		SHA256_ProcessBlock(c, &c->last.buf);
 	}
 	else /* 0 <= last.size < HASH_BLOCK_SIZE - HASH_LEN_SIZE */
@@ -321,7 +323,9 @@ int SHA256_Final(unsigned char *md, SHA256_CTX *c)
         /* padding 0s */
 		memset(&c->last.buf[c->last.size], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE - c->last.size);
 
-		*(uint64_t *)&c->last.buf[HASH_LEN_OFFSET] = htobe64(c->total_bits);
+		//*(uint64_t *)&c->last.buf[HASH_LEN_OFFSET] = htobe64(c->total_bits);
+		htobe64c(&c->last.buf[HASH_LEN_OFFSET], c->total_bits);
+
 		SHA256_ProcessBlock(c, &c->last.buf);
 	}
 
