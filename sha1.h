@@ -16,6 +16,4 @@ int sha1_init(void);
 int sha1_update(const void *data, uint64_t size);
 int sha1_final(uint8_t *hash);
 
-int print_buffer(const void *buf, uint32_t len);
-
 #endif

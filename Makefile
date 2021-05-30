@@ -9,7 +9,7 @@ STRIP = $(CROSS_COMPILE)strip
 CFLAGS = -Wall -g -Os
 INCLUDE = -I ./
 
-.PHONY: all SHA1 SHA512 SHA3 MD5 HMAC help
+.PHONY: all SHA1 SHA512 SHA3 MD5 HMAC help common
 
 all: MD5 SHA1 SHA512 SHA3 HMAC
 
@@ -17,15 +17,21 @@ help:
 	@echo "Support Targets: MD5 SHA1 SHA512 SHA3 HMAC"
 	@echo "make MD5 SHA1 SHA512 SHA4 HMAC"
 
+COMM_OBJ := utils.o
+COMMON : $(COMM_OBJ)
+utils.o: utils.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
 #
 # rules for sha1
 #
 SHA1_OBJ := sha1.o
 SHA1_OBJ += sha1_test.o
+SHA1_OBJ += $(COMM_OBJ)
 
 SHA1_TARGET = sha1_test
 
-SHA1: $(SHA1_OBJ)
+SHA1: $(SHA1_OBJ) common
 	$(CC) $(CFLAGS) $(SHA1_OBJ) -o $(SHA1_TARGET) $(LIBS) $(INCLUDE)
 	$(STRIP) --strip-unneeded $(SHA1_TARGET)
  
@@ -42,6 +48,7 @@ sha1_test.o : sha1_test.c
 #
 SHA512_OBJ := sha512.o
 SHA512_OBJ += sha512_test.o
+SHA512_OBJ += $(COMM_OBJ)
 
 SHA512_TARGET = sha512_test
 
@@ -60,6 +67,7 @@ sha512_test.o : sha512_test.c
 #
 MD5_OBJ := md5.o
 MD5_OBJ += md5_test.o
+MD5_OBJ += $(COMM_OBJ)
 
 MD5_TARGET = md5_test
 
@@ -67,7 +75,7 @@ MD5: $(MD5_OBJ)
 	$(CC) $(CFLAGS) $(MD5_OBJ) -o $(MD5_TARGET) $(LIBS) $(INCLUDE)
 	$(STRIP) --strip-unneeded $(MD5_TARGET)
 
-md5.o : md5.c
+md5.o : md5.c md5.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 md5_test.o : md5_test.c
@@ -78,6 +86,7 @@ md5_test.o : md5_test.c
 #
 SHA3_OBJ := sha3.o
 SHA3_OBJ += sha3_test.o
+SHA3_OBJ += $(COMM_OBJ)
 
 SHA3_TARGET = sha3_test
 
@@ -96,6 +105,7 @@ sha3_test.o : sha3_test.c
 #
 HMAC_OBJ := hmac.o
 HMAC_OBJ += hmac_test.o
+HMAC_OBJ += $(COMM_OBJ)
 
 HMAC_TARGET = hmac_test
 

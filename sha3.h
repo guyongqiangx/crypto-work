@@ -16,6 +16,4 @@ int sha3_init(void);
 int sha3_update(const void *data, uint64_t size);
 int sha3_final(uint8_t *hash);
 
-int print_buffer(const void *buf, uint32_t len);
-
 #endif

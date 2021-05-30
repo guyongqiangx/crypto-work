@@ -123,25 +123,6 @@ static uint32_t swap32(uint32_t a)
 }
 #endif
 
-#define DUMP_LINE_SIZE 16
-int print_buffer(const void *buf, uint32_t len)
-{
-	uint32_t i;
-	for (i=0; i<len; i++)
-	{
-		if (i%DUMP_LINE_SIZE == 0)
-			printf("%04X:", i);
-
-		printf(" %02x", ((uint8_t *)buf)[i]);
-
-		if (i%DUMP_LINE_SIZE == (DUMP_LINE_SIZE-1))
-			printf("\n");
-	}
-	printf("\n");
-
-	return 0;
-}
-
 /*
  * "abc" -->   0x61,     0x62,     0x63
  *   Origin: 0b0110 0001 0110 0010 0110 0011
