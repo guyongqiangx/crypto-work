@@ -9,9 +9,9 @@ STRIP = $(CROSS_COMPILE)strip
 CFLAGS = -Wall -g -Os
 INCLUDE = -I ./
 
-.PHONY: all SHA1 SHA512 SHA3 MD5 HMAC help common
+.PHONY: all SHA1 SHA256 SHA512 SHA3 MD5 HMAC help common
 
-all: MD5 SHA1 SHA512 SHA3 HMAC
+all: MD5 SHA1 SHA256 SHA512 SHA3 HMAC
 
 help:
 	@echo "Support Targets: MD5 SHA1 SHA512 SHA3 HMAC"
@@ -37,10 +37,31 @@ SHA1: $(SHA1_OBJ) common
  
 # --strip-unneeded 
  
-SHA1.o : sha1.c
+sha1.o : sha1.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 sha1_test.o : sha1_test.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+#
+# rules for sha256
+#
+SHA256_OBJ := sha256.o
+SHA256_OBJ += sha256_test.o
+SHA256_OBJ += $(COMM_OBJ)
+
+SHA256_TARGET = sha256_test
+
+SHA256: $(SHA256_OBJ) common
+	$(CC) $(CFLAGS) $(SHA256_OBJ) -o $(SHA256_TARGET) $(LIBS) $(INCLUDE)
+	$(STRIP) --strip-unneeded $(SHA256_TARGET)
+
+# --strip-unneeded
+
+sha256.o : sha256.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+sha256_test.o : sha256_test.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 #
@@ -120,6 +141,7 @@ hmac_test.o : hmac_test.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 OBJ = $(SHA1_OBJ) $(SHA1_TARGET)
+OBJ += $(SHA256_OBJ) $(SHA256_TARGET)
 OBJ += $(SHA512_OBJ) $(SHA512_TARGET)
 OBJ += $(SHA3_OBJ) $(SHA3_TARGET)
 OBJ += $(MD5_OBJ) $(MD5_TARGET)
