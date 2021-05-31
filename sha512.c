@@ -34,18 +34,6 @@
 #define HASH_PADDING_PATTERN	SHA512_PADDING_PATTERN
 #define HASH_ROUND_NUM			SHA512_ROUND_NUM
 
-
-#define U64(x)	x##ULL
-
-typedef union {
-	struct
-	{
-		uint64_t l;
-		uint64_t h;
-	}i;				/* integer: low, high */
-	uint8_t d[16];	/*    data: bytes */
-} uint128_t;
-
 /* SHA512 Constants */
 static const uint64_t K512[HASH_ROUND_NUM] =
 {
@@ -105,47 +93,29 @@ static uint64_t Maj(uint64_t x, uint64_t y, uint64_t z)
 	return (x & y) ^ (x & z) ^ (y & z);
 }
 
-/* Sigma0 */
-static uint64_t Sigma0(uint64_t x)
+/* SIGMA0 */
+static uint64_t SIGMA0(uint64_t x)
 {
 	return ROTR(x, 28) ^ ROTR(x, 34) ^ ROTR(x, 39);
 }
 
-/* Sigma1 */
-static uint64_t Sigma1(uint64_t x)
+/* SIGMA1 */
+static uint64_t SIGMA1(uint64_t x)
 {
 	return ROTR(x, 14) ^ ROTR(x, 18) ^ ROTR(x, 41);
 }
 
-/* sigma0, different from Sigma0 */
+/* sigma0, different from SIGMA0 */
 static uint64_t sigma0(uint64_t x)
 {
 	return ROTR(x, 1) ^ ROTR(x, 8) ^ SHR(x, 7);
 }
 
-/* sigma1, different from Sigma1 */
+/* sigma1, different from SIGMA1 */
 static uint64_t sigma1(uint64_t x)
 {
 	return ROTR(x, 19) ^ ROTR(x, 61) ^ SHR(x, 6);
 }
-
-#if 0
-/* swap 16 bytes */
-static void *swap128(void *data)
-{
-	uint8_t *buf, temp, i;
-
-	buf = (uint8_t *)data;
-	for (i=0; i<8; i++)
-	{
-		temp = buf[i];
-		buf[i] = buf[15-i];
-		buf[15-i] = temp;
-	}
-
-	return (void *)buf;
-}
-#endif
 
 /*
  * "abc" -->   0x61,     0x62,     0x63
@@ -154,29 +124,6 @@ static void *swap128(void *data)
  *                                          (|<-------------------->|)(|<------- 0x18 ------->|)
  *   Format: "abc" + 1 + 0 x 423 + 0x18
  */
-
-struct sha512_context {
-    /* message total length in bytes */
-    uint128_t total;
-
-    /* intermedia hash value for each block */
-    struct {
-        uint64_t a;
-        uint64_t b;
-        uint64_t c;
-        uint64_t d;
-        uint64_t e;
-        uint64_t f;
-        uint64_t g;
-        uint64_t h;
-    }hash;
-
-    /* last block */
-    struct {
-        uint32_t used;      /* used bytes */
-        uint8_t  buf[128];  /* block data buffer */
-    }last;
-};
 
 static struct sha512_context *get_sha512_context(void)
 {
@@ -285,8 +232,8 @@ static uint32_t sha512_process_block(const void *block)
 
 	for (t=0; t<HASH_ROUND_NUM; t++)
 	{
-		T1 = h + Sigma1(e) + Ch(e, f, g) + K512[t] + W[t];
-		T2 = Sigma0(a) + Maj(a, b, c);
+		T1 = h + SIGMA1(e) + Ch(e, f, g) + K512[t] + W[t];
+		T2 = SIGMA0(a) + Maj(a, b, c);
 		 h = g;
 		 g = f;
 		 f = e;
