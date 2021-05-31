@@ -59,7 +59,6 @@ static const uint64_t K512[HASH_ROUND_NUM] =
     0x4cc5d4becb3e42b6, 0x597f299cfc657e2a, 0x5fcb6fab3ad6faec, 0x6c44198c4a475817
 };
 
-
 #if 0
 /* ROTate Left (circular left shift) */
 static uint64_t ROTL(uint64_t x, uint8_t shift)
@@ -126,56 +125,51 @@ static uint64_t sigma1(uint64_t x)
  *   Format: "abc" + 1 + 0 x 423 + 0x18
  */
 
-static struct sha512_context *get_sha512_context(void)
+int SHA512_Init(SHA512_CTX *c)
 {
-	static struct sha512_context _sha512;
+	memset(c, 0, sizeof(SHA512_CTX));
 
-	return &_sha512;
+	/* Initial Value for SHA512 */
+	c->hash.a = 0x6a09e667f3bcc908;
+	c->hash.b = 0xbb67ae8584caa73b;
+	c->hash.c = 0x3c6ef372fe94f82b;
+	c->hash.d = 0xa54ff53a5f1d36f1;
+	c->hash.e = 0x510e527fade682d1;
+	c->hash.f = 0x9b05688c2b3e6c1f;
+	c->hash.g = 0x1f83d9abfb41bd6b;
+	c->hash.h = 0x5be0cd19137e2179;
+
+	c->total.i.l = 0;
+	c->total.i.h = 0;
+	c->last.used = 0;
+
+	return ERR_OK;
 }
 
-int sha512_init(void)
-{
-	struct sha512_context *context;
-
-	context = get_sha512_context();
-
-	memset(context, 0, sizeof(struct sha512_context));
-	context->hash.a = 0x6a09e667f3bcc908;
-	context->hash.b = 0xbb67ae8584caa73b;
-	context->hash.c = 0x3c6ef372fe94f82b;
-	context->hash.d = 0xa54ff53a5f1d36f1;
-	context->hash.e = 0x510e527fade682d1;
-	context->hash.f = 0x9b05688c2b3e6c1f;
-	context->hash.g = 0x1f83d9abfb41bd6b;
-	context->hash.h = 0x5be0cd19137e2179;
-
-	context->total.i.l = 0;
-	context->total.i.h = 0;
-	context->last.used = 0;
-
-	return 0;
-}
-
-//#define WORD(b,i) (((uint64_t *)b)[i])
-static uint32_t prepare_schedule_word(const void *block, uint64_t *w)
+static int SHA512_PrepareScheduleWord(const void *block, uint64_t *W)
 {
 	uint32_t t;
+
+    if ((NULL == block) || (NULL == W))
+    {
+        return ERR_INV_PARAM;
+    }
+
 	for (t=0; t<HASH_ROUND_NUM; t++)
 	{
 		if (t<=15) /*  0 <= t <= 15 */
-			w[t] = be64toh(QWORD(block, t));
+			W[t] = be64toh(QWORD(block, t));
 		else	   /* 16 <= t <= 79 */
-			w[t] = sigma1(w[t-2]) + w[t-7] + sigma0(w[t-15]) + w[t-16];
+			W[t] = sigma1(W[t-2]) + W[t-7] + sigma0(W[t-15]) + W[t-16];
 	}
 
-	return 0;
+	return ERR_OK;
 }
 
-static int update_processed_bits(uint128_t *x, uint64_t len)
+static int SHA512_UpdateTotal(uint128_t *x, uint64_t len)
 {
 	uint64_t l;
 
-	/* l = (x->i.l + len) & U64(0xffffffffffffffff); */
 	l = (x->i.l + (((uint64_t)len)<<3)) & 0xffffffffffffffff;
 	if (l < x->i.l)
 		x->i.h++;
@@ -185,66 +179,71 @@ static int update_processed_bits(uint128_t *x, uint64_t len)
 
     x->i.l = l;
 
-	return 0;
+	return ERR_OK;
 }
 
-static int update_length_field(uint8_t *buffer, uint128_t *length)
+#if 0
+static int SHA512_SaveTotal(uint8_t *buffer, uint128_t *len)
 {
 	int i;
 
 	for (i=0; i<HASH_LEN_SIZE; i++)
 	{
-		buffer[i] = length->d[HASH_LEN_SIZE-1-i];
+		buffer[i] = len->d[HASH_LEN_SIZE-1-i];
 	}
 
-	return 0;
+	return ERR_OK;
 }
+#endif
 
-static uint32_t sha512_process_block(const void *block)
+static int SHA512_ProcessBlock(SHA512_CTX *ctx, const void *block)
 {
 	uint32_t t;
 	uint64_t W[HASH_ROUND_NUM];
 	uint64_t T1, T2;
 	uint64_t a, b, c, d, e, f, g, h;
-	struct sha512_context *context;
 
-	context = get_sha512_context();
+    if ((NULL == ctx) || (NULL == block))
+    {
+        return ERR_INV_PARAM;
+    }
 
-#ifdef DEBUG
-	//printf("block: %d\n", context->total >> 10);  /* block size: 2^10 = 1024 */
+#if (DUMP_BLOCK_DATA == 1)
+	//printf("block: %d\n", ctx->total >> 10);  /* block size: 2^10 = 1024 */
 	print_buffer(block, HASH_BLOCK_SIZE, " ");
 #endif
 
 	/* prepare schedule word */
-	prepare_schedule_word(block, W);
+	SHA512_PrepareScheduleWord(block, W);
 
-	a = context->hash.a;
-	b = context->hash.b;
-	c = context->hash.c;
-	d = context->hash.d;
-	e = context->hash.e;
-	f = context->hash.f;
-	g = context->hash.g;
-	h = context->hash.h;
+	a = ctx->hash.a;
+	b = ctx->hash.b;
+	c = ctx->hash.c;
+	d = ctx->hash.d;
+	e = ctx->hash.e;
+	f = ctx->hash.f;
+	g = ctx->hash.g;
+	h = ctx->hash.h;
 
-	//DBG("block: \n");
-	//DBG("a=0x%016llx, b=0x%016llx, c=0x%016llx, d=0x%016llx, e=0x%016llx, f=0x%016llx, g=0x%016llx, h=0x%016llx\n", 
-	//	a, b, c, d, e, f, g, h);
+#if (DUMP_BLOCK_HASH == 1)
+	DBG("   %016llx %016llx %016llx %016llx\n   %016llx %016llx %016llx %016llx\n", \
+		ctx->hash.a, ctx->hash.b, ctx->hash.c, ctx->hash.d, ctx->hash.e, ctx->hash.f, ctx->hash.g, ctx->hash.h);
+#endif
 
 	for (t=0; t<HASH_ROUND_NUM; t++)
 	{
-		T1 = h + SIGMA1(e) + Ch(e, f, g) + K512[t] + W[t];
-		T2 = SIGMA0(a) + Maj(a, b, c);
-		 h = g;
-		 g = f;
-		 f = e;
-		 e = d + T1;
-		 d = c;
-		 c = b;
-		 b = a;
-		 a = T1 + T2;
+        T1 = h + SIGMA1(e) + Ch(e, f, g) + K512[t] + W[t];
+        T2 = SIGMA0(a) + Maj(a, b, c);
+         h = g;
+         g = f;
+         f = e;
+         e = d + T1;
+         d = c;
+         c = b;
+         b = a;
+         a = T1 + T2;
 
-#ifdef DEBUG
+#if (DUMP_ROUND_DATA == 1)
 		DBG("%02d:\n", t);
 		DBG("T1=0x%016llx, T2=0x%016llx, W=0x%016llx\n", T1, T2, W[t]);
 		DBG(" a=0x%016llx,  b=0x%016llx, c=0x%016llx, d=0x%016llx,\n e=0x%016llx,  f=0x%016llx, g=0x%016llx, h=0x%016llx\n", 
@@ -252,142 +251,159 @@ static uint32_t sha512_process_block(const void *block)
 #endif
 	}
 
-	context->hash.a += a;
-	context->hash.b += b;
-	context->hash.c += c;
-	context->hash.d += d;
-	context->hash.e += e;
-	context->hash.f += f;
-	context->hash.g += g;
-	context->hash.h += h;
+	ctx->hash.a += a;
+	ctx->hash.b += b;
+	ctx->hash.c += c;
+	ctx->hash.d += d;
+	ctx->hash.e += e;
+	ctx->hash.f += f;
+	ctx->hash.g += g;
+	ctx->hash.h += h;
 
-#ifdef DEBUG
-	DBG("block hash:\n");
-	DBG("   %016llx %016llx %016llx %016llx\n   %016llx %016llx %016llx %016llx\n", 
-		context->hash.a, context->hash.b, context->hash.c, context->hash.d, context->hash.e, context->hash.f, context->hash.g, context->hash.h);
+#if (DUMP_BLOCK_HASH == 1)
+	DBG(" HASH: %016llx %016llx %016llx %016llx\n   %016llx %016llx %016llx %016llx\n", 
+		ctx->hash.a, ctx->hash.b, ctx->hash.c, ctx->hash.d, ctx->hash.e, ctx->hash.f, ctx->hash.g, ctx->hash.h);
 #endif
 
-	return 0;
+	return ERR_OK;
 }
 
-int sha512_update(const void *data, uint64_t size)
+int SHA512_Update(SHA512_CTX *c, const void *data, size_t len)
 {
-	uint64_t len = 0;
+	uint64_t copy_len = 0;
 
-	struct sha512_context *context;
-
-	context = get_sha512_context();
+    if ((NULL == c) || (NULL == data))
+    {
+        return ERR_INV_PARAM;
+    }
 
 	/* has used data */
-	if (context->last.used != 0)
+	if (c->last.used != 0)
 	{
 		/* less than 1 block in total, combine data */
-		if (context->last.used + size < HASH_BLOCK_SIZE)
+		if (c->last.used + len < HASH_BLOCK_SIZE)
 		{
-			memcpy(&context->last.buf[context->last.used], data, size);
-			context->last.used += size;
+			memcpy(&c->last.buf[c->last.used], data, len);
+			c->last.used += len;
 
-			return 0;
+			return ERR_OK;
 		}
 		else /* more than 1 block */
 		{
 			/* process the block in context buffer */
-			len = HASH_BLOCK_SIZE - context->last.used;
-			memcpy(&context->last.buf[context->last.used], data, len);
-			sha512_process_block(&context->last.buf);
-			update_processed_bits(&context->total, HASH_BLOCK_SIZE);
+			copy_len = HASH_BLOCK_SIZE - c->last.used;
+			memcpy(&c->last.buf[c->last.used], data, copy_len);
+			SHA512_ProcessBlock(c, &c->last.buf);
+			SHA512_UpdateTotal(&c->total, HASH_BLOCK_SIZE);
 
-			data = (uint8_t *)data + len;
-			size -= len;
+			data = (uint8_t *)data + copy_len;
+			len -= copy_len;
 
 			/* reset context buffer */
-			memset(&context->last.buf[0], 0, HASH_BLOCK_SIZE);
-			context->last.used = 0;
+			memset(&c->last.buf[0], 0, HASH_BLOCK_SIZE);
+			c->last.used = 0;
 		}
 	}
 
 	/* less than 1 block, copy to context buffer */
-	if (size < HASH_BLOCK_SIZE)
+	if (len < HASH_BLOCK_SIZE)
 	{
-		memcpy(&context->last.buf[context->last.used], data, size);
-		context->last.used += size;
+		memcpy(&c->last.buf[c->last.used], data, len);
+		c->last.used += len;
 
-		return 0;
+		return ERR_OK;
 	}
 	else
 	{
 		/* process data blocks */
-		while (size > HASH_BLOCK_SIZE)
+		while (len > HASH_BLOCK_SIZE)
 		{
-			sha512_process_block(data);
-			update_processed_bits(&context->total, HASH_BLOCK_SIZE);
+			SHA512_ProcessBlock(c, data);
+			SHA512_UpdateTotal(&c->total, HASH_BLOCK_SIZE);
 
 			data = (uint8_t *)data + HASH_BLOCK_SIZE;
-			size -= HASH_BLOCK_SIZE;
+			len -= HASH_BLOCK_SIZE;
 		}
 
-		/* copy the reset to context buffer */
-		memcpy(&context->last.buf[0], data, size);
-		context->last.used = size;
+		/* copy rest data to context buffer */
+		memcpy(&c->last.buf[0], data, len);
+		c->last.used = len;
 	}
 
-	return 0;
+	return ERR_OK;
 }
 
-int sha512_final(uint8_t *hash)
+int SHA512_Final(unsigned char *md, SHA512_CTX *c)
 {
 	uint64_t *buf;
 
-	struct sha512_context *context;
-
-	context = get_sha512_context();
+    if ((NULL == c) || (NULL == md))
+    {
+        return ERR_INV_PARAM;
+    }
 
 	/* Last block should be less thant HASH_BLOCK_SIZE - HASH_LEN_SIZE */
-	if (context->last.used >= (HASH_BLOCK_SIZE - HASH_LEN_SIZE))
+	if (c->last.used >= (HASH_BLOCK_SIZE - HASH_LEN_SIZE))
 	{
-		/* update processed bits */
-		update_processed_bits(&context->total, context->last.used);
+        SHA512_UpdateTotal(&c->total, c->last.used);
 
-		/* one more block */
-		context->last.buf[context->last.used] = HASH_PADDING_PATTERN;
-		context->last.used++;
+        /* one more block */
+        c->last.buf[c->last.used] = HASH_PADDING_PATTERN;
+        c->last.used++;
 
-		memset(&context->last.buf[context->last.used], 0, HASH_BLOCK_SIZE - context->last.used);
-		sha512_process_block(&context->last.buf);
+        memset(&c->last.buf[c->last.used], 0, HASH_BLOCK_SIZE - c->last.used);
+        SHA512_ProcessBlock(c, &c->last.buf);
 
-		context->last.used = 0;
+        c->last.used = 0;
 
-		memset(&context->last.buf[0], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE);
-		update_length_field(&context->last.buf[HASH_LEN_OFFSET], &context->total);
-		sha512_process_block(&context->last.buf);
+        memset(&c->last.buf[0], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE);
+        //SHA512_SaveTotal(&c->last.buf[HASH_LEN_OFFSET], &c->total);
+        htobe64c(&c->last.buf[HASH_LEN_OFFSET], c->total.i.h);
+        htobe64c(&c->last.buf[HASH_LEN_OFFSET+8], c->total.i.l);
+
+        SHA512_ProcessBlock(c, &c->last.buf);
 	}
 	else /* 0 <= last.used < HASH_BLOCK_SIZE - HASH_LEN_SIZE */
 	{
-		/* update processed bits */
-		update_processed_bits(&context->total, context->last.used);
+        SHA512_UpdateTotal(&c->total, c->last.used);
 
-		/* one more block */
-		context->last.buf[context->last.used] = HASH_PADDING_PATTERN;
-		context->last.used++;
+        /* one more block */
+        c->last.buf[c->last.used] = HASH_PADDING_PATTERN;
+        c->last.used++;
 
-		memset(&context->last.buf[context->last.used], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE - context->last.used);
-		update_length_field(&context->last.buf[HASH_LEN_OFFSET], &context->total);
-	
-		sha512_process_block(&context->last.buf);
+        /* padding 0s */
+        memset(&c->last.buf[c->last.used], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE - c->last.used);
+        //SHA512_SaveTotal(&c->last.buf[HASH_LEN_OFFSET], &c->total);
+        htobe64c(&c->last.buf[HASH_LEN_OFFSET], c->total.i.h);
+        htobe64c(&c->last.buf[HASH_LEN_OFFSET+8], c->total.i.l);
+
+        SHA512_ProcessBlock(c, &c->last.buf);
 	}
 
 	DBG("%016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx\n", 
-		context->hash.a, context->hash.b, context->hash.c, context->hash.d, context->hash.e, context->hash.f, context->hash.g, context->hash.h);
+		c->hash.a, c->hash.b, c->hash.c, c->hash.d, c->hash.e, c->hash.f, c->hash.g, c->hash.h);
 
-	buf = (uint64_t *)hash;
-	buf[0] = htobe64(context->hash.a);
-	buf[1] = htobe64(context->hash.b);
-	buf[2] = htobe64(context->hash.c);
-	buf[3] = htobe64(context->hash.d);
-	buf[4] = htobe64(context->hash.e);
-	buf[5] = htobe64(context->hash.f);
-	buf[6] = htobe64(context->hash.g);
-	buf[7] = htobe64(context->hash.h);
+	buf = (uint64_t *)md;
+	buf[0] = htobe64(c->hash.a);
+	buf[1] = htobe64(c->hash.b);
+	buf[2] = htobe64(c->hash.c);
+	buf[3] = htobe64(c->hash.d);
+	buf[4] = htobe64(c->hash.e);
+	buf[5] = htobe64(c->hash.f);
+	buf[6] = htobe64(c->hash.g);
+	buf[7] = htobe64(c->hash.h);
 
-	return 0;
+	return ERR_OK;
 }
+
+unsigned char *SHA512(const unsigned char *d, size_t n, unsigned char *md)
+{
+    SHA512_CTX c;
+
+    SHA512_Init(&c);
+    SHA512_Update(&c, d, n);
+    SHA512_Final(md, &c);
+
+    return md;
+}
+

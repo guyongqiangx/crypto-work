@@ -20,7 +20,7 @@ typedef union {
 	uint8_t d[16];	/*    data: bytes */
 } uint128_t;
 
-struct sha512_context {
+typedef struct sha512_context {
     /* message total length in bytes */
     uint128_t total;
 
@@ -41,7 +41,20 @@ struct sha512_context {
         uint32_t used;      /* used bytes */
         uint8_t  buf[128];  /* block data buffer */
     }last;
-};
+}SHA512_CTX;
+
+/* https://www.openssl.org/docs/man1.1.1/man3/SHA256_Final.html */
+int SHA384_Init(SHA512_CTX *c);
+int SHA384_Update(SHA512_CTX *c, const void *data, size_t len);
+int SHA384_Final(unsigned char *md, SHA512_CTX *c);
+unsigned char *SHA384(const unsigned char *d, size_t n,
+					  unsigned char *md);
+
+int SHA512_Init(SHA512_CTX *c);
+int SHA512_Update(SHA512_CTX *c, const void *data, size_t len);
+int SHA512_Final(unsigned char *md, SHA512_CTX *c);
+unsigned char *SHA512(const unsigned char *d, size_t n,
+					  unsigned char *md);
 
 int sha512_init(void);
 int sha512_update(const void *data, uint64_t size);

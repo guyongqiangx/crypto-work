@@ -7,21 +7,21 @@
 #define HASH_SIZE 64
 int main(int argc, char * argv[])
 {
-	//char data[]="abc";
-	char data[]="abcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+	char data[]="abc";
+	//char data[]="abcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 	uint8_t hash[HASH_SIZE];
 	uint32_t i, len = 0;
 
-	memset(hash, 0, sizeof(hash));
-
-	sha512_init();
+	SHA512_CTX ctx;
 
 	len = strlen(data);
 	printf("length: %d\n", len);
 
-	sha512_update(data, len);
+	memset(hash, 0, sizeof(hash));
 
-	sha512_final(hash);
+	SHA512_Init(&ctx);
+	SHA512_Update(&ctx, data, len);
+	SHA512_Final(hash, &ctx);
 
 	printf("sha512 result:\n");
 
@@ -30,7 +30,7 @@ int main(int argc, char * argv[])
 		printf("%02x", hash[i]);
 	printf("\n");
 
-#if 1
+#if 0
 	sha512_init();
 	sha512_update("abc", 3);
 	sha512_update("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", 55);
@@ -46,7 +46,7 @@ int main(int argc, char * argv[])
 	printf("\n");
 #endif
 
-#if 0
+#if 1
 	printf("openssl dgst -sha512 abc.txt\n");
 	system("openssl dgst -sha512 abc.txt");
 #else
