@@ -137,7 +137,7 @@ static int SHA256_PrepareScheduleWord(const void *block, uint32_t *W)
 	for (t=0; t<HASH_ROUND_NUM; t++)
 	{
 		if (t<=15) /*  0 <= t <= 15 */
-			W[t] = be32toh(WORD(block, t));
+			W[t] = be32toh(DWORD(block, t));
 		else	   /* 16 <= t <= 79 */
 			W[t] = sigma1(W[t-2]) + W[t-7] + sigma0(W[t-15]) + W[t-16];
 	}
@@ -226,7 +226,7 @@ int SHA256_Update(SHA256_CTX *c, const void *data, size_t len)
         return ERR_INV_PARAM;
     }
 
-	/* has last.used data */
+	/* has used data */
 	if (c->last.used != 0)
 	{
 		/* less than 1 block in total, combine data */
