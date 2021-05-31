@@ -1,5 +1,8 @@
 #ifndef __UTILS__H
+#define __UTILS__H
 #include <stdlib.h>
+
+#define WORD(b,i) (((uint32_t *)(b))[(i)])
 
 /* Only needed if htobexx is not defined */
 #ifndef htobe32

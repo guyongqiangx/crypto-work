@@ -1,5 +1,5 @@
-#ifndef __MY_SHA1__
-#define __MY_SHA1__
+#ifndef __SHA256__H
+#define __SHA256__H
 
 #define ERR_OK			 0
 #define ERR_ERR         -1	/* generic error */
@@ -13,8 +13,8 @@ typedef unsigned int       uint32_t;
 typedef unsigned long long uint64_t;
 
 typedef struct sha256_context {
-    /* message length in bits */
-    uint64_t total_bits;
+    /* message total length in bytes */
+    uint64_t total;
 
     /* intermedia hash value for each block */
     struct {
@@ -30,8 +30,8 @@ typedef struct sha256_context {
 
     /* last block */
     struct {
-        uint32_t size;        	/* size in bytes */
-        unsigned char buf[64];  		/* block data buffer */
+        uint32_t used;     /* used bytes */
+        uint8_t  buf[64];  /* block data buffer */
     }last;
 }SHA256_CTX;
 

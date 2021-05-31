@@ -125,7 +125,6 @@ int SHA256_Init(SHA256_CTX *c)
 	return ERR_OK;
 }
 
-#define WORD(b,i) (((uint32_t *)b)[i])
 static int SHA256_PrepareScheduleWord(const void *block, uint32_t *W)
 {
 	uint32_t t;
@@ -159,7 +158,7 @@ static int SHA256_ProcessBlock(SHA256_CTX *ctx, const void *block)
     }
 
 #if (DUMP_BLOCK_DATA == 1)
-	DBG("BLOCK: %llu\n", ctx->total_bits >> 9); /* block size: 2^9 = 512 */
+	DBG("BLOCK: %llu\n", ctx->total/HASH_BLOCK_SIZE);
 	print_buffer(block, HASH_BLOCK_SIZE, " ");
 #endif
 
@@ -227,39 +226,39 @@ int SHA256_Update(SHA256_CTX *c, const void *data, size_t len)
         return ERR_INV_PARAM;
     }
 
-	/* has last.size data */
-	if (c->last.size != 0)
+	/* has last.used data */
+	if (c->last.used != 0)
 	{
 		/* less than 1 block in total, combine data */
-		if (c->last.size + len < HASH_BLOCK_SIZE)
+		if (c->last.used + len < HASH_BLOCK_SIZE)
 		{
-			memcpy(&c->last.buf[c->last.size], data, len);
-			c->last.size += len;
+			memcpy(&c->last.buf[c->last.used], data, len);
+			c->last.used += len;
 
 			return ERR_OK;
 		}
 		else /* more than 1 block */
 		{
 			/* process the block in context buffer */
-			copy_len = HASH_BLOCK_SIZE - c->last.size;
-			memcpy(&c->last.buf[c->last.size], data, copy_len);
+			copy_len = HASH_BLOCK_SIZE - c->last.used;
+			memcpy(&c->last.buf[c->last.used], data, copy_len);
 			SHA256_ProcessBlock(c, &c->last.buf);
-            c->total_bits += HASH_BLOCK_SIZE << 3;
+            c->total += HASH_BLOCK_SIZE;
 
 			data = (uint8_t *)data + copy_len;
 			len -= copy_len;
 
 			/* reset context buffer */
 			memset(&c->last.buf[0], 0, HASH_BLOCK_SIZE);
-			c->last.size = 0;
+			c->last.used = 0;
 		}
 	}
 
 	/* less than 1 block, copy to context buffer */
 	if (len < HASH_BLOCK_SIZE)
 	{
-		memcpy(&c->last.buf[c->last.size], data, len);
-		c->last.size += len;
+		memcpy(&c->last.buf[c->last.used], data, len);
+		c->last.used += len;
 
 		return ERR_OK;
 	}
@@ -269,7 +268,7 @@ int SHA256_Update(SHA256_CTX *c, const void *data, size_t len)
 		while (len > HASH_BLOCK_SIZE)
 		{
 			SHA256_ProcessBlock(c, data);
-            c->total_bits += HASH_BLOCK_SIZE << 3;
+            c->total += HASH_BLOCK_SIZE;
 
 			data = (uint8_t *)data + HASH_BLOCK_SIZE;
 			len -= HASH_BLOCK_SIZE;
@@ -277,7 +276,7 @@ int SHA256_Update(SHA256_CTX *c, const void *data, size_t len)
 
 		/* copy rest data to context buffer */
 		memcpy(&c->last.buf[0], data, len);
-		c->last.size = len;
+		c->last.used = len;
 	}
 
 	return ERR_OK;
@@ -293,38 +292,38 @@ int SHA256_Final(unsigned char *md, SHA256_CTX *c)
     }
 
 	/* Last block should be less thant HASH_BLOCK_SIZE - HASH_LEN_SIZE */
-	if (c->last.size >= (HASH_BLOCK_SIZE - HASH_LEN_SIZE))
+	if (c->last.used >= (HASH_BLOCK_SIZE - HASH_LEN_SIZE))
 	{
-	    c->total_bits += c->last.size << 3;
+	    c->total += c->last.used;
 
 		/* one more block */
-		c->last.buf[c->last.size] = HASH_PADDING_PATTERN;
-		c->last.size++;
+		c->last.buf[c->last.used] = HASH_PADDING_PATTERN;
+		c->last.used++;
 
-		memset(&c->last.buf[c->last.size], 0, HASH_BLOCK_SIZE - c->last.size);
+		memset(&c->last.buf[c->last.used], 0, HASH_BLOCK_SIZE - c->last.used);
 		SHA256_ProcessBlock(c, &c->last.buf);
 
 		memset(&c->last.buf[0], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE);
-        c->last.size = 0;
+        c->last.used = 0;
  
-		//*(uint64_t *)&(c->last.buf[HASH_LEN_OFFSET]) = htobe64(c->total_bits);
-		htobe64c(&c->last.buf[HASH_LEN_OFFSET], c->total_bits);
+		//*(uint64_t *)&(c->last.buf[HASH_LEN_OFFSET]) = htobe64(c->total << 3);
+		htobe64c(&c->last.buf[HASH_LEN_OFFSET], c->total << 3);
 
 		SHA256_ProcessBlock(c, &c->last.buf);
 	}
-	else /* 0 <= last.size < HASH_BLOCK_SIZE - HASH_LEN_SIZE */
+	else /* 0 <= last.used < HASH_BLOCK_SIZE - HASH_LEN_SIZE */
 	{
-	    c->total_bits += c->last.size << 3;
+	    c->total += c->last.used;
 
 		/* one more block */
-		c->last.buf[c->last.size] = HASH_PADDING_PATTERN;
-		c->last.size++;
+		c->last.buf[c->last.used] = HASH_PADDING_PATTERN;
+		c->last.used++;
 
         /* padding 0s */
-		memset(&c->last.buf[c->last.size], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE - c->last.size);
+		memset(&c->last.buf[c->last.used], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE - c->last.used);
 
-		//*(uint64_t *)&c->last.buf[HASH_LEN_OFFSET] = htobe64(c->total_bits);
-		htobe64c(&c->last.buf[HASH_LEN_OFFSET], c->total_bits);
+		//*(uint64_t *)&c->last.buf[HASH_LEN_OFFSET] = htobe64(c->total << 3);
+		htobe64c(&c->last.buf[HASH_LEN_OFFSET], c->total << 3);
 
 		SHA256_ProcessBlock(c, &c->last.buf);
 	}
