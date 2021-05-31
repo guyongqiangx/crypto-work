@@ -8,14 +8,20 @@
 
 #ifdef DEBUG
 #define DBG(...) printf(__VA_ARGS__)
+#define DUMP_BLOCK_DATA 1
+#define DUMP_BLOCK_HASH 1
+#define DUMP_ROUND_DATA 1
 #else
 #define DBG(...)
+#define DUMP_BLOCK_DATA 0
+#define DUMP_BLOCK_HASH 0
+#define DUMP_ROUND_DATA 0
 #endif
 
 #define SHA512_BLOCK_SIZE			128	/* 1024 bits = 128 bytes */
 #define SHA512_LEN_SIZE	 			 16	/*  128 bits =  16 bytes */
 #define SHA512_LEN_OFFSET 			(SHA512_BLOCK_SIZE - SHA512_LEN_SIZE)
-#define SHA512_DIGEST_SIZE			512 /* 512 bits =  64 bytes */
+#define SHA512_DIGEST_SIZE			 64 /*  512 bits =  64 bytes */
 
 #define SHA512_PADDING_PATTERN 	   0x80
 #define SHA512_ROUND_NUM			 80
@@ -41,7 +47,7 @@ typedef union {
 } uint128_t;
 
 /* SHA512 Constants */
-static const uint64_t K512[80] = 
+static const uint64_t K512[HASH_ROUND_NUM] =
 {
     U64(0x428a2f98d728ae22), U64(0x7137449123ef65cd), U64(0xb5c0fbcfec4d3b2f), U64(0xe9b5dba58189dbbc),
     U64(0x3956c25bf348b538), U64(0x59f111f1b605d019), U64(0x923f82a4af194f9b), U64(0xab1c5ed5da6d8118),
@@ -150,20 +156,20 @@ static void *swap128(void *data)
  */
 
 struct sha512_context {
-	uint64_t a;
-	uint64_t b;
-	uint64_t c;
-	uint64_t d;
-	uint64_t e;
-	uint64_t f;
-	uint64_t g;
-	uint64_t h;
+    /* message total length in bytes */
+    uint128_t total;
 
-	uint128_t processed_bits;
+    uint64_t a;
+    uint64_t b;
+    uint64_t c;
+    uint64_t d;
+    uint64_t e;
+    uint64_t f;
+    uint64_t g;
+    uint64_t h;
 
-	uint32_t rest; /* rest size in last block */
-	uint8_t last_block[HASH_BLOCK_SIZE];
-
+    uint32_t rest; /* rest size in last block */
+    uint8_t last_block[HASH_BLOCK_SIZE];
 };
 
 static struct sha512_context *get_sha512_context(void)
@@ -189,21 +195,21 @@ int sha512_init(void)
 	context->g = U64(0x1f83d9abfb41bd6b);
 	context->h = U64(0x5be0cd19137e2179);
 
-	context->processed_bits.i.l = 0;
-	context->processed_bits.i.h = 0;
+	context->total.i.l = 0;
+	context->total.i.h = 0;
 	context->rest = 0;
 
 	return 0;
 }
 
-#define WORD(b,i) (((uint64_t *)b)[i])
+//#define WORD(b,i) (((uint64_t *)b)[i])
 static uint32_t prepare_schedule_word(const void *block, uint64_t *w)
 {
 	uint32_t t;
 	for (t=0; t<HASH_ROUND_NUM; t++)
 	{
 		if (t<=15) /*  0 <= t <= 15 */
-			w[t] = be64toh(WORD(block, t));
+			w[t] = be64toh(QWORD(block, t));
 		else	   /* 16 <= t <= 79 */
 			w[t] = sigma1(w[t-2]) + w[t-7] + sigma0(w[t-15]) + w[t-16];
 	}
@@ -215,6 +221,7 @@ static int update_processed_bits(uint128_t *x, uint64_t len)
 {
 	uint64_t l;
 
+	/* l = (x->i.l + len) & U64(0xffffffffffffffff); */
 	l = (x->i.l + (((uint64_t)len)<<3)) & U64(0xffffffffffffffff);
 	if (l < x->i.l)
 		x->i.h++;
@@ -250,8 +257,8 @@ static uint32_t sha512_process_block(const void *block)
 	context = get_sha512_context();
 
 #ifdef DEBUG
-	//printf("block: %d\n", context->processed_bits >> 10);  /* block size: 2^10 = 1024 */
-	print_buffer(block, HASH_BLOCK_SIZE);
+	//printf("block: %d\n", context->total >> 10);  /* block size: 2^10 = 1024 */
+	print_buffer(block, HASH_BLOCK_SIZE, " ");
 #endif
 
 	/* prepare schedule word */
@@ -334,7 +341,7 @@ int sha512_update(const void *data, uint64_t size)
 			len = HASH_BLOCK_SIZE - context->rest;
 			memcpy(&context->last_block[context->rest], data, len);
 			sha512_process_block(&context->last_block);
-			update_processed_bits(&context->processed_bits, HASH_BLOCK_SIZE);
+			update_processed_bits(&context->total, HASH_BLOCK_SIZE);
 
 			data = (uint8_t *)data + len;
 			size -= len;
@@ -359,7 +366,7 @@ int sha512_update(const void *data, uint64_t size)
 		while (size > HASH_BLOCK_SIZE)
 		{
 			sha512_process_block(data);
-			update_processed_bits(&context->processed_bits, HASH_BLOCK_SIZE);
+			update_processed_bits(&context->total, HASH_BLOCK_SIZE);
 
 			data = (uint8_t *)data + HASH_BLOCK_SIZE;
 			size -= HASH_BLOCK_SIZE;
@@ -385,7 +392,7 @@ int sha512_final(uint8_t *hash)
 	if (context->rest >= (HASH_BLOCK_SIZE - HASH_LEN_SIZE))
 	{
 		/* update processed bits */
-		update_processed_bits(&context->processed_bits, context->rest);
+		update_processed_bits(&context->total, context->rest);
 
 		/* one more block */
 		context->last_block[context->rest] = HASH_PADDING_PATTERN;
@@ -397,20 +404,20 @@ int sha512_final(uint8_t *hash)
 		context->rest = 0;
 
 		memset(&context->last_block[0], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE);
-		update_length_field(&context->last_block[HASH_LEN_OFFSET], &context->processed_bits);
+		update_length_field(&context->last_block[HASH_LEN_OFFSET], &context->total);
 		sha512_process_block(&context->last_block);
 	}
 	else /* 0 <= rest < HASH_BLOCK_SIZE - HASH_LEN_SIZE */
 	{
 		/* update processed bits */
-		update_processed_bits(&context->processed_bits, context->rest);
+		update_processed_bits(&context->total, context->rest);
 
 		/* one more block */
 		context->last_block[context->rest] = HASH_PADDING_PATTERN;
 		context->rest++;
 
 		memset(&context->last_block[context->rest], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE - context->rest);
-		update_length_field(&context->last_block[HASH_LEN_OFFSET], &context->processed_bits);
+		update_length_field(&context->last_block[HASH_LEN_OFFSET], &context->total);
 	
 		sha512_process_block(&context->last_block);
 	}

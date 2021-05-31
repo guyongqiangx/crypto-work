@@ -2,7 +2,8 @@
 #define __UTILS__H
 #include <stdlib.h>
 
-#define WORD(b,i) (((uint32_t *)(b))[(i)])
+#define DWORD(b,i) (((uint32_t *)(b))[(i)])
+#define QWORD(b,i) (((uint64_t *)(b))[(i)])
 
 /* Only needed if htobexx is not defined */
 #ifndef htobe32
