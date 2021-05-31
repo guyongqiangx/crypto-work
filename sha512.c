@@ -159,17 +159,23 @@ struct sha512_context {
     /* message total length in bytes */
     uint128_t total;
 
-    uint64_t a;
-    uint64_t b;
-    uint64_t c;
-    uint64_t d;
-    uint64_t e;
-    uint64_t f;
-    uint64_t g;
-    uint64_t h;
+    /* intermedia hash value for each block */
+    struct {
+        uint64_t a;
+        uint64_t b;
+        uint64_t c;
+        uint64_t d;
+        uint64_t e;
+        uint64_t f;
+        uint64_t g;
+        uint64_t h;
+    }hash;
 
-    uint32_t rest; /* rest size in last block */
-    uint8_t last_block[HASH_BLOCK_SIZE];
+    /* last block */
+    struct {
+        uint32_t used;      /* used bytes */
+        uint8_t  buf[128];  /* block data buffer */
+    }last;
 };
 
 static struct sha512_context *get_sha512_context(void)
@@ -186,18 +192,18 @@ int sha512_init(void)
 	context = get_sha512_context();
 
 	memset(context, 0, sizeof(struct sha512_context));
-	context->a = U64(0x6a09e667f3bcc908);
-	context->b = U64(0xbb67ae8584caa73b);
-	context->c = U64(0x3c6ef372fe94f82b);
-	context->d = U64(0xa54ff53a5f1d36f1);
-	context->e = U64(0x510e527fade682d1);
-	context->f = U64(0x9b05688c2b3e6c1f);
-	context->g = U64(0x1f83d9abfb41bd6b);
-	context->h = U64(0x5be0cd19137e2179);
+	context->hash.a = U64(0x6a09e667f3bcc908);
+	context->hash.b = U64(0xbb67ae8584caa73b);
+	context->hash.c = U64(0x3c6ef372fe94f82b);
+	context->hash.d = U64(0xa54ff53a5f1d36f1);
+	context->hash.e = U64(0x510e527fade682d1);
+	context->hash.f = U64(0x9b05688c2b3e6c1f);
+	context->hash.g = U64(0x1f83d9abfb41bd6b);
+	context->hash.h = U64(0x5be0cd19137e2179);
 
 	context->total.i.l = 0;
 	context->total.i.h = 0;
-	context->rest = 0;
+	context->last.used = 0;
 
 	return 0;
 }
@@ -264,14 +270,14 @@ static uint32_t sha512_process_block(const void *block)
 	/* prepare schedule word */
 	prepare_schedule_word(block, W);
 
-	a = context->a;
-	b = context->b;
-	c = context->c;
-	d = context->d;
-	e = context->e;
-	f = context->f;
-	g = context->g;
-	h = context->h;
+	a = context->hash.a;
+	b = context->hash.b;
+	c = context->hash.c;
+	d = context->hash.d;
+	e = context->hash.e;
+	f = context->hash.f;
+	g = context->hash.g;
+	h = context->hash.h;
 
 	//DBG("block: \n");
 	//DBG("a=0x%016llx, b=0x%016llx, c=0x%016llx, d=0x%016llx, e=0x%016llx, f=0x%016llx, g=0x%016llx, h=0x%016llx\n", 
@@ -298,19 +304,19 @@ static uint32_t sha512_process_block(const void *block)
 #endif
 	}
 
-	context->a += a;
-	context->b += b;
-	context->c += c;
-	context->d += d;
-	context->e += e;
-	context->f += f;
-	context->g += g;
-	context->h += h;
+	context->hash.a += a;
+	context->hash.b += b;
+	context->hash.c += c;
+	context->hash.d += d;
+	context->hash.e += e;
+	context->hash.f += f;
+	context->hash.g += g;
+	context->hash.h += h;
 
 #ifdef DEBUG
 	DBG("block hash:\n");
 	DBG("   %016llx %016llx %016llx %016llx\n   %016llx %016llx %016llx %016llx\n", 
-		context->a, context->b, context->c, context->d, context->e, context->f, context->g, context->h);
+		context->hash.a, context->hash.b, context->hash.c, context->hash.d, context->hash.e, context->hash.f, context->hash.g, context->hash.h);
 #endif
 
 	return 0;
@@ -324,39 +330,39 @@ int sha512_update(const void *data, uint64_t size)
 
 	context = get_sha512_context();
 
-	/* has rest data */
-	if (context->rest != 0)
+	/* has used data */
+	if (context->last.used != 0)
 	{
 		/* less than 1 block in total, combine data */
-		if (context->rest + size < HASH_BLOCK_SIZE)
+		if (context->last.used + size < HASH_BLOCK_SIZE)
 		{
-			memcpy(&context->last_block[context->rest], data, size);
-			context->rest += size;
+			memcpy(&context->last.buf[context->last.used], data, size);
+			context->last.used += size;
 
 			return 0;
 		}
 		else /* more than 1 block */
 		{
 			/* process the block in context buffer */
-			len = HASH_BLOCK_SIZE - context->rest;
-			memcpy(&context->last_block[context->rest], data, len);
-			sha512_process_block(&context->last_block);
+			len = HASH_BLOCK_SIZE - context->last.used;
+			memcpy(&context->last.buf[context->last.used], data, len);
+			sha512_process_block(&context->last.buf);
 			update_processed_bits(&context->total, HASH_BLOCK_SIZE);
 
 			data = (uint8_t *)data + len;
 			size -= len;
 
 			/* reset context buffer */
-			memset(&context->last_block[0], 0, HASH_BLOCK_SIZE);
-			context->rest = 0;
+			memset(&context->last.buf[0], 0, HASH_BLOCK_SIZE);
+			context->last.used = 0;
 		}
 	}
 
 	/* less than 1 block, copy to context buffer */
 	if (size < HASH_BLOCK_SIZE)
 	{
-		memcpy(&context->last_block[context->rest], data, size);
-		context->rest += size;
+		memcpy(&context->last.buf[context->last.used], data, size);
+		context->last.used += size;
 
 		return 0;
 	}
@@ -373,8 +379,8 @@ int sha512_update(const void *data, uint64_t size)
 		}
 
 		/* copy the reset to context buffer */
-		memcpy(&context->last_block[0], data, size);
-		context->rest = size;
+		memcpy(&context->last.buf[0], data, size);
+		context->last.used = size;
 	}
 
 	return 0;
@@ -389,51 +395,51 @@ int sha512_final(uint8_t *hash)
 	context = get_sha512_context();
 
 	/* Last block should be less thant HASH_BLOCK_SIZE - HASH_LEN_SIZE */
-	if (context->rest >= (HASH_BLOCK_SIZE - HASH_LEN_SIZE))
+	if (context->last.used >= (HASH_BLOCK_SIZE - HASH_LEN_SIZE))
 	{
 		/* update processed bits */
-		update_processed_bits(&context->total, context->rest);
+		update_processed_bits(&context->total, context->last.used);
 
 		/* one more block */
-		context->last_block[context->rest] = HASH_PADDING_PATTERN;
-		context->rest++;
+		context->last.buf[context->last.used] = HASH_PADDING_PATTERN;
+		context->last.used++;
 
-		memset(&context->last_block[context->rest], 0, HASH_BLOCK_SIZE - context->rest);
-		sha512_process_block(&context->last_block);
+		memset(&context->last.buf[context->last.used], 0, HASH_BLOCK_SIZE - context->last.used);
+		sha512_process_block(&context->last.buf);
 
-		context->rest = 0;
+		context->last.used = 0;
 
-		memset(&context->last_block[0], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE);
-		update_length_field(&context->last_block[HASH_LEN_OFFSET], &context->total);
-		sha512_process_block(&context->last_block);
+		memset(&context->last.buf[0], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE);
+		update_length_field(&context->last.buf[HASH_LEN_OFFSET], &context->total);
+		sha512_process_block(&context->last.buf);
 	}
-	else /* 0 <= rest < HASH_BLOCK_SIZE - HASH_LEN_SIZE */
+	else /* 0 <= last.used < HASH_BLOCK_SIZE - HASH_LEN_SIZE */
 	{
 		/* update processed bits */
-		update_processed_bits(&context->total, context->rest);
+		update_processed_bits(&context->total, context->last.used);
 
 		/* one more block */
-		context->last_block[context->rest] = HASH_PADDING_PATTERN;
-		context->rest++;
+		context->last.buf[context->last.used] = HASH_PADDING_PATTERN;
+		context->last.used++;
 
-		memset(&context->last_block[context->rest], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE - context->rest);
-		update_length_field(&context->last_block[HASH_LEN_OFFSET], &context->total);
+		memset(&context->last.buf[context->last.used], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE - context->last.used);
+		update_length_field(&context->last.buf[HASH_LEN_OFFSET], &context->total);
 	
-		sha512_process_block(&context->last_block);
+		sha512_process_block(&context->last.buf);
 	}
 
 	DBG("%016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx\n", 
-		context->a, context->b, context->c, context->d, context->e, context->f, context->g, context->h);
+		context->hash.a, context->hash.b, context->hash.c, context->hash.d, context->hash.e, context->hash.f, context->hash.g, context->hash.h);
 
 	buf = (uint64_t *)hash;
-	buf[0] = htobe64(context->a);
-	buf[1] = htobe64(context->b);
-	buf[2] = htobe64(context->c);
-	buf[3] = htobe64(context->d);
-	buf[4] = htobe64(context->e);
-	buf[5] = htobe64(context->f);
-	buf[6] = htobe64(context->g);
-	buf[7] = htobe64(context->h);
+	buf[0] = htobe64(context->hash.a);
+	buf[1] = htobe64(context->hash.b);
+	buf[2] = htobe64(context->hash.c);
+	buf[3] = htobe64(context->hash.d);
+	buf[4] = htobe64(context->hash.e);
+	buf[5] = htobe64(context->hash.f);
+	buf[6] = htobe64(context->hash.g);
+	buf[7] = htobe64(context->hash.h);
 
 	return 0;
 }
