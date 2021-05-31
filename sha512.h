@@ -20,8 +20,6 @@ typedef union {
 	uint8_t d[16];	/*    data: bytes */
 } uint128_t;
 
-#define U64(x)	x##ULL
-
 struct sha512_context {
     /* message total length in bytes */
     uint128_t total;
