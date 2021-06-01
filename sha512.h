@@ -56,9 +56,4 @@ int SHA512_Final(unsigned char *md, SHA512_CTX *c);
 unsigned char *SHA512(const unsigned char *d, size_t n,
 					  unsigned char *md);
 
-int sha512_init(void);
-int sha512_update(const void *data, uint64_t size);
-int sha512_final(uint8_t *hash);
-
 #endif
-

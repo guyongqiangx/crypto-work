@@ -54,6 +54,28 @@ int main(int argc, char * argv[])
 	printf("openssl dgst -sha512 58.txt\n");
 	system("openssl dgst -sha512 58.txt");
 #endif
+
+#if 1
+	len = strlen(data);
+	printf("length: %d\n", len);
+
+	memset(hash, 0, sizeof(hash));
+
+	SHA384_Init(&ctx);
+	SHA384_Update(&ctx, data, len);
+	SHA384_Final(hash, &ctx);
+
+	printf("sha384 result:\n");
+
+	//print_buffer(hash, 20);
+	for (i=0; i<48; i++)
+		printf("%02x", hash[i]);
+	printf("\n");
+
+	printf("openssl dgst -sha384 abc.txt\n");
+	system("openssl dgst -sha384 abc.txt");
+
+#endif
 	printf("press any key to exit...\n");
 	getchar();
 

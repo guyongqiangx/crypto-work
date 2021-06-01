@@ -26,9 +26,12 @@
 #define SHA512_PADDING_PATTERN 	   0x80
 #define SHA512_ROUND_NUM			 80
 
+#define SHA384_DIGEST_SIZE			 48 /*  384 bits =  48 bytes */
+
 #define HASH_BLOCK_SIZE		SHA512_BLOCK_SIZE
 #define HASH_LEN_SIZE		SHA512_LEN_SIZE
 #define HASH_LEN_OFFSET		SHA512_LEN_OFFSET
+
 #define HASH_DIGEST_SIZE	SHA512_DIGEST_SIZE
 
 #define HASH_PADDING_PATTERN	SHA512_PADDING_PATTERN
@@ -407,3 +410,60 @@ unsigned char *SHA512(const unsigned char *d, size_t n, unsigned char *md)
     return md;
 }
 
+int SHA384_Init(SHA512_CTX *c)
+{
+	memset(c, 0, sizeof(SHA512_CTX));
+
+	/* Initial Value for SHA384 */
+	c->hash.a = 0xcbbb9d5dc1059ed8;
+	c->hash.b = 0x629a292a367cd507;
+	c->hash.c = 0x9159015a3070dd17;
+	c->hash.d = 0x152fecd8f70e5939;
+	c->hash.e = 0x67332667ffc00b31;
+	c->hash.f = 0x8eb44a8768581511;
+	c->hash.g = 0xdb0c2e0d64f98fa7;
+	c->hash.h = 0x47b5481dbefa4fa4;
+
+	c->total.i.l = 0;
+	c->total.i.h = 0;
+	c->last.used = 0;
+
+	return ERR_OK;
+}
+
+int SHA384_Update(SHA512_CTX *c, const void *data, size_t len)
+{
+    return SHA512_Update(c, data, len);
+}
+
+int SHA384_Final(unsigned char *md, SHA512_CTX *c)
+{
+    int rc = ERR_OK;
+    unsigned char sha512_md[SHA512_DIGEST_SIZE];
+
+    memset(&sha512_md, 0, sizeof(sha512_md));
+
+    rc = SHA512_Final(sha512_md, c);
+
+    memcpy(md, sha512_md, SHA384_DIGEST_SIZE);
+
+    return rc;
+}
+
+unsigned char *SHA384(const unsigned char *d, size_t n, unsigned char *md)
+{
+    unsigned char sha512_md[SHA512_DIGEST_SIZE];
+
+    if ((NULL == d) || (NULL == md))
+    {
+        return NULL;
+    }
+
+    memset(sha512_md, 0, sizeof(sha512_md));
+
+    SHA512(d, n, sha512_md);
+
+    memcpy(md, sha512_md, SHA384_DIGEST_SIZE);
+
+    return md;
+}
