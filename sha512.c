@@ -10,7 +10,7 @@
 #define DBG(...) printf(__VA_ARGS__)
 #define DUMP_BLOCK_DATA 1
 #define DUMP_BLOCK_HASH 1
-#define DUMP_ROUND_DATA 1
+#define DUMP_ROUND_DATA 0
 #else
 #define DBG(...)
 #define DUMP_BLOCK_DATA 0
@@ -132,6 +132,11 @@ static uint64_t sigma1(uint64_t x)
 
 int SHA512_Init(SHA512_CTX *c)
 {
+    if (NULL == c)
+    {
+        return ERR_INV_PARAM;
+    }
+
 	memset(c, 0, sizeof(SHA512_CTX));
 
 	/* Initial Value for SHA512 */
@@ -452,6 +457,11 @@ static unsigned char *SHA512_XXX(const unsigned char *d, size_t n, unsigned char
 
 int SHA384_Init(SHA512_CTX *c)
 {
+    if (NULL == c)
+    {
+        return ERR_INV_PARAM;
+    }
+
 	memset(c, 0, sizeof(SHA512_CTX));
 
 	/* Initial Value for SHA384 */
@@ -486,9 +496,13 @@ unsigned char *SHA384(const unsigned char *d, size_t n, unsigned char *md)
     return SHA512_XXX(d, n, md, SHA384_DIGEST_SIZE);
 }
 
-
 int SHA512_224_Init(SHA512_CTX *c)
 {
+    if (NULL == c)
+    {
+        return ERR_INV_PARAM;
+    }
+
 	memset(c, 0, sizeof(SHA512_CTX));
 
 	/* Initial Value for SHA512/224 */
@@ -525,6 +539,11 @@ unsigned char *SHA512_224(const unsigned char *d, size_t n, unsigned char *md)
 
 int SHA512_256_Init(SHA512_CTX *c)
 {
+    if (NULL == c)
+    {
+        return ERR_INV_PARAM;
+    }
+
     memset(c, 0, sizeof(SHA512_CTX));
 
     /* Initial Value for SHA512/256 */
@@ -559,3 +578,81 @@ unsigned char *SHA512_256(const unsigned char *d, size_t n, unsigned char *md)
     return SHA512_XXX(d, n, md, SHA512_256_DIGEST_SIZE);
 }
 
+static int SHA512t_GenerateIV(SHA512_CTX *c, unsigned int t)
+{
+    char name[12]; /* 12 chars for "SHA-512/xxx", like "SHA512/224" */
+    unsigned char md[SHA512_DIGEST_SIZE];
+
+    SHA512_Init(c);
+
+    c->hash.a ^= 0xa5a5a5a5a5a5a5a5;
+    c->hash.b ^= 0xa5a5a5a5a5a5a5a5;
+    c->hash.c ^= 0xa5a5a5a5a5a5a5a5;
+    c->hash.d ^= 0xa5a5a5a5a5a5a5a5;
+    c->hash.e ^= 0xa5a5a5a5a5a5a5a5;
+    c->hash.f ^= 0xa5a5a5a5a5a5a5a5;
+    c->hash.g ^= 0xa5a5a5a5a5a5a5a5;
+    c->hash.h ^= 0xa5a5a5a5a5a5a5a5;
+
+    /* "SHA-512/xxx" */
+    memset(name, 0, sizeof(name));
+    sprintf(name, "SHA-512/%d", t);
+
+    SHA512_Update(c, name, strlen(name));
+    SHA512_Final(md, c);
+
+    DBG("%s IV:\n", name);
+	DBG(" 0x%016llx\n 0x%016llx\n 0x%016llx\n 0x%016llx\n"\
+        " 0x%016llx\n 0x%016llx\n 0x%016llx\n 0x%016llx\n",
+		c->hash.a, c->hash.b, c->hash.c, c->hash.d, c->hash.e, c->hash.f, c->hash.g, c->hash.h);
+
+    c->ext = t;
+
+    return ERR_OK;
+}
+
+int SHA512t_Init(SHA512_CTX *c, unsigned int t)
+{
+    if (NULL == c)
+    {
+        return ERR_INV_PARAM;
+    }
+
+    /* t=8x, t!=0, t!=384, t!=512 */
+    if (( t >= 512) || (0 != t%8) || (384 == t) || (0 == t))
+    {
+        return ERR_INV_PARAM;
+    }
+
+    memset(c, 0, sizeof(SHA512_CTX));
+
+    /* Generate Initial Value for SHA512/t */
+    SHA512t_GenerateIV(c, t);
+
+    c->total.low = 0;
+    c->total.high = 0;
+    c->last.used = 0;
+
+    return ERR_OK;
+}
+
+int SHA512t_Update(SHA512_CTX *c, const void *data, size_t len)
+{
+    return SHA512_XXX_Update(c, data, len);
+}
+
+int SHA512t_Final(unsigned char *md, SHA512_CTX *c)
+{
+    return SHA512_XXX_Final(md, c->ext/8, c);
+}
+
+unsigned char *SHA512t(const unsigned char *d, size_t n, unsigned char *md, unsigned int t)
+{
+    SHA512_CTX c;
+
+    SHA512t_Init(&c, t);
+    SHA512t_Update(&c, d, n);
+    SHA512t_Final(md, &c);
+
+    return md;
+}

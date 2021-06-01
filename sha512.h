@@ -37,6 +37,8 @@ typedef struct sha512_context {
         uint32_t used;      /* used bytes */
         uint8_t  buf[128];  /* block data buffer */
     }last;
+
+    uint32_t ext;           /* t value of SHA512/t */
 }SHA512_CTX;
 
 /* https://www.openssl.org/docs/man1.1.1/man3/SHA256_Final.html */
@@ -65,5 +67,10 @@ int SHA512_256_Update(SHA512_CTX *c, const void *data, size_t len);
 int SHA512_256_Final(unsigned char *md, SHA512_CTX *c);
 unsigned char *SHA512_256(const unsigned char *d, size_t n,
                       unsigned char *md);
+
+int SHA512t_Init(SHA512_CTX *c, unsigned int t);
+int SHA512t_Update(SHA512_CTX *c, const void *data, size_t len);
+int SHA512t_Final(unsigned char *md, SHA512_CTX *c);
+unsigned char *SHA512t(const unsigned char *d, size_t n, unsigned char *md, unsigned int t);
 
 #endif
