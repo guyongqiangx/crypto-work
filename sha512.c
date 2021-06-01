@@ -650,6 +650,11 @@ unsigned char *SHA512t(const unsigned char *d, size_t n, unsigned char *md, unsi
 {
     SHA512_CTX c;
 
+    if ((NULL == d) || (NULL == md))
+    {
+        return NULL;
+    }
+
     SHA512t_Init(&c, t);
     SHA512t_Update(&c, d, n);
     SHA512t_Final(md, &c);
