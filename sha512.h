@@ -56,4 +56,18 @@ int SHA512_Final(unsigned char *md, SHA512_CTX *c);
 unsigned char *SHA512(const unsigned char *d, size_t n,
 					  unsigned char *md);
 
+/* SHA512/224 */
+int SHA512_224_Init(SHA512_CTX *c);
+int SHA512_224_Update(SHA512_CTX *c, const void *data, size_t len);
+int SHA512_224_Final(unsigned char *md, SHA512_CTX *c);
+unsigned char *SHA512_224(const unsigned char *d, size_t n,
+                      unsigned char *md);
+
+/* SHA512/256 */
+int SHA512_256_Init(SHA512_CTX *c);
+int SHA512_256_Update(SHA512_CTX *c, const void *data, size_t len);
+int SHA512_256_Final(unsigned char *md, SHA512_CTX *c);
+unsigned char *SHA512_256(const unsigned char *d, size_t n,
+                      unsigned char *md);
+
 #endif
