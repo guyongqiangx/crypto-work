@@ -39,7 +39,7 @@ int print_buffer(const void *buf, size_t len, const char *indent)
 			printf((sizeof(size_t) == 8)?"%s%04lX:":"%s%04X:", indent, i);
 		}
 
-		printf(" %02x", ((char *)buf)[i]);
+		printf(" %02x", ((unsigned char *)buf)[i]);
 
 		if (i%DUMP_LINE_SIZE == (DUMP_LINE_SIZE-1))
 			printf("\n");
