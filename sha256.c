@@ -110,6 +110,11 @@ static uint32_t sigma1(uint32_t x)
 
 int SHA256_Init(SHA256_CTX *c)
 {
+    if (NULL == c)
+    {
+        return ERR_INV_PARAM;
+    }
+
 	memset(c, 0, sizeof(SHA256_CTX));
 
 	/* Initial Value for SHA256 */
@@ -345,6 +350,11 @@ unsigned char *SHA256(const unsigned char *d, size_t n, unsigned char *md)
 {
 	SHA256_CTX c;
 
+	if ((NULL == d) || (NULL == md))
+	{
+		return NULL;
+	}
+
 	SHA256_Init(&c);
 	SHA256_Update(&c, d, n);
 	SHA256_Final(md, &c);
@@ -354,6 +364,11 @@ unsigned char *SHA256(const unsigned char *d, size_t n, unsigned char *md)
 
 int SHA224_Init(SHA256_CTX *c)
 {
+    if (NULL == c)
+    {
+        return ERR_INV_PARAM;
+    }
+
 	memset(c, 0, sizeof(SHA256_CTX));
 
 	c->hash.a = 0xc1059ed8;
