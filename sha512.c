@@ -144,8 +144,8 @@ int SHA512_Init(SHA512_CTX *c)
 	c->hash.g = 0x1f83d9abfb41bd6b;
 	c->hash.h = 0x5be0cd19137e2179;
 
-	c->total.i.l = 0;
-	c->total.i.h = 0;
+	c->total.low = 0;
+	c->total.high = 0;
 	c->last.used = 0;
 
 	return ERR_OK;
@@ -175,14 +175,14 @@ static int SHA512_UpdateTotal(uint128_t *x, uint64_t len)
 {
 	uint64_t l;
 
-	l = (x->i.l + (((uint64_t)len)<<3)) & 0xffffffffffffffff;
-	if (l < x->i.l)
-		x->i.h++;
+	l = (x->low + (((uint64_t)len)<<3)) & 0xffffffffffffffff;
+	if (l < x->low)
+		x->high++;
 
 	//if (sizeof(len) >= 8)
-	//	x->i.h += ((uint64_t)len)>> 61)
+	//	x->high += ((uint64_t)len)>> 61)
 
-    x->i.l = l;
+    x->low = l;
 
 	return ERR_OK;
 }
@@ -363,8 +363,8 @@ int SHA512_Final(unsigned char *md, SHA512_CTX *c)
 
         memset(&c->last.buf[0], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE);
         //SHA512_SaveTotal(&c->last.buf[HASH_LEN_OFFSET], &c->total);
-        htobe64c(&c->last.buf[HASH_LEN_OFFSET], c->total.i.h);
-        htobe64c(&c->last.buf[HASH_LEN_OFFSET+8], c->total.i.l);
+        htobe64c(&c->last.buf[HASH_LEN_OFFSET], c->total.high);
+        htobe64c(&c->last.buf[HASH_LEN_OFFSET+8], c->total.low);
 
         SHA512_ProcessBlock(c, &c->last.buf);
 	}
@@ -379,8 +379,8 @@ int SHA512_Final(unsigned char *md, SHA512_CTX *c)
         /* padding 0s */
         memset(&c->last.buf[c->last.used], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE - c->last.used);
         //SHA512_SaveTotal(&c->last.buf[HASH_LEN_OFFSET], &c->total);
-        htobe64c(&c->last.buf[HASH_LEN_OFFSET], c->total.i.h);
-        htobe64c(&c->last.buf[HASH_LEN_OFFSET+8], c->total.i.l);
+        htobe64c(&c->last.buf[HASH_LEN_OFFSET], c->total.high);
+        htobe64c(&c->last.buf[HASH_LEN_OFFSET+8], c->total.low);
 
         SHA512_ProcessBlock(c, &c->last.buf);
 	}
@@ -464,8 +464,8 @@ int SHA384_Init(SHA512_CTX *c)
 	c->hash.g = 0xdb0c2e0d64f98fa7;
 	c->hash.h = 0x47b5481dbefa4fa4;
 
-	c->total.i.l = 0;
-	c->total.i.h = 0;
+	c->total.low = 0;
+	c->total.high = 0;
 	c->last.used = 0;
 
 	return ERR_OK;
@@ -501,8 +501,8 @@ int SHA512_224_Init(SHA512_CTX *c)
 	c->hash.g = 0x3f9d85a86a1d36c8;
 	c->hash.h = 0x1112e6ad91d692a1;
 
-	c->total.i.l = 0;
-	c->total.i.h = 0;
+	c->total.low = 0;
+	c->total.high = 0;
 	c->last.used = 0;
 
 	return ERR_OK;
@@ -537,8 +537,8 @@ int SHA512_256_Init(SHA512_CTX *c)
     c->hash.g = 0x2b0199fc2c85b8aa;
     c->hash.h = 0x0eb72ddc81c52ca2;
 
-    c->total.i.l = 0;
-    c->total.i.h = 0;
+    c->total.low = 0;
+    c->total.high = 0;
     c->last.used = 0;
 
     return ERR_OK;
