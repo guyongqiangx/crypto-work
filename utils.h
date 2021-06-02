@@ -86,6 +86,7 @@ static union { char c[4]; unsigned long l; } endian_test = { { 'l', '?', '?', 'b
 	((ENDIANNESS == ENDIAN_LITTLE) ? __bswap_constant_64(x) : (x))
 #endif
 
+int htole32c(unsigned char *data, unsigned long x);
 int htobe32c(unsigned char *data, unsigned long x);
 int htobe64c(unsigned char *data, unsigned long long x);
 
