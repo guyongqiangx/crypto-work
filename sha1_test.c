@@ -12,16 +12,15 @@ int main(int argc, char * argv[])
 	uint8_t hash[20];
 	uint32_t i, len = 0;
 
+    SHA_CTX ctx;
+
 	memset(hash, 0, sizeof(hash));
-
-	sha1_init();
-
 	len = strlen(data);
 	printf("length: %d\n", len);
 
-	sha1_update(data, len);
-
-	sha1_final(hash);
+    SHA1_Init(&ctx);
+    SHA1_Update(&ctx, data, len);
+	SHA1_Final(hash, &ctx);
 
 	printf("sha1 result:\n");
 

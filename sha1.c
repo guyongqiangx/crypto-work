@@ -99,57 +99,29 @@ static sha1_func F[4] =
 	Ch, Parity, Maj, Parity
 };
 
-struct sha1_context {
-    /* message length in bits */
-    uint64_t total_bits;
-
-    /* intermedia hash value for each block */
-    struct {
-        uint32_t a;
-        uint32_t b;
-        uint32_t c;
-        uint32_t d;
-        uint32_t e;
-    }hash; 
-
-    /* last block buffer */
-    struct {
-        uint32_t size;                  /* size in bytes */
-        uint8_t  buf[HASH_BLOCK_SIZE];  /* buffer */
-    }last;
-};
-
-static struct sha1_context *get_sha1_context(void)
+int SHA1_Init(SHA_CTX *c)
 {
-	static struct sha1_context _sha1;
+    if (NULL == c)
+    {
+        return ERR_INV_PARAM;
+    }
 
-	return &_sha1;
-}
+	memset(c, 0, sizeof(struct SHA_CTX));
 
-int sha1_init(void)
-{
-	struct sha1_context *context;
-
-	context = get_sha1_context();
-
-    /* reset all fields to 0 */
-	memset(context, 0, sizeof(struct sha1_context));
-
-	context->hash.a = 0x67452301;
-	context->hash.b = 0xEFCDAB89;
-	context->hash.c = 0x98BADCFE;
-	context->hash.d = 0x10325476;
-	context->hash.e = 0xC3D2E1F0;
+	c->hash.a = 0x67452301;
+	c->hash.b = 0xEFCDAB89;
+	c->hash.c = 0x98BADCFE;
+	c->hash.d = 0x10325476;
+	c->hash.e = 0xC3D2E1F0;
 
 	return ERR_OK;
 }
 
-#define WORD(b,i) (((uint32_t *)b)[i])
-static int prepare_schedule_word(const void *block, uint32_t *w)
+static int SHA1_PrepareScheduleWord(const void *block, uint32_t *W)
 {
 	uint32_t t;
 
-    if ((NULL == block) || (NULL == w))
+    if ((NULL == block) || (NULL == W))
     {
         return ERR_INV_PARAM;
     }
@@ -157,42 +129,44 @@ static int prepare_schedule_word(const void *block, uint32_t *w)
 	for (t=0; t<HASH_ROUND_NUM; t++)
 	{
 		if (t<=15) /*  0 <= t <= 15 */
-			w[t] = be32toh(WORD(block, t));
+			W[t] = be32toh(DWORD(block, t));
 		else	   /* 16 <= t <= 79 */
-			w[t] = ROTL(w[t-3] ^ w[t-8] ^ w[t-14] ^ w[t-16], 1);
+			W[t] = ROTL(W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16], 1);
 	}
 
 	return ERR_OK;
 }
 
-static int sha1_process_block(const void *block)
+static int SHA1_ProcessBlock(SHA256_CTX *ctx, const void *block)
 {
 	uint32_t t;
 	uint32_t W[HASH_ROUND_NUM];
 	uint32_t T;
 	uint32_t a, b, c, d, e;
-	struct sha1_context *context;
 
-	context = get_sha1_context();
-
-    if (NULL == block)
+    if ((NULL == ctx) || (NULL == block))
     {
         return ERR_INV_PARAM;
     }
 
 #if (DUMP_BLOCK_DATA == 1)
-	DBG("block %llu:\n", context->total_bits >> 9); /* block size: 2^9 = 512 */
-	print_buffer(block, HASH_BLOCK_SIZE);
+    DBG("BLOCK: %llu\n", ctx->total/HASH_BLOCK_SIZE);
+    print_buffer(block, HASH_BLOCK_SIZE, " ");
 #endif
 
 	/* prepare schedule word */
-	prepare_schedule_word(block, W);
+	SHA1_PrepareScheduleWord(block, W);
 
-	a = context->hash.a;
-	b = context->hash.b;
-	c = context->hash.c;
-	d = context->hash.d;
-	e = context->hash.e;
+	a = ctx->hash.a;
+	b = ctx->hash.b;
+	c = ctx->hash.c;
+	d = ctx->hash.d;
+	e = ctx->hash.e;
+
+#if (DUMP_BLOCK_HASH == 1)
+	DBG(" LAST: %08x%08x%08x%08x%08x\n",
+		ctx->hash.a, ctx->hash.b, ctx->hash.c, ctx->hash.d, ctx->hash.e);
+#endif
 
 	for (t=0; t<HASH_ROUND_NUM; t++)
 	{
@@ -204,142 +178,156 @@ static int sha1_process_block(const void *block)
 		a = T;
 
 #if (DUMP_ROUND_DATA == 1)
-		DBG("  %02d: T=0x%08x, W=0x%08x, a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x, e=0x%08x\n", t, T, W[t], a, b, c, d, e);
+		DBG("   %02d: T=0x%08x, W=0x%08x, a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x, e=0x%08x\n",
+                t, T, W[t], a, b, c, d, e);
 #endif
 	}
 
-	context->hash.a += a;
-	context->hash.b += b;
-	context->hash.c += c;
-	context->hash.d += d;
-	context->hash.e += e;
+	ctx->hash.a += a;
+	ctx->hash.b += b;
+	ctx->hash.c += c;
+	ctx->hash.d += d;
+	ctx->hash.e += e;
 
 #if (DUMP_BLOCK_HASH == 1)
-	DBG("hash: %08x %08x %08x %08x %08x\n", context->hash.a, context->hash.b, context->hash.c, context->hash.d, context->hash.e);
+	DBG(" HASH: %08x%08x%08x%08x%08x\n",
+		ctx->hash.a, ctx->hash.b, ctx->hash.c, ctx->hash.d, ctx->hash.e);
 #endif
 
 	return ERR_OK;
 }
 
-int sha1_update(const void *data, uint64_t size)
+int SHA1_Update(SHA_CTX *c, const void *data, size_t len)
 {
-	uint64_t len = 0;
-	struct sha1_context *context;
+	uint32_t copy_len = 0;
 
-	context = get_sha1_context();
-
-    if (NULL == data)
+    if ((NULL == c) || (NULL == data))
     {
         return ERR_INV_PARAM;
     }
 
-	/* has last.size data */
-	if (context->last.size != 0)
+	/* has used data */
+	if (c->last.used != 0)
 	{
 		/* less than 1 block in total, combine data */
-		if (context->last.size + size < HASH_BLOCK_SIZE)
+		if (c->last.used + len < HASH_BLOCK_SIZE)
 		{
-			memcpy(&context->last.buf[context->last.size], data, size);
-			context->last.size += size;
+			memcpy(&c->last.buf[c->last.used], data, len);
+			c->last.used += len;
 
 			return ERR_OK;
 		}
 		else /* more than 1 block */
 		{
 			/* process the block in context buffer */
-			len = HASH_BLOCK_SIZE - context->last.size;
-			memcpy(&context->last.buf[context->last.size], data, len);
-			sha1_process_block(&context->last.buf);
-            context->total_bits += HASH_BLOCK_SIZE << 3;
+			copy_len = HASH_BLOCK_SIZE - c->last.used;
+			memcpy(&c->last.buf[c->last.used], data, copy_len);
+			SHA1_ProcessBlock(c, &c->last.buf);
+            c->total += HASH_BLOCK_SIZE;
 
-			data = (uint8_t *)data + len;
-			size -= len;
+			data = (uint8_t *)data + copy_len;
+			len -= copy_len;
 
 			/* reset context buffer */
-			memset(&context->last.buf[0], 0, HASH_BLOCK_SIZE);
-			context->last.size = 0;
+			memset(&c->last.buf[0], 0, HASH_BLOCK_SIZE);
+			c->last.used = 0;
 		}
 	}
 
 	/* less than 1 block, copy to context buffer */
-	if (size < HASH_BLOCK_SIZE)
+	if (len < HASH_BLOCK_SIZE)
 	{
-		memcpy(&context->last.buf[context->last.size], data, size);
-		context->last.size += size;
+		memcpy(&c->last.buf[c->last.used], data, len);
+		c->last.used += len;
 
 		return ERR_OK;
 	}
 	else
 	{
 		/* process data blocks */
-		while (size > HASH_BLOCK_SIZE)
+		while (len > HASH_BLOCK_SIZE)
 		{
-			sha1_process_block(data);
-            context->total_bits += HASH_BLOCK_SIZE << 3;
+			SHA1_ProcessBlock(c, data);
+            c->total += HASH_BLOCK_SIZE;
 
 			data = (uint8_t *)data + HASH_BLOCK_SIZE;
-			size -= HASH_BLOCK_SIZE;
+			len -= HASH_BLOCK_SIZE;
 		}
 
 		/* copy rest data to context buffer */
-		memcpy(&context->last.buf[0], data, size);
-		context->last.size = size;
+		memcpy(&c->last.buf[0], data, len);
+		c->last.used = len;
 	}
 
 	return ERR_OK;
 }
 
-int sha1_final(uint8_t *hash)
+int SHA1_Final(unsigned char *md, SHA_CTX *c)
 {
 	uint32_t *buf;
-	struct sha1_context *context;
 
-	context = get_sha1_context();
-
-    if (NULL == hash)
+    if ((NULL == c) || (NULL == md))
     {
         return ERR_INV_PARAM;
     }
 
 	/* Last block should be less thant HASH_BLOCK_SIZE - HASH_LEN_SIZE */
-	if (context->last.size >= (HASH_BLOCK_SIZE - HASH_LEN_SIZE))
+	if (c->last.used >= (HASH_BLOCK_SIZE - HASH_LEN_SIZE))
 	{
-	    context->total_bits += context->last.size << 3;
+	    c->total += c->last.used;
 
 		/* one more block */
-		context->last.buf[context->last.size] = HASH_PADDING_PATTERN;
-		context->last.size++;
+		c->last.buf[c->last.used] = HASH_PADDING_PATTERN;
+		c->last.used++;
 
-		memset(&context->last.buf[context->last.size], 0, HASH_BLOCK_SIZE - context->last.size);
-		sha1_process_block(&context->last.buf);
+		memset(&c->last.buf[c->last.used], 0, HASH_BLOCK_SIZE - c->last.used);
+		SHA1_ProcessBlock(c, &c->last.buf);
 
-		memset(&context->last.buf[0], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE);
-        context->last.size = 0;
+		memset(&c->last.buf[0], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE);
+        c->last.used = 0;
  
-		*(uint64_t *)&(context->last.buf[HASH_LEN_OFFSET]) = htobe64(context->total_bits);
-		sha1_process_block(&context->last.buf);
+		// *(uint64_t *)&(c->last.buf[HASH_LEN_OFFSET]) = htobe64(c->total << 3);
+		htobe64c(&(c->last.buf[HASH_LEN_OFFSET]), c->total << 3);
+		SHA1_ProcessBlock(c, &c->last.buf);
 	}
-	else /* 0 <= last.size < HASH_BLOCK_SIZE - HASH_LEN_SIZE */
+	else /* 0 <= last.used < HASH_BLOCK_SIZE - HASH_LEN_SIZE */
 	{
-	    context->total_bits += context->last.size << 3;
+	    c->total += c->last.used;
 
 		/* one more block */
-		context->last.buf[context->last.size] = HASH_PADDING_PATTERN;
-		context->last.size++;
+		c->last.buf[c->last.used] = HASH_PADDING_PATTERN;
+		c->last.used++;
 
         /* padding 0s */
-		memset(&context->last.buf[context->last.size], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE - context->last.size);
+		memset(&c->last.buf[c->last.used], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE - c->last.used);
 
-		*(uint64_t *)&context->last.buf[HASH_LEN_OFFSET] = htobe64(context->total_bits);
-		sha1_process_block(&context->last.buf);
+		// *(uint64_t *)&c->last.buf[HASH_LEN_OFFSET] = htobe64(c->total << 3);
+		htobe64c(&(c->last.buf[HASH_LEN_OFFSET]), c->total << 3);
+		SHA1_ProcessBlock(c, &c->last.buf);
 	}
 
-	buf = (uint32_t *)hash;
-	buf[0] = htobe32(context->hash.a);
-	buf[1] = htobe32(context->hash.b);
-	buf[2] = htobe32(context->hash.c);
-	buf[3] = htobe32(context->hash.d);
-	buf[4] = htobe32(context->hash.e);
+	buf = (uint32_t *)md;
+	buf[0] = htobe32(c->hash.a);
+	buf[1] = htobe32(c->hash.b);
+	buf[2] = htobe32(c->hash.c);
+	buf[3] = htobe32(c->hash.d);
+	buf[4] = htobe32(c->hash.e);
 
 	return ERR_OK;
+}
+
+unsigned char *SHA1(const unsigned char *d, size_t n, unsigned char *md)
+{
+    SHA_CTX c;
+
+    if ((NULL == d) || (NULL == md))
+    {
+        return NULL;
+    }
+
+    SHA1_Init(&c);
+    SHA1_Update(&c, d, n);
+    SHA1_Final(md, &c);
+
+    return md;
 }
