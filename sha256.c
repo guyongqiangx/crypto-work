@@ -180,7 +180,7 @@ static int SHA256_ProcessBlock(SHA256_CTX *ctx, const void *block)
 	h = ctx->hash.h;
 
 #if (DUMP_BLOCK_HASH == 1)
-	DBG(" LAST: %08x%08x%08x%08x%08x%08x%08x%08x\n", \
+	DBG(" LAST: %08x%08x%08x%08x%08x%08x%08x%08x\n",
 		ctx->hash.a, ctx->hash.b, ctx->hash.c, ctx->hash.d, ctx->hash.e, ctx->hash.f, ctx->hash.g, ctx->hash.h);
 #endif
 
@@ -214,7 +214,7 @@ static int SHA256_ProcessBlock(SHA256_CTX *ctx, const void *block)
 	ctx->hash.h += h;
 
 #if (DUMP_BLOCK_HASH == 1)
-	DBG(" HASH: %08x%08x%08x%08x%08x%08x%08x%08x\n\n", \
+	DBG(" HASH: %08x%08x%08x%08x%08x%08x%08x%08x\n\n",
 		ctx->hash.a, ctx->hash.b, ctx->hash.c, ctx->hash.d, ctx->hash.e, ctx->hash.f, ctx->hash.g, ctx->hash.h);
 #endif
 
@@ -312,7 +312,7 @@ int SHA256_Final(unsigned char *md, SHA256_CTX *c)
         c->last.used = 0;
  
 		//*(uint64_t *)&(c->last.buf[HASH_LEN_OFFSET]) = htobe64(c->total << 3);
-		htobe64c(&c->last.buf[HASH_LEN_OFFSET], c->total << 3);
+		htobe64c(&(c->last.buf[HASH_LEN_OFFSET]), c->total << 3);
 
 		SHA256_ProcessBlock(c, &c->last.buf);
 	}
@@ -328,7 +328,7 @@ int SHA256_Final(unsigned char *md, SHA256_CTX *c)
 		memset(&c->last.buf[c->last.used], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE - c->last.used);
 
 		//*(uint64_t *)&c->last.buf[HASH_LEN_OFFSET] = htobe64(c->total << 3);
-		htobe64c(&c->last.buf[HASH_LEN_OFFSET], c->total << 3);
+		htobe64c(&(c->last.buf[HASH_LEN_OFFSET]), c->total << 3);
 
 		SHA256_ProcessBlock(c, &c->last.buf);
 	}

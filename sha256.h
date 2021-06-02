@@ -1,5 +1,5 @@
-#ifndef __SHA256__H
-#define __SHA256__H
+#ifndef __ROCKY_SHA256__H
+#define __ROCKY_SHA256__H
 
 #define ERR_OK			 0
 #define ERR_ERR         -1	/* generic error */
@@ -26,7 +26,7 @@ typedef struct sha256_context {
 		uint32_t f;
 		uint32_t g;
 		uint32_t h;
-    }hash; 
+    }hash;
 
     /* last block */
     struct {
