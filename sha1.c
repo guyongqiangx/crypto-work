@@ -106,7 +106,7 @@ int SHA1_Init(SHA_CTX *c)
         return ERR_INV_PARAM;
     }
 
-	memset(c, 0, sizeof(struct SHA_CTX));
+	memset(c, 0, sizeof(SHA_CTX));
 
 	c->hash.a = 0x67452301;
 	c->hash.b = 0xEFCDAB89;
@@ -137,7 +137,7 @@ static int SHA1_PrepareScheduleWord(const void *block, uint32_t *W)
 	return ERR_OK;
 }
 
-static int SHA1_ProcessBlock(SHA256_CTX *ctx, const void *block)
+static int SHA1_ProcessBlock(SHA_CTX *ctx, const void *block)
 {
 	uint32_t t;
 	uint32_t W[HASH_ROUND_NUM];
