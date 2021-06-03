@@ -11,17 +11,15 @@ int main(int argc, char * argv[])
 	//uint8_t buf[SHA1_BLOCK_SIZE];
 	uint8_t hash[16];
 	uint32_t i, len = 0;
+    MD5_CTX ctx;
 
 	memset(hash, 0, sizeof(hash));
-
-	md5_init();
-
 	len = strlen(data);
 	printf("length: %d\n", len);
 
-	md5_update(data, len);
-
-	md5_final(hash);
+    MD5_Init(&ctx);
+    MD5_Update(&ctx, data, len);
+	MD5_Final(hash, &ctx);
 
 	printf("md5 result:\n");
 

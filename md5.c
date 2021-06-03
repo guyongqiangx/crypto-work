@@ -4,12 +4,18 @@
 #include "utils.h"
 #include "md5.h"
 
-//#define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
 #define DBG(...) printf(__VA_ARGS__)
+#define DUMP_BLOCK_DATA 1
+#define DUMP_BLOCK_HASH 1
+#define DUMP_ROUND_DATA 1
 #else
 #define DBG(...)
+#define DUMP_BLOCK_DATA 0
+#define DUMP_BLOCK_HASH 0
+#define DUMP_ROUND_DATA 0
 #endif
 
 #define MD5_BLOCK_SIZE		64	/* 512 bits = 64 bytes */
@@ -101,27 +107,6 @@ static md5_func g[4] =
 	F, G, H, I
 };
 
-#if 0
-static uint64_t swap64(uint64_t a)
-{
-  return ((a & 0x00000000000000FFULL) << 56) |
-         ((a & 0x000000000000FF00ULL) << 40) |
-         ((a & 0x0000000000FF0000ULL) << 24) |
-         ((a & 0x00000000FF000000ULL) <<  8) |
-         ((a & 0x000000FF00000000ULL) >>  8) |
-         ((a & 0x0000FF0000000000ULL) >> 24) |
-         ((a & 0x00FF000000000000ULL) >> 40) |
-         ((a & 0xFF00000000000000ULL) >> 56);
-}
-
-static uint32_t swap32(uint32_t a)
-{
-  return ((a & 0x000000FF) << 24) |
-         ((a & 0x0000FF00) << 8) |
-         ((a & 0x00FF0000) >> 8) |
-         ((a & 0xFF000000) >> 24);
-}
-#endif
 
 /*
  * "abc" -->   0x61,     0x62,     0x63
@@ -131,56 +116,41 @@ static uint32_t swap32(uint32_t a)
  *   Format: "abc" + 1 + 0 x 423 + 0x18
  */
 
-struct md5_context {
-	uint32_t a;
-	uint32_t b;
-	uint32_t c;
-	uint32_t d;
-
-	uint64_t processed_bits;
-
-	uint32_t rest; /* rest size in last block */
-	uint8_t last_block[HASH_BLOCK_SIZE];
-
-};
-
-static struct md5_context *get_md5_context(void)
+int MD5_Init(MD5_CTX *c)
 {
-	static struct md5_context _md5;
-
-	return &_md5;
-}
-
-int md5_init(void)
-{
-	struct md5_context *context;
-
-	context = get_md5_context();
-
-	memset(context, 0, sizeof(struct md5_context));
-	context->a = 0x67452301; /* little endian */
-	context->b = 0xEFCDAB89;
-	context->c = 0x98BADCFE;
-	context->d = 0x10325476;
-
-	context->processed_bits = 0;
-	context->rest = 0;
-
-	return 0;
-}
-
-#define WORD(b,i) (((uint32_t *)b)[i])
-static uint32_t prepare_schedule_word(const void *block, uint32_t *w)
-{
-	uint32_t i;
-    for (i=0; i<16; i++)
+	if (NULL == c)
     {
-        //w[i] = swap32(WORD(block, i));
-        w[i] = WORD(block, i);
-        //printf("0x%08x ", w[i]);
+        return ERR_INV_PARAM;
     }
 
-	return 0;
+	memset(c, 0, sizeof(MD5_CTX));
+
+	c->hash.a = 0x67452301; /* little endian */
+	c->hash.b = 0xEFCDAB89;
+	c->hash.c = 0x98BADCFE;
+	c->hash.d = 0x10325476;
+
+	c->total = 0;
+	c->last.used = 0;
+
+	return ERR_OK;
+}
+
+static int MD5_PrepareScheduleWord(const void *block, uint32_t *W)
+{
+	uint32_t i;
+
+    if ((NULL == block) || (NULL == W))
+    {
+        return ERR_INV_PARAM;
+    }
+
+    for (i=0; i<16; i++)
+    {
+        W[i] = DWORD(block, i);
+    }
+
+	return ERR_OK;
 }
 
 #if 0
@@ -192,7 +162,7 @@ static uint32_t prepare_schedule_word(const void *block, uint32_t *w)
     DBG("%02d: a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x, X=0x%08x, T=0x%08x\n", i-1, a, b, c, d, X[k], T[i-1]);
 #endif
 
-static uint32_t md5_process_block(const void *block)
+static int MD5_ProcessBlock(MD5_CTX *ctx, const void *block)
 {
     //uint32_t i;
 	//uint32_t t;
@@ -200,33 +170,24 @@ static uint32_t md5_process_block(const void *block)
 	//uint32_t T;
     //uint32_t AA, BB, CC, DD;
 	uint32_t a, b, c, d;
-	struct md5_context *context;
 
-	context = get_md5_context();
-
-#ifdef DEBUG
-	printf("block: %lld\n", context->processed_bits >> 9); /* block size: 2^9 = 512 */
-	print_buffer(block, HASH_BLOCK_SIZE);
-#endif
-
-#if 1
-	/* prepare schedule word */
-	prepare_schedule_word(block, X);
-#else
-	printf("\n");
-    for (i=0; i<16; i++)
+    if ((NULL == ctx) || (NULL == block))
     {
-        //X[i] = swap32(WORD(block, i));
-        X[i] = WORD(block, i);
-        printf("0x%08x ", X[i]);
+        return ERR_INV_PARAM;
     }
-    printf("\n");
+
+#if (DUMP_BLOCK_DATA == 1)
+    DBG("BLOCK: %llu\n", ctx->total/HASH_BLOCK_SIZE);
+    print_buffer(block, HASH_BLOCK_SIZE, " ");
 #endif
 
-	a = context->a;
-	b = context->b;
-	c = context->c;
-	d = context->d;
+	/* prepare schedule word */
+	MD5_PrepareScheduleWord(block, X);
+
+	a = ctx->hash.a;
+	b = ctx->hash.b;
+	c = ctx->hash.c;
+	d = ctx->hash.d;
 
     /* Round 1 */
     MD5_OP(a, b, c, d,  0,  7,  1); MD5_OP(d, a, b, c,  1, 12,  2); MD5_OP(c, d, a, b,  2, 17,  3); MD5_OP(b, c, d, a,  3, 22,  4);
@@ -263,151 +224,161 @@ static uint32_t md5_process_block(const void *block)
 		b = T;
 		a = d;
 
-#ifdef DEBUG
-		DBG("%02d:\n", t);
-		DBG("T=0x%08x, W=0x%08x\n", T, W[t]);
-		DBG("a=0x%08x, b=0x%08x, c=0x%02x, d=0x%08x\n", a, b, c, d);
+#if (DUMP_ROUND_DATA == 1)
+		DBG("   %02d: T=0x%08x, W=0x%08x, a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x\n",
+                t, T, W[t], a, b, c, d);
 #endif
 	}
 #endif
 
-	context->a += a;
-	context->b += b;
-	context->c += c;
-	context->d += d;
-
-	//context->processed_bits += HASH_BLOCK_SIZE << 3;
-
-#ifdef DEBUG
-	DBG("hash:\n");
-	DBG("%08x%08x%08x%08x\n", context->a, context->b, context->c, context->d);
+	ctx->hash.a += a;
+	ctx->hash.b += b;
+	ctx->hash.c += c;
+	ctx->hash.d += d;
+#if (DUMP_BLOCK_HASH == 1)
+	DBG(" HASH: %08x%08x%08x%08x\n",
+		ctx->hash.a, ctx->hash.b, ctx->hash.c, ctx->hash.d);
 #endif
 
-	return 0;
+	return ERR_OK;
 }
 
-int md5_update(const void *data, uint64_t size)
+int MD5_Update(MD5_CTX *c, const void *data, unsigned long len)
 {
-	uint64_t len = 0;
+	uint32_t copy_len = 0;
 
-	struct md5_context *context;
+    if ((NULL == c) || (NULL == data))
+    {
+        return ERR_INV_PARAM;
+    }
 
-	context = get_md5_context();
-
-	/* has rest data */
-	if (context->rest != 0)
+	/* has used data */
+	if (c->last.used != 0)
 	{
 		/* less than 1 block in total, combine data */
-		if (context->rest + size < HASH_BLOCK_SIZE)
+		if (c->last.used + len < HASH_BLOCK_SIZE)
 		{
-			memcpy(&context->last_block[context->rest], data, size);
-			context->rest += size;
+			memcpy(&c->last.buf[c->last.used], data, len);
+			c->last.used += len;
 
-			return 0;
+			return ERR_OK;
 		}
 		else /* more than 1 block */
 		{
 			/* process the block in context buffer */
-			len = HASH_BLOCK_SIZE - context->rest;
-			memcpy(&context->last_block[context->rest], data, len);
-			md5_process_block(&context->last_block);
+			copy_len = HASH_BLOCK_SIZE - c->last.used;
+			memcpy(&c->last.buf[c->last.used], data, copy_len);
+			MD5_ProcessBlock(c, &c->last.buf);
 
-            context->processed_bits += HASH_BLOCK_SIZE << 3;
+            c->total += HASH_BLOCK_SIZE;
 
-			data = (uint8_t *)data + len;
-			size -= len;
+			data = (uint8_t *)data + copy_len;
+			len -= copy_len;
 
 			/* reset context buffer */
-			memset(&context->last_block[0], 0, HASH_BLOCK_SIZE);
-			context->rest = 0;
+			memset(&c->last.buf[0], 0, HASH_BLOCK_SIZE);
+			c->last.used = 0;
 		}
 	}
 
 	/* less than 1 block, copy to context buffer */
-	if (size < HASH_BLOCK_SIZE)
+	if (len < HASH_BLOCK_SIZE)
 	{
-		memcpy(&context->last_block[context->rest], data, size);
-		context->rest += size;
+		memcpy(&c->last.buf[c->last.used], data, len);
+		c->last.used += len;
 
-		return 0;
+		return ERR_OK;
 	}
 	else
 	{
 		/* process data blocks */
-		while (size > HASH_BLOCK_SIZE)
+		while (len > HASH_BLOCK_SIZE)
 		{
-			md5_process_block(data);
-            context->processed_bits += HASH_BLOCK_SIZE << 3;
+			MD5_ProcessBlock(c, data);
+            c->total += HASH_BLOCK_SIZE;
 
 			data = (uint8_t *)data + HASH_BLOCK_SIZE;
-			size -= HASH_BLOCK_SIZE;
+			len -= HASH_BLOCK_SIZE;
 		}
 
-		/* copy the reset to context buffer */
-		memcpy(&context->last_block[0], data, size);
-		context->rest = size;
+		/* copy rest data to context buffer */
+		memcpy(&c->last.buf[0], data, len);
+		c->last.used = len;
 	}
 
-	return 0;
+	return ERR_OK;
 }
 
-int md5_final(uint8_t *hash)
+int MD5_Final(unsigned char *md, MD5_CTX *c)
 {
-	uint64_t total;
 	uint32_t *buf;
 
-	struct md5_context *context;
-
-	context = get_md5_context();
+    if ((NULL == c) || (NULL == md))
+    {
+        return ERR_INV_PARAM;
+    }
 
 	/* Last block should be less thant HASH_BLOCK_SIZE - HASH_LEN_SIZE */
-	if (context->rest >= (HASH_BLOCK_SIZE - HASH_LEN_SIZE))
+	if (c->last.used >= (HASH_BLOCK_SIZE - HASH_LEN_SIZE))
 	{
-	    total = context->processed_bits + (context->rest << 3);
+	    c->total += c->last.used;
 
 		/* one more block */
-		context->last_block[context->rest] = HASH_PADDING_PATTERN;
-        context->rest++;
+		c->last.buf[c->last.used] = HASH_PADDING_PATTERN;
+        c->last.used++;
 
-		memset(&context->last_block[context->rest], 0, HASH_BLOCK_SIZE - context->rest);
-		md5_process_block(&context->last_block);
+		memset(&c->last.buf[c->last.used], 0, HASH_BLOCK_SIZE - c->last.used);
+		MD5_ProcessBlock(c, &c->last.buf);
 
-		context->rest = 0;
+		memset(&c->last.buf[0], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE);
+		c->last.used = 0;
 
-		memset(&context->last_block[0], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE);
-		//*(uint64_t *)&(context->last_block[HASH_LEN_OFFSET]) = swap64(total);
-		*(uint32_t *)&(context->last_block[HASH_LEN_OFFSET]) = total & 0xFFFFFFFF;
-        *(uint32_t *)&(context->last_block[HASH_LEN_OFFSET+3]) = (total >> 32) & 0xFFFFFFFF;
-		md5_process_block(&context->last_block);
+		//*(uint32_t *)&(c->last.buf[HASH_LEN_OFFSET]) = total & 0xFFFFFFFF;
+        //*(uint32_t *)&(c->last.buf[HASH_LEN_OFFSET+3]) = (total >> 32) & 0xFFFFFFFF;
+        htole32c(&(c->last.buf[HASH_LEN_OFFSET]), (c->total << 3) & 0xFFFFFFFF);
+        htole32c(&(c->last.buf[HASH_LEN_OFFSET + 3]), ((c->total << 3) >> 32) & 0xFFFFFFFF);
+		MD5_ProcessBlock(c, &c->last.buf);
 	}
-	else /* 0 <= rest < HASH_BLOCK_SIZE - HASH_LEN_SIZE */
+	else /* 0 <= last.used < HASH_BLOCK_SIZE - HASH_LEN_SIZE */
 	{
-		/* calc, don't need to accumulate the padding block */
-		total = context->processed_bits + (context->rest << 3);
+		c->total += c->last.used;
 
 		/* one more block */
-		context->last_block[context->rest] = HASH_PADDING_PATTERN;
-		context->rest++;
+		c->last.buf[c->last.used] = HASH_PADDING_PATTERN;
+		c->last.used++;
 
-		memset(&context->last_block[context->rest], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE - context->rest);
+        /* padding 0s */
+		memset(&c->last.buf[c->last.used], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE - c->last.used);
 
-		//*(uint64_t *)&(context->last_block[HASH_LEN_OFFSET]) = swap64(total);
-		*(uint32_t *)&(context->last_block[HASH_LEN_OFFSET]) = total & 0xFFFFFFFF;
-        *(uint32_t *)&(context->last_block[HASH_LEN_OFFSET+3]) = (total >> 32) & 0xFFFFFFFF;
-		md5_process_block(&context->last_block);
+		//*(uint32_t *)&(c->last.buf[HASH_LEN_OFFSET]) = total & 0xFFFFFFFF;
+        //*(uint32_t *)&(c->last.buf[HASH_LEN_OFFSET+3]) = (total >> 32) & 0xFFFFFFFF;
+        htole32c(&(c->last.buf[HASH_LEN_OFFSET]), (c->total << 3) & 0xFFFFFFFF);
+        htole32c(&(c->last.buf[HASH_LEN_OFFSET + 3]), ((c->total << 3) >> 32) & 0xFFFFFFFF);
+		MD5_ProcessBlock(c, &c->last.buf);
 	}
 
-	DBG("%08x %08x %08x %08x\n", context->a, context->b, context->c, context->d);
-	//snprintf(hash, HASH_DIGEST_SIZE, "%08x%08x%08x%08x%08x", context->a, context->b, context->c, context->d, context->e);
-	buf = (uint32_t *)hash;
-	//buf[0] = swap32(context->a);
-	//buf[1] = swap32(context->b);
-	//buf[2] = swap32(context->c);
-	//buf[3] = swap32(context->d);
-	buf[0] = context->a;
-	buf[1] = context->b;
-	buf[2] = context->c;
-	buf[3] = context->d;
+    /* LE format, different from SHA family(big endian) */
+	buf = (uint32_t *)md;
+	buf[0] = c->hash.a;
+	buf[1] = c->hash.b;
+	buf[2] = c->hash.c;
+	buf[3] = c->hash.d;
 
-	return 0;
+	return ERR_OK;
+}
+
+unsigned char *MD5(const unsigned char *d, unsigned long n, unsigned char *md)
+{
+    MD5_CTX c;
+
+    if ((NULL == d) || (NULL == md))
+    {
+        return NULL;
+    }
+
+    MD5_Init(&c);
+    MD5_Update(&c, d, n);
+    MD5_Final(md, &c);
+
+    return md;
 }
