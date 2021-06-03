@@ -114,6 +114,9 @@ int SHA1_Init(SHA_CTX *c)
 	c->hash.d = 0x10325476;
 	c->hash.e = 0xC3D2E1F0;
 
+	c->total = 0;
+	c->last.used = 0;
+
 	return ERR_OK;
 }
 
