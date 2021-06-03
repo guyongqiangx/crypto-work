@@ -12,6 +12,21 @@ int htole32c(unsigned char *data, unsigned long x)
 	return 0;
 }
 
+/* unsigned long long (64 bits) to little endian char buffer */
+int htole64c(unsigned char *data, unsigned long long x)
+{
+	*data    = (unsigned char)( x	  &0xff);
+	*data ++ = (unsigned char)((x>> 8)&0xff);
+	*data ++ = (unsigned char)((x>>16)&0xff);
+	*data ++ = (unsigned char)((x>>24)&0xff);
+	*data ++ = (unsigned char)((x>>32)&0xff);
+	*data ++ = (unsigned char)((x>>40)&0xff);
+	*data ++ = (unsigned char)((x>>48)&0xff);
+	*data    = (unsigned char)((x>>56)&0xff);
+
+	return 0;
+}
+
 /* unsigned long (32 bits) to big endian char buffer */
 int htobe32c(unsigned char *data, unsigned long x)
 {
