@@ -11,7 +11,7 @@ INCLUDE = -I ./
 
 .PHONY: all SHA1 SHA256 SHA512 SHA3 MD5 HMAC help common
 
-all: MD5 SHA1 SHA256 SHA512 SHA3 HMAC
+all: MD2 MD4 MD5 SHA1 SHA256 SHA512 SHA3 HMAC
 
 help:
 	@echo "Support Targets: MD5 SHA1 SHA512 SHA3 HMAC"
@@ -84,6 +84,25 @@ sha512_test.o : sha512_test.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 #
+# rules for md4
+#
+MD4_OBJ := md4.o
+MD4_OBJ += md4_test.o
+MD4_OBJ += $(COMM_OBJ)
+
+MD4_TARGET = md4_test
+
+MD4: $(MD4_OBJ)
+	$(CC) $(CFLAGS) $(MD4_OBJ) -o $(MD4_TARGET) $(LIBS) $(INCLUDE)
+	$(STRIP) --strip-unneeded $(MD4_TARGET)
+
+md4.o : md4.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+md4_test.o : md4_test.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+#
 # rules for md5
 #
 MD5_OBJ := md5.o
@@ -96,7 +115,7 @@ MD5: $(MD5_OBJ)
 	$(CC) $(CFLAGS) $(MD5_OBJ) -o $(MD5_TARGET) $(LIBS) $(INCLUDE)
 	$(STRIP) --strip-unneeded $(MD5_TARGET)
 
-md5.o : md5.c md5.h
+md5.o : md5.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 md5_test.o : md5_test.c
@@ -144,6 +163,7 @@ OBJ = $(SHA1_OBJ) $(SHA1_TARGET)
 OBJ += $(SHA256_OBJ) $(SHA256_TARGET)
 OBJ += $(SHA512_OBJ) $(SHA512_TARGET)
 OBJ += $(SHA3_OBJ) $(SHA3_TARGET)
+OBJ += $(MD4_OBJ) $(MD4_TARGET)
 OBJ += $(MD5_OBJ) $(MD5_TARGET)
 OBJ += $(HMAC_OBJ) $(HMAC_TARGET)
 
