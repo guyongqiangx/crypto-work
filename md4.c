@@ -143,9 +143,10 @@ static int MD4_PrepareScheduleWord(const void *block, uint32_t *X)
 #define MD4_OP(a,b,c,d,k,s,i) \
     a = b + ((a + (g[(i-1)/16])(b, c, d) + X[k] + T[i-1])<<(s))
 #else
-#define MD4_OP(a,b,c,d,k,s,i) \
-    a = ROTL(a + (g[(i-1)/16])(b, c, d) + X[k] + T[(i-1)/16], s); \
-    DBG("%02d: a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x, X=0x%08x, T=0x%08x\n", i-1, a, b, c, d, X[k], T[(i-1)/16]);
+#define MD4_OP(a,b,c,d,k,s) \
+    a = ROTL(a + (g[idx/16])(b, c, d) + X[k] + T[idx/16], s); \
+    DBG("%02d: a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x, X=0x%08x, T=0x%08x\n", idx, a, b, c, d, X[k], T[idx/16]); \
+    idx ++;
 #endif
 
 static int MD4_ProcessBlock(MD4_CTX *ctx, const void *block)
@@ -156,6 +157,7 @@ static int MD4_ProcessBlock(MD4_CTX *ctx, const void *block)
 	//uint32_t T;
     //uint32_t AA, BB, CC, DD;
 	uint32_t a, b, c, d;
+    uint32_t idx;
 
     if ((NULL == ctx) || (NULL == block))
     {
@@ -175,24 +177,25 @@ static int MD4_ProcessBlock(MD4_CTX *ctx, const void *block)
 	c = ctx->hash.c;
 	d = ctx->hash.d;
 
-    /* Round 1 */
-    MD4_OP(a, b, c, d,  0,  3,  1); MD4_OP(d, a, b, c,  1, 7,  2); MD4_OP(c, d, a, b,  2, 11,  3); MD4_OP(b, c, d, a,  3, 19,  4);
-    MD4_OP(a, b, c, d,  4,  3,  5); MD4_OP(d, a, b, c,  5, 7,  6); MD4_OP(c, d, a, b,  6, 11,  7); MD4_OP(b, c, d, a,  7, 19,  8);
-    MD4_OP(a, b, c, d,  8,  3,  9); MD4_OP(d, a, b, c,  9, 7, 10); MD4_OP(c, d, a, b, 10, 11, 11); MD4_OP(b, c, d, a, 11, 19, 12);
-    MD4_OP(a, b, c, d, 12,  3, 13); MD4_OP(d, a, b, c, 13, 7, 14); MD4_OP(c, d, a, b, 14, 11, 15); MD4_OP(b, c, d, a, 15, 19, 16);
+    idx = 0;
 
+    /* Round 1 */
+    MD4_OP(a, b, c, d,  0,  3); MD4_OP(d, a, b, c,  1,  7); MD4_OP(c, d, a, b,  2, 11); MD4_OP(b, c, d, a,  3, 19);
+    MD4_OP(a, b, c, d,  4,  3); MD4_OP(d, a, b, c,  5,  7); MD4_OP(c, d, a, b,  6, 11); MD4_OP(b, c, d, a,  7, 19);
+    MD4_OP(a, b, c, d,  8,  3); MD4_OP(d, a, b, c,  9,  7); MD4_OP(c, d, a, b, 10, 11); MD4_OP(b, c, d, a, 11, 19);
+    MD4_OP(a, b, c, d, 12,  3); MD4_OP(d, a, b, c, 13,  7); MD4_OP(c, d, a, b, 14, 11); MD4_OP(b, c, d, a, 15, 19);
 
     /* Round 2 */
-    MD4_OP(a, b, c, d,  0,  3, 17); MD4_OP(d, a, b, c,  4,  5, 18); MD4_OP(c, d, a, b,  8,  9, 19); MD4_OP(b, c, d, a, 12, 13, 20);
-    MD4_OP(a, b, c, d,  1,  3, 21); MD4_OP(d, a, b, c,  5,  5, 22); MD4_OP(c, d, a, b,  9,  9, 23); MD4_OP(b, c, d, a, 13, 13, 24);
-    MD4_OP(a, b, c, d,  2,  3, 25); MD4_OP(d, a, b, c,  6,  5, 26); MD4_OP(c, d, a, b, 10,  9, 27); MD4_OP(b, c, d, a, 14, 13, 28);
-    MD4_OP(a, b, c, d,  3,  3, 29); MD4_OP(d, a, b, c,  7,  5, 30); MD4_OP(c, d, a, b, 11,  9, 31); MD4_OP(b, c, d, a, 15, 13, 32);
+    MD4_OP(a, b, c, d,  0,  3); MD4_OP(d, a, b, c,  4,  5); MD4_OP(c, d, a, b,  8,  9); MD4_OP(b, c, d, a, 12, 13);
+    MD4_OP(a, b, c, d,  1,  3); MD4_OP(d, a, b, c,  5,  5); MD4_OP(c, d, a, b,  9,  9); MD4_OP(b, c, d, a, 13, 13);
+    MD4_OP(a, b, c, d,  2,  3); MD4_OP(d, a, b, c,  6,  5); MD4_OP(c, d, a, b, 10,  9); MD4_OP(b, c, d, a, 14, 13);
+    MD4_OP(a, b, c, d,  3,  3); MD4_OP(d, a, b, c,  7,  5); MD4_OP(c, d, a, b, 11,  9); MD4_OP(b, c, d, a, 15, 13);
 
     /* Round 3 */
-    MD4_OP(a, b, c, d,  0,  3, 33); MD4_OP(d, a, b, c,  8,  9, 34); MD4_OP(c, d, a, b,  4, 11, 35); MD4_OP(b, c, d, a, 12, 15, 36);
-    MD4_OP(a, b, c, d,  2,  3, 37); MD4_OP(d, a, b, c, 10,  9, 38); MD4_OP(c, d, a, b,  6, 11, 39); MD4_OP(b, c, d, a, 14, 15, 40);
-    MD4_OP(a, b, c, d,  1,  3, 41); MD4_OP(d, a, b, c,  9,  9, 42); MD4_OP(c, d, a, b,  5, 11, 43); MD4_OP(b, c, d, a, 13, 15, 44);
-    MD4_OP(a, b, c, d,  3,  3, 45); MD4_OP(d, a, b, c, 11,  9, 46); MD4_OP(c, d, a, b,  7, 11, 47); MD4_OP(b, c, d, a, 15, 15, 48);
+    MD4_OP(a, b, c, d,  0,  3); MD4_OP(d, a, b, c,  8,  9); MD4_OP(c, d, a, b,  4, 11); MD4_OP(b, c, d, a, 12, 15);
+    MD4_OP(a, b, c, d,  2,  3); MD4_OP(d, a, b, c, 10,  9); MD4_OP(c, d, a, b,  6, 11); MD4_OP(b, c, d, a, 14, 15);
+    MD4_OP(a, b, c, d,  1,  3); MD4_OP(d, a, b, c,  9,  9); MD4_OP(c, d, a, b,  5, 11); MD4_OP(b, c, d, a, 13, 15);
+    MD4_OP(a, b, c, d,  3,  3); MD4_OP(d, a, b, c, 11,  9); MD4_OP(c, d, a, b,  7, 11); MD4_OP(b, c, d, a, 15, 15);
 
 #if 0
 	for (t=0; t<HASH_ROUND_NUM; t++)
