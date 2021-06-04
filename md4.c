@@ -34,7 +34,7 @@
 #define HASH_PADDING_PATTERN	MD4_PADDING_PATTERN
 #define HASH_ROUND_NUM			MD4_ROUND_NUM
 
-typedef uint32_t (*md5_func)(uint32_t x, uint32_t y, uint32_t z);
+typedef uint32_t (*md4_func)(uint32_t x, uint32_t y, uint32_t z);
 
 /* SHA1 Constants */
 static uint32_t T[3] = 
@@ -88,7 +88,7 @@ static uint32_t H(uint32_t x, uint32_t y, uint32_t z)
 
 
 /* MD4 Functions */
-static md5_func g[3] =
+static md4_func g[3] =
 {
 	F, G, H
 };
