@@ -38,26 +38,4 @@ int MD5_Init(MD5_CTX *c);
 int MD5_Update(MD5_CTX *c, const void *data, unsigned long len);
 int MD5_Final(unsigned char *md, MD5_CTX *c);
 unsigned char *MD5(const unsigned char *d, unsigned long n, unsigned char *md);
-
-int md5_init(void);
-int md5_update(const void *data, uint64_t size);
-int md5_final(uint8_t *hash);
-
-#if 0
- int MD2_Init(MD2_CTX *c);
- int MD2_Update(MD2_CTX *c, const unsigned char *data,
-                  unsigned long len);
- int MD2_Final(unsigned char *md, MD2_CTX *c);
-
-
- #include <openssl/md4.h>
-
- unsigned char *MD4(const unsigned char *d, unsigned long n,
-                  unsigned char *md);
-
- int MD4_Init(MD4_CTX *c);
- int MD4_Update(MD4_CTX *c, const void *data,
-                  unsigned long len);
- int MD4_Final(unsigned char *md, MD4_CTX *c);
- #endif
 #endif

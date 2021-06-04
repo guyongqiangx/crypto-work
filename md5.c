@@ -101,7 +101,7 @@ static uint32_t I(uint32_t x, uint32_t y, uint32_t z)
 }
 
 
-/* SHA1 Functions */
+/* MD5 Functions */
 static md5_func g[4] =
 {
 	F, G, H, I
