@@ -9,13 +9,13 @@ STRIP = $(CROSS_COMPILE)strip
 CFLAGS = -Wall -g -Os
 INCLUDE = -I ./
 
-.PHONY: all SHA1 SHA256 SHA512 SHA3 MD5 HMAC help common
+.PHONY: all SHA1 SHA256 SHA512 SHA3 MD5 SM3 HMAC help common
 
-all: MD2 MD4 MD5 SHA1 SHA256 SHA512 SHA3 HMAC
+all: MD2 MD4 MD5 SHA1 SHA256 SHA512 SHA3 SM3 HMAC
 
 help:
-	@echo "Support Targets: MD5 SHA1 SHA512 SHA3 HMAC"
-	@echo "make MD5 SHA1 SHA512 SHA4 HMAC"
+	@echo "Support Targets: MD5 SHA1 SHA512 SHA3 SM3 HMAC"
+	@echo "make MD5 SHA1 SHA512 SHA3 SM3 HMAC"
 
 COMM_OBJ := utils.o
 COMMON : $(COMM_OBJ)
@@ -122,6 +122,25 @@ md5_test.o : md5_test.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 #
+# rules for sm3
+#
+SM3_OBJ := sm3.o
+SM3_OBJ += sm3_test.o
+SM3_OBJ += $(COMM_OBJ)
+
+SM3_TARGET = sm3_test
+
+SM3: $(SM3_OBJ)
+	$(CC) $(CFLAGS) $(SM3_OBJ) -o $(SM3_TARGET) $(LIBS) $(INCLUDE)
+	$(STRIP) --strip-unneeded $(SM3_TARGET)
+
+sm3.o : sm3.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+sm3_test.o : sm3_test.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+#
 # rules for sha3
 #
 SHA3_OBJ := sha3.o
@@ -165,6 +184,7 @@ OBJ += $(SHA512_OBJ) $(SHA512_TARGET)
 OBJ += $(SHA3_OBJ) $(SHA3_TARGET)
 OBJ += $(MD4_OBJ) $(MD4_TARGET)
 OBJ += $(MD5_OBJ) $(MD5_TARGET)
+OBJ += $(SM3_OBJ) $(SM3_TARGET)
 OBJ += $(HMAC_OBJ) $(HMAC_TARGET)
 
 clean:
