@@ -8,6 +8,7 @@
 
 #ifdef DEBUG
 #define DBG(...) printf(__VA_ARGS__)
+#define DUMP_SCHED_DATA 1
 #define DUMP_BLOCK_DATA 1
 #define DUMP_BLOCK_HASH 1
 #define DUMP_ROUND_DATA 1
@@ -46,13 +47,13 @@ static uint32_t ROTR(uint32_t x, uint8_t shift)
 {
 	return (x >> shift) | (x << (32 - shift));
 }
-#endif
 
 /* Right SHift */
 static uint32_t SHR(uint32_t x, uint8_t shift)
 {
 	return (x >> shift);
 }
+#endif
 
 static uint32_t FF(uint32_t x, uint32_t y, uint32_t z, uint32_t j)
 {
@@ -152,7 +153,7 @@ int SM3_Init(SM3_CTX *c)
 	return ERR_OK;
 }
 
-static int SM3_PrepareScheduleWord(const void *block, uint32_t *W, uint32_t *WP)
+static int SM3_PrepareScheduleWord(const void *block, uint32_t *W, uint32_t *Wp)
 {
 	uint32_t j;
 
@@ -173,8 +174,28 @@ static int SM3_PrepareScheduleWord(const void *block, uint32_t *W, uint32_t *WP)
     /* Array W Prime */
     for (j=0; j<HASH_ROUND_NUM; j++)
     {
-        WP[j] = W[j] ^ W[j+4];
+        Wp[j] = W[j] ^ W[j+4];
     }
+
+#if (DUMP_SCHED_DATA == 1)
+    printf("W1...W67:\n");
+    for (j=0; j<(HASH_ROUND_NUM+4); j++)
+    {
+        printf("%08x ", W[j]);
+        if (j%8 == 7)
+            printf("\n");
+    }
+    printf("\n");
+
+    printf("Wp1...Wp63:\n");
+    for (j=0; j<HASH_ROUND_NUM; j++)
+    {
+        printf("%08x ", Wp[j]);
+        if (j%8 == 7)
+            printf("\n");
+    }
+    printf("\n");
+#endif
 
 	return ERR_OK;
 }
@@ -182,7 +203,7 @@ static int SM3_PrepareScheduleWord(const void *block, uint32_t *W, uint32_t *WP)
 static int SM3_ProcessBlock(SM3_CTX *ctx, const void *block)
 {
 	uint32_t j;
-	uint32_t W[HASH_ROUND_NUM+4], WP[HASH_ROUND_NUM];
+	uint32_t W[HASH_ROUND_NUM+4], Wp[HASH_ROUND_NUM];
     uint32_t SS1, SS2;
 	uint32_t TT1, TT2;
 	uint32_t A, B, C, D, E, F, G, H;
@@ -198,7 +219,7 @@ static int SM3_ProcessBlock(SM3_CTX *ctx, const void *block)
 #endif
 
 	/* prepare schedule word */
-	SM3_PrepareScheduleWord(block, W, WP);
+	SM3_PrepareScheduleWord(block, W, Wp);
 
 	A = ctx->hash.a;
 	B = ctx->hash.b;
@@ -218,7 +239,7 @@ static int SM3_ProcessBlock(SM3_CTX *ctx, const void *block)
 	{
 	    SS1 = ROTL(ROTL(A, 12) + E + ROTL(T[j<16?0:1], j), 7);
         SS2 = SS1 ^ ROTL(A, 12);
-        TT1 = FF(A, B, C, j) + D + SS2 + WP[j];
+        TT1 = FF(A, B, C, j) + D + SS2 + Wp[j];
         TT2 = GG(E, F, G, j) + H + SS1 + W[j];
           D = C;
           C = ROTL(B, 9);
@@ -230,20 +251,23 @@ static int SM3_ProcessBlock(SM3_CTX *ctx, const void *block)
           E = P0(TT2);
 
 #if (DUMP_ROUND_DATA == 1)
-		DBG("   %02d: SS1=0x%08x, SS2=0x%08x, TT1=0x%08x, TT2=0x%08x, W=0x%08x, WP=0x%08x, \n"\
+DBG("   %02d: A=0x%08x,    B=0x%08x,   C=0x%08x,   D=0x%08x, E=0x%08x, F=0x%08x, G=0x%08x, H=0x%08x\n", \
+        j, A, B, C, D, E, F, G, H);
+#else
+		DBG("   %02d: SS1=0x%08x, SS2=0x%08x, TT1=0x%08x, TT2=0x%08x, W=0x%08x, Wp=0x%08x, \n"\
 			"         A=0x%08x,    B=0x%08x,   C=0x%08x,   D=0x%08x, E=0x%08x, F=0x%08x, G=0x%08x, H=0x%08x\n", \
-				j, SS1, SS2, TT1, TT2, W[j], WP[j], A, B, C, D, E, F, G, H);
+				j, SS1, SS2, TT1, TT2, W[j], Wp[j], A, B, C, D, E, F, G, H);
 #endif
 	}
 
-	ctx->hash.a += A;
-	ctx->hash.b += B;
-	ctx->hash.c += C;
-	ctx->hash.d += D;
-	ctx->hash.e += E;
-	ctx->hash.f += F;
-	ctx->hash.g += G;
-	ctx->hash.h += H;
+	ctx->hash.a ^= A;
+	ctx->hash.b ^= B;
+	ctx->hash.c ^= C;
+	ctx->hash.d ^= D;
+	ctx->hash.e ^= E;
+	ctx->hash.f ^= F;
+	ctx->hash.g ^= G;
+	ctx->hash.h ^= H;
 
 #if (DUMP_BLOCK_HASH == 1)
 	DBG(" HASH: %08x%08x%08x%08x%08x%08x%08x%08x\n\n",
