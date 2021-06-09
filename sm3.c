@@ -198,7 +198,7 @@ static int SM3_ProcessBlock(SM3_CTX *ctx, const void *block)
 
 #if (DUMP_ROUND_DATA == 1)
 #if 1 /* Don't show temp variables: SS1/SS2/TT1/TT2/W/W' */
-        DBG("   %02d: A=0x%08x,    B=0x%08x,   C=0x%08x,   D=0x%08x, E=0x%08x, F=0x%08x, G=0x%08x, H=0x%08x\n", \
+        DBG("   %02d: A=0x%08x, B=0x%08x, C=0x%08x, D=0x%08x, E=0x%08x, F=0x%08x, G=0x%08x, H=0x%08x\n", \
                 j, A, B, C, D, E, F, G, H);
 #else
 		DBG("   %02d: SS1=0x%08x, SS2=0x%08x, TT1=0x%08x, TT2=0x%08x, W=0x%08x, Wp=0x%08x\n"\

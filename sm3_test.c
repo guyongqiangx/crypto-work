@@ -25,21 +25,22 @@ int main(int argc, char * argv[])
 
 	printf("sm3 result:\n");
 
-	//print_buffer(hash, 20);
+	//print_buffer(hash, 32);
 	for (i=0; i<32; i++)
 		printf("%02x", hash[i]);
 	printf("\n");
 
 #if 0
-	sha1_init();
-	sha1_update("abc", 3);
-	sha1_update("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", 55);
-	sha1_final(hash);
 
-	printf("sha1 result:\n");
+	SM3_Init(&ctx);
+	SM3_Update(&ctx, "abcdabcdabcdabcdabcdabcdabcdabcd", 32);
+	SM3_Update(&ctx, "abcdabcdabcdabcdabcdabcdabcdabcd", 32);
+	SM3_Final(hash, &ctx);
 
-	//print_buffer(hash, 20);
-	for (i=0; i<20; i++)
+	printf("sm3 result:\n");
+
+	//print_buffer(hash, 32);
+	for (i=0; i<32; i++)
 		printf("%02x", hash[i]);
 	printf("\n");
 #endif
@@ -49,8 +50,8 @@ int main(int argc, char * argv[])
 	system("openssl dgst -sm3 abc.txt");
 #else
 	//system("stat 58.txt");
-	printf("openssl dgst -sha1 58.txt\n");
-	system("openssl dgst -sha1 58.txt");
+	printf("openssl dgst -sm3 58.txt\n");
+	system("openssl dgst -sm3 58.txt");
 #endif
 
 	printf("press any key to exit...\n");
