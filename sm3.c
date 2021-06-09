@@ -41,20 +41,6 @@ static uint32_t ROTL(uint32_t x, uint8_t shift)
 	return (x << shift) | (x >> (32 - shift));
 }
 
-#if 0
-/* ROTate Right (cirular right shift) */
-static uint32_t ROTR(uint32_t x, uint8_t shift)
-{
-	return (x >> shift) | (x << (32 - shift));
-}
-
-/* Right SHift */
-static uint32_t SHR(uint32_t x, uint8_t shift)
-{
-	return (x >> shift);
-}
-#endif
-
 static uint32_t FF(uint32_t x, uint32_t y, uint32_t z, uint32_t j)
 {
     if (j<16) /* 0 <= j <= 15 */
@@ -78,46 +64,6 @@ static uint32_t GG(uint32_t x, uint32_t y, uint32_t z, uint32_t j)
         return (x & y) | (~x & z);
     }
 }
-
-#if 0
-/* Ch ... choose */
-static uint32_t Ch(uint32_t x, uint32_t y, uint32_t z)
-{
-	//DBG("    Ch(0x%08x, 0x%08x, 0x%08x);\n", x, y, z);
-	return (x & y) ^ (~x & z) ;
-}
-
-/* Maj ... majority */
-static uint32_t Maj(uint32_t x, uint32_t y, uint32_t z)
-{
-	//DBG("   Maj(0x%08x, 0x%08x, 0x%08x);\n", x, y, z);
-	return (x & y) ^ (x & z) ^ (y & z);
-}
-
-/* SIGMA0 */
-static uint32_t SIGMA0(uint32_t x)
-{
-	return ROTR(x, 2) ^ ROTR(x, 13) ^ ROTR(x, 22);
-}
-
-/* SIGMA1 */
-static uint32_t SIGMA1(uint32_t x)
-{
-	return ROTR(x, 6) ^ ROTR(x, 11) ^ ROTR(x, 25);
-}
-
-/* sigma0, different from SIGMA0 */
-static uint32_t sigma0(uint32_t x)
-{
-	return ROTR(x, 7) ^ ROTR(x, 18) ^ SHR(x, 3);
-}
-
-/* sigma1, different from SIGMA1 */
-static uint32_t sigma1(uint32_t x)
-{
-	return ROTR(x, 17) ^ ROTR(x, 19) ^ SHR(x, 10);
-}
-#endif
 
 /* P0, Permutation 0 */
 static uint32_t P0(uint32_t x)
@@ -157,7 +103,7 @@ static int SM3_PrepareScheduleWord(const void *block, uint32_t *W, uint32_t *Wp)
 {
 	uint32_t j;
 
-    if ((NULL == block) || (NULL == W))
+    if ((NULL == block) || (NULL == W) || (NULL == Wp))
     {
         return ERR_INV_PARAM;
     }
@@ -178,21 +124,21 @@ static int SM3_PrepareScheduleWord(const void *block, uint32_t *W, uint32_t *Wp)
     }
 
 #if (DUMP_SCHED_DATA == 1)
-    printf("W1...W67:\n");
+    printf("W1...W67:\n       ");
     for (j=0; j<(HASH_ROUND_NUM+4); j++)
     {
         printf("%08x ", W[j]);
         if (j%8 == 7)
-            printf("\n");
+            printf("\n       ");
     }
     printf("\n");
 
-    printf("Wp1...Wp63:\n");
+    printf("W'1...W'63:\n       ");
     for (j=0; j<HASH_ROUND_NUM; j++)
     {
         printf("%08x ", Wp[j]);
         if (j%8 == 7)
-            printf("\n");
+            printf("\n       ");
     }
     printf("\n");
 #endif
@@ -231,7 +177,7 @@ static int SM3_ProcessBlock(SM3_CTX *ctx, const void *block)
 	H = ctx->hash.h;
 
 #if (DUMP_BLOCK_HASH == 1)
-	DBG(" LAST: %08x%08x%08x%08x%08x%08x%08x%08x\n",
+	DBG("   IV: %08x %08x %08x %08x %08x %08x %08x %08x\n",
 		ctx->hash.a, ctx->hash.b, ctx->hash.c, ctx->hash.d, ctx->hash.e, ctx->hash.f, ctx->hash.g, ctx->hash.h);
 #endif
 
@@ -251,12 +197,14 @@ static int SM3_ProcessBlock(SM3_CTX *ctx, const void *block)
           E = P0(TT2);
 
 #if (DUMP_ROUND_DATA == 1)
-DBG("   %02d: A=0x%08x,    B=0x%08x,   C=0x%08x,   D=0x%08x, E=0x%08x, F=0x%08x, G=0x%08x, H=0x%08x\n", \
-        j, A, B, C, D, E, F, G, H);
+#if 1 /* Don't show temp variables: SS1/SS2/TT1/TT2/W/W' */
+        DBG("   %02d: A=0x%08x,    B=0x%08x,   C=0x%08x,   D=0x%08x, E=0x%08x, F=0x%08x, G=0x%08x, H=0x%08x\n", \
+                j, A, B, C, D, E, F, G, H);
 #else
-		DBG("   %02d: SS1=0x%08x, SS2=0x%08x, TT1=0x%08x, TT2=0x%08x, W=0x%08x, Wp=0x%08x, \n"\
+		DBG("   %02d: SS1=0x%08x, SS2=0x%08x, TT1=0x%08x, TT2=0x%08x, W=0x%08x, Wp=0x%08x\n"\
 			"         A=0x%08x,    B=0x%08x,   C=0x%08x,   D=0x%08x, E=0x%08x, F=0x%08x, G=0x%08x, H=0x%08x\n", \
 				j, SS1, SS2, TT1, TT2, W[j], Wp[j], A, B, C, D, E, F, G, H);
+#endif
 #endif
 	}
 
@@ -270,7 +218,7 @@ DBG("   %02d: A=0x%08x,    B=0x%08x,   C=0x%08x,   D=0x%08x, E=0x%08x, F=0x%08x,
 	ctx->hash.h ^= H;
 
 #if (DUMP_BLOCK_HASH == 1)
-	DBG(" HASH: %08x%08x%08x%08x%08x%08x%08x%08x\n\n",
+	DBG(" HASH: %08x %08x %08x %08x %08x %08x %08x %08x\n",
 		ctx->hash.a, ctx->hash.b, ctx->hash.c, ctx->hash.d, ctx->hash.e, ctx->hash.f, ctx->hash.g, ctx->hash.h);
 #endif
 
