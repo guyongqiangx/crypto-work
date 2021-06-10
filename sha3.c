@@ -75,7 +75,7 @@ static const uint64_t K512[HASH_ROUND_NUM] =
 #define SHA3_PADDING_PAT2_END    0x01
 #endif
 
-#if 0
+#if 1
 /* ROTate Left (circular left shift) */
 static uint64_t ROTL(uint64_t x, uint8_t shift)
 {
@@ -142,20 +142,20 @@ static uint32_t theta(uint64_t A[5][5])
 
     for (x=0; x<5; x++)
     {
-        C[x] = A[x][0] ^ A[x][1] ^ A[x][2] ^ A[x][3] ^ A[x][4];
+        C[x] = A[0][x] ^ A[1][x] ^ A[2][x] ^ A[3][x] ^ A[4][x];
     }
 
     for (x=0; x<5; x++)
     {
      /* D[x] = C[x-1]     ^ ROTR(C[x+1],     1) */
-        D[x] = C[(x+4)%5] ^ ROTR(C[(x+1)%5], 1);
+        D[x] = C[(x+4)%5] ^ ROTL(C[(x+1)%5], 1);
     }
 
-    for (x=0; x<5; x++)
+    for (y=0; y<5; y++)
     {
-        for (y=0; y<5; y++)
+        for (x=0; x<5; x++)
         {
-            A[x][y] = A[x][y] ^ D[x];
+            A[y][x] = A[y][x] ^ D[x];
         }
     }
 
@@ -188,6 +188,68 @@ static uint32_t rho_and_pi(uint64_t A[5][5])
     return 0;
 }
 
+static uint32_t Rp[5][5] =
+{
+    {   0,   1,  190,  28,  91},
+    {  36, 300,    6,  55, 276},
+    {   3,  10,  171, 153, 231},
+    { 105,  45,   15,  21, 136},
+    { 210,  66,  253, 120,  78}
+};
+static uint32_t rho(uint64_t A[5][5])
+{
+    uint64_t Ap[5][5];
+    uint32_t x, y, m;
+    uint32_t t;
+
+    memset(Ap, 0, sizeof(Ap));
+    x = 1;
+    y = 0;
+    #if 0
+    /* Note: Ap[0][0] is not been set */
+    for (t=0; t<24; t++)
+    {
+        printf("[%u, %u]=%3d ", y, x, (t+1)*(t+2)/2);
+        if (t%5==4)
+            printf("\n");
+        Ap[y][x] = ROTL(A[y][x], ((t+1)*(t+2)/2)%64);
+        m = x;
+        x = y;
+        y = (2*m + 3*y) % 5;
+    }
+    printf("\n");
+    #else
+    /* Note: Ap[0][0] is not been set */
+    for (t=0; t<24; t++)
+    {
+        Ap[y][x] = ROTL(A[y][x], Rp[y][x]%64);
+        m = x;
+        x = y;
+        y = (2*m + 3*y) % 5;
+    }
+    #endif
+
+    memcpy(A, Ap, sizeof(Ap));
+    return 0;
+}
+
+static uint32_t pi(uint64_t A[5][5])
+{
+    uint64_t B[5][5];
+    uint32_t x, y;
+
+    for (x=0; x<5; x++)
+    {
+        for (y=0; y<5; y++)
+        {
+            B[y][(2*x+3*y)%5] = ROTR(A[x][y], R[x][y]);
+        }
+    }
+
+    memcpy(A, B, sizeof(B));
+    return 0;
+}
+
 #if 0
 static uint32_t pi(uint64_t A[5][5])
 {
@@ -199,12 +261,13 @@ static void dump_lane(uint64_t lane[5][5])
 {
     uint32_t x, y;
 
-    for (y=0; y<5; y++)
+    for (y=0; y<5; y++) /* row */
     {
-        for (x=0; x<5; x++)
+        for (x=0; x<5; x++) /* col */
         {
-            DBG("[%d, %d]: %016llx\n", x, y, lane[x][y]);
+            DBG("[%d, %d]: %016llx  ", x, y, lane[y][x]);
         }
+        DBG("\n");
     } 
     return;
 }
@@ -384,8 +447,26 @@ static int SHA3_ProcessBlock(SHA3_CTX *ctx, const void *block)
     for (t=0; t<ctx->nr; t++)
     {
         theta(ctx->lane);
-        rho_and_pi(ctx->lane);
+#if (DUMP_SCHED_DATA == 1)
+        DBG("After Theta:\n");
+        print_buffer(&ctx->lane[0][0], ctx->b, " ");
+#endif
+        //rho_and_pi(ctx->lane);
+        rho(ctx->lane);
+#if (DUMP_SCHED_DATA == 1)
+        DBG("After Rho:\n");
+        print_buffer(&ctx->lane[0][0], ctx->b, " ");
+#endif
+        pi(ctx->lane);
+#if (DUMP_SCHED_DATA == 1)
+        DBG("After Pi:\n");
+        print_buffer(&ctx->lane[0][0], ctx->b, " ");
+#endif
         chi(ctx->lane);
+#if (DUMP_SCHED_DATA == 1)
+        DBG("After Chi:\n");
+        print_buffer(&ctx->lane[0][0], ctx->b, " ");
+#endif
         iota(ctx->lane, t);
 
 #if (DUMP_ROUND_DATA == 1)
