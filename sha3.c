@@ -403,11 +403,30 @@ static int SHA3_PrepareScheduleWord(SHA3_CTX *ctx, const void *block)
 {
 	uint32_t i;
     uint64_t *data;
+    uint64_t temp[25];
 
     if ((NULL == ctx) || (NULL == block))
     {
         return ERR_INV_PARAM;
     }
+
+    for (i=0; i<ctx->b/8; i++)
+    {
+        if (i<ctx->r/8)
+        {
+            //temp[i] = be64toh(QWORD(block, i));
+            temp[i] = QWORD(block, i);
+        }
+        else
+        {
+            temp[i] = 0x0;
+        }
+    }
+#if (DUMP_SCHED_DATA == 1)
+    DBG("Data to absorbed:\n");
+    //dump_lane(ctx->lane);
+    print_buffer(temp, ctx->b, " ");
+#endif
 
 #if (DUMP_SCHED_DATA == 1)
     DBG("SchedWord: [before]\n");
@@ -420,14 +439,7 @@ static int SHA3_PrepareScheduleWord(SHA3_CTX *ctx, const void *block)
 
     for (i=0; i<ctx->b/8; i++)
     {
-        if (i<ctx->r/8)
-        {
-            data[i] ^= be64toh(QWORD(block, i));
-        }
-        else
-        {
-            data[i] ^= 0x0000000000000000;
-        }
+        data[i] ^= temp[i];
     }
 
 #if (DUMP_SCHED_DATA == 1)
