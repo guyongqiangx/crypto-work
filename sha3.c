@@ -140,6 +140,9 @@ static uint32_t theta(uint64_t A[5][5])
     uint32_t x, y;
     uint64_t C[5], D[5];
 
+    memset(C, 0, sizeof(C));
+    memset(D, 0, sizeof(D));
+
     for (x=0; x<5; x++)
     {
         C[x] = A[0][x] ^ A[1][x] ^ A[2][x] ^ A[3][x] ^ A[4][x];
@@ -241,6 +244,7 @@ static uint32_t pi(uint64_t A[5][5])
     uint64_t Ap[5][5];
     uint32_t x, y;
 
+    memset(Ap, 0, sizeof(Ap));
     for (y=0; y<5; y++)
     {
         for (x=0; x<5; x++)
@@ -280,6 +284,7 @@ static uint32_t chi(uint64_t A[5][5])
     uint64_t Ap[5][5];
     uint32_t x, y;
 
+    memset(Ap, 0, sizeof(Ap));
     for (y=0; y<5; y++)
     {
         for (x=0; x<5; x++)
@@ -319,10 +324,10 @@ static uint64_t RC[24] =
     0x0000000080000001,
     0x8000000080008008,
 };
-static uint32_t iota(uint64_t B[5][5], uint32_t i)
+static uint32_t iota(uint64_t A[5][5], uint32_t i)
 {
-    B[0][0] ^= B[0][0] ^ RC[i];
-    
+    A[0][0] = A[0][0] ^ RC[i];
+
     return 0;
 }
 
@@ -471,6 +476,10 @@ static int SHA3_ProcessBlock(SHA3_CTX *ctx, const void *block)
         print_buffer(&ctx->lane[0][0], ctx->b, " ");
 #endif
         iota(ctx->lane, t);
+#if (DUMP_SCHED_DATA == 1)
+        DBG("After Iota:\n");
+        print_buffer(&ctx->lane[0][0], ctx->b, " ");
+#endif
 
 #if (DUMP_ROUND_DATA == 1)
         DBG("%02d:\n", t);
