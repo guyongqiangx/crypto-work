@@ -138,10 +138,12 @@ static uint64_t sigma1(uint64_t x)
 static uint32_t theta(uint64_t A[5][5])
 {
     uint32_t x, y;
+    uint64_t Ap[5][5];
     uint64_t C[5], D[5];
 
     memset(C, 0, sizeof(C));
     memset(D, 0, sizeof(D));
+    memset(Ap, 0, sizeof(Ap));
 
     for (x=0; x<5; x++)
     {
@@ -158,10 +160,11 @@ static uint32_t theta(uint64_t A[5][5])
     {
         for (x=0; x<5; x++)
         {
-            A[y][x] = A[y][x] ^ D[x];
+            Ap[y][x] = A[y][x] ^ D[x];
         }
     }
 
+    memcpy(A, Ap, sizeof(Ap));
     return 0;
 }
 
@@ -454,6 +457,10 @@ static int SHA3_ProcessBlock(SHA3_CTX *ctx, const void *block)
 
     for (t=0; t<ctx->nr; t++)
     {
+#if (DUMP_ROUND_DATA == 1)
+        DBG("Round #%d:\n", t);
+#endif
+
         theta(ctx->lane);
 #if (DUMP_SCHED_DATA == 1)
         DBG("After Theta:\n");
@@ -481,7 +488,7 @@ static int SHA3_ProcessBlock(SHA3_CTX *ctx, const void *block)
         print_buffer(&ctx->lane[0][0], ctx->b, " ");
 #endif
 
-#if (DUMP_ROUND_DATA == 1)
+#if 0 //(DUMP_ROUND_DATA == 1)
         DBG("%02d:\n", t);
         dump_lane(ctx->lane);
 #endif
