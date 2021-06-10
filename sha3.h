@@ -16,36 +16,50 @@ typedef struct {
 	uint64_t low;  /*  low 64 bits */
 } uint128_t;
 
-typedef struct sha3_context {
-    /* message total length in bytes */
-    uint128_t total;
+typedef enum sha3_algorithm {
+    SHA3_224,
+    SHA3_256,
+    SHA3_384,
+    SHA3_512,
+    SHAKE128,
+    SHAKE256
+}SHA3_ALG;
 
+typedef struct sha3_context {
     /* intermedia hash value for each block */
-    struct {
-        uint64_t a;
-        uint64_t b;
-        uint64_t c;
-        uint64_t d;
-        uint64_t e;
-        uint64_t f;
-        uint64_t g;
-        uint64_t h;
-    }hash;
+    uint64_t lane[5][5];      /* 5 x 5 x 64 = 1600 bits */
 
     /* last block */
     struct {
         uint32_t used;      /* used bytes */
-        uint8_t  buf[128];  /* block data buffer */
+        uint8_t  buf[200];  /* block data buffer */
     }last;
 
-    uint32_t ext;           /* t value of SHA3/t */
+    /*
+     * |-------------------------------------------------------------|
+     * | l          | 0    | 1    | 2    | 3    | 4    | 5    | 6    |
+     * |-------------------------------------------------------------|
+     * | w = 2^l    | 1    | 2    | 4    | 8    | 16   | 32   | 64   |
+     * |-------------------------------------------------------------|
+     * | b = 25*2^l | 25   | 50   | 100  | 200  | 400  | 800  | 1600 |
+     * |-------------------------------------------------------------|
+     * | SHA3: l = 6, w = 64, b = 1600                          *    |
+     * |-------------------------------------------------------------|
+     */
+
+    uint32_t l; /* binary logarithm of lane size */
+    uint32_t w; /* lane size in bits */
+    uint32_t b; /* width of the state, b = r + c */
+    uint32_t r; /* bit rate, rate of a sponge function, length of one message block */
+    uint32_t c; /* capacity, r + c = b */
+
+    uint32_t nr; /* round number, nr = 12 + 2l */
+
+    uint32_t ol; /* output hash length in bytes */
 }SHA3_CTX;
 
-/* https://www.openssl.org/docs/man1.1.1/man3/SHA256_Final.html */
-
-int SHA3_Init(SHA3_CTX *c);
+int SHA3_Init(SHA3_CTX *c, SHA3_ALG alg);
 int SHA3_Update(SHA3_CTX *c, const void *data, size_t len);
 int SHA3_Final(unsigned char *md, SHA3_CTX *c);
-unsigned char *SHA3(const unsigned char *d, size_t n,
-					  unsigned char *md);
+unsigned char *SHA3(SHA3_ALG alg, const unsigned char *d, size_t n, unsigned char *md);
 #endif
