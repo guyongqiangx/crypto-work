@@ -203,6 +203,8 @@ static uint32_t rho(uint64_t A[5][5])
     uint32_t t;
 
     memset(Ap, 0, sizeof(Ap));
+
+    /* (x,y) = (1,0) */
     x = 1;
     y = 0;
     #if 0
@@ -223,9 +225,10 @@ static uint32_t rho(uint64_t A[5][5])
     for (t=0; t<24; t++)
     {
         Ap[y][x] = ROTL(A[y][x], Rp[y][x]%64);
+        /* (x,y) = (y,(2x+3y)%5) */
         m = x;
         x = y;
-        y = (2*m + 3*y) % 5;
+        y = (2*m+3*y) % 5;
     }
     #endif
 
@@ -235,18 +238,18 @@ static uint32_t rho(uint64_t A[5][5])
 
 static uint32_t pi(uint64_t A[5][5])
 {
-    uint64_t B[5][5];
+    uint64_t Ap[5][5];
     uint32_t x, y;
 
-    for (x=0; x<5; x++)
+    for (y=0; y<5; y++)
     {
-        for (y=0; y<5; y++)
+        for (x=0; x<5; x++)
         {
-            B[y][(2*x+3*y)%5] = ROTR(A[x][y], R[x][y]);
+            Ap[y][x] = A[x][(x+3*y)%5];
         }
     }
 
-    memcpy(A, B, sizeof(B));
+    memcpy(A, Ap, sizeof(Ap));
     return 0;
 }
 
@@ -272,20 +275,20 @@ static void dump_lane(uint64_t lane[5][5])
     return;
 }
 
-static uint32_t chi(uint64_t B[5][5])
+static uint32_t chi(uint64_t A[5][5])
 {
-    uint64_t A[5][5];
+    uint64_t Ap[5][5];
     uint32_t x, y;
 
-    for (x=0; x<5; x++)
+    for (y=0; y<5; y++)
     {
-        for (y=0; y<5; y++)
+        for (x=0; x<5; x++)
         {
-            A[x][y] = B[x][y] ^ ((~B[(x+2)%5][y]) & B[(x+2)%5][y]);
+            Ap[y][x] = A[y][x] ^ ((~A[y][(x+1)%5]) & A[y][(x+2)%5]);
         }
     }
 
-    memcpy(B, A, sizeof(A));
+    memcpy(A, Ap, sizeof(Ap));
     return 0;
 }
 
