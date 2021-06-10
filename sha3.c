@@ -418,7 +418,6 @@ static int SHA3_PrepareScheduleWord(SHA3_CTX *ctx, const void *block)
     /* initial S */
     data = &ctx->lane[0][0];
 
-    memset(data, 0, ctx->b);
     for (i=0; i<ctx->b/8; i++)
     {
         if (i<ctx->r/8)
@@ -452,6 +451,7 @@ static int SHA3_ProcessBlock(SHA3_CTX *ctx, const void *block)
     }
 
 #if (DUMP_BLOCK_DATA == 1)
+    DBG("BLOCK DATA:\n");
     print_buffer(block, ctx->r, " ");
 #endif
 
@@ -464,37 +464,37 @@ static int SHA3_ProcessBlock(SHA3_CTX *ctx, const void *block)
 #endif
 
         theta(ctx->lane);
-#if (DUMP_SCHED_DATA == 1)
+#if (DUMP_ROUND_DATA == 1)
         DBG("After Theta:\n");
         print_buffer(&ctx->lane[0][0], ctx->b, " ");
 #endif
         //rho_and_pi(ctx->lane);
         rho(ctx->lane);
-#if (DUMP_SCHED_DATA == 1)
+#if (DUMP_ROUND_DATA == 1)
         DBG("After Rho:\n");
         print_buffer(&ctx->lane[0][0], ctx->b, " ");
 #endif
         pi(ctx->lane);
-#if (DUMP_SCHED_DATA == 1)
+#if (DUMP_ROUND_DATA == 1)
         DBG("After Pi:\n");
         print_buffer(&ctx->lane[0][0], ctx->b, " ");
 #endif
         chi(ctx->lane);
-#if (DUMP_SCHED_DATA == 1)
+#if (DUMP_ROUND_DATA == 1)
         DBG("After Chi:\n");
         print_buffer(&ctx->lane[0][0], ctx->b, " ");
 #endif
         iota(ctx->lane, t);
-#if (DUMP_SCHED_DATA == 1)
+#if (DUMP_ROUND_DATA == 1)
         DBG("After Iota:\n");
         print_buffer(&ctx->lane[0][0], ctx->b, " ");
 #endif
-
-#if 0 //(DUMP_ROUND_DATA == 1)
-        DBG("%02d:\n", t);
-        dump_lane(ctx->lane);
-#endif
     }
+
+#if (DUMP_BLOCK_HASH == 1)
+    DBG("After Permutation:\n");
+    print_buffer(&ctx->lane[0][0], ctx->b, " ");
+#endif
 
 	return ERR_OK;
 }
