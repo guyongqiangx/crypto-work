@@ -209,6 +209,8 @@ static uint32_t rho(uint64_t A[5][5])
     uint32_t t;
 
     memset(Ap, 0, sizeof(Ap));
+    /* A'[0,0,z]=A[0,0,z] */
+    memcpy(Ap[0], A[0], sizeof(Ap[0]));
 
     /* (x,y) = (1,0) */
     x = 1;
