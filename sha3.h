@@ -20,6 +20,10 @@ typedef struct {
  * Standard:
  *   SHA-3 Standard: Permutation-Based Hash and Extendable-Output Functions
  *   https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf
+ *
+ * Understanding-Cryptography-Keccak.pdf
+ * SHA-3 and The Hash Function Keccak
+ * https://www.crypto-textbook.com/download/Understanding-Cryptography-Keccak.pdf
  */
 
 typedef enum sha3_algorithm {

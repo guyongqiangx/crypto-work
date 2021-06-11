@@ -458,7 +458,7 @@ int SHA3_Final(unsigned char *md, SHA3_CTX *c)
         return ERR_INV_PARAM;
     }
 
-    /* more than 2 bytes left, padding 0x60...0x01 */
+    /* more than 2 bytes left, padding 0x06...0x80 (0x */
     if (c->last.used <= (c->r - 2))
     {
         /* one more block */
@@ -471,7 +471,7 @@ int SHA3_Final(unsigned char *md, SHA3_CTX *c)
         c->last.buf[c->last.used] = SHA3_PADDING_PAT2_END;
         c->last.used++;
     }
-    else /* if (c->last.used == (c->r - 1)) */ /* only 1 bytes left, padding 0x61 */
+    else /* if (c->last.used == (c->r - 1)) */ /* only 1 bytes left, padding 0x86(0x61 in reverse) */
     {
         c->last.buf[c->last.used] = SHA3_PADDING_PAT1;
         c->last.used++;
