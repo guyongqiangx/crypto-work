@@ -79,31 +79,6 @@ static uint32_t theta(uint64_t A[5][5])
 }
 
 /* rotation constants, aka rotation offsets */
-static uint32_t R[5][5] =
-{
-    {  0, 36,  3, 41, 18},
-    {  1, 44, 10, 45,  2},
-    { 62,  6, 43, 15, 61},
-    { 28, 55, 25, 21, 56},
-    { 27, 20, 39,  8, 14}
-};
-static uint32_t rho_and_pi(uint64_t A[5][5])
-{
-    uint64_t B[5][5];
-    uint32_t x, y;
-
-    for (x=0; x<5; x++)
-    {
-        for (y=0; y<5; y++)
-        {
-            B[y][(2*x+3*y)%5] = ROTR(A[x][y], R[x][y]);
-        }
-    }
-
-    memcpy(A, B, sizeof(B));
-    return 0;
-}
-
 static uint32_t Rp[5][5] =
 {
     {   0,   1,  190,  28,  91},
@@ -171,13 +146,6 @@ static uint32_t pi(uint64_t A[5][5])
     memcpy(A, Ap, sizeof(Ap));
     return 0;
 }
-
-#if 0
-static uint32_t pi(uint64_t A[5][5])
-{
-    return 0;
-}
-#endif
 
 static void dump_lane(uint64_t lane[5][5])
 {
