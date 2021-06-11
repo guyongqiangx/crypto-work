@@ -12,7 +12,7 @@ typedef unsigned short     uint16_t;
 typedef unsigned int       uint32_t;
 typedef unsigned long long uint64_t;
 
-typedef struct md4_context {
+typedef struct md2_context {
     /* message total length in bytes */
     uint64_t total;
 

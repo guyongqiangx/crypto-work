@@ -18,21 +18,21 @@
 #define DUMP_ROUND_DATA 0
 #endif
 
-#define MD4_BLOCK_SIZE		64	/* 512 bits = 64 bytes */
-#define MD4_LEN_SIZE	 	 8	/*  64 bits =  8 bytes */
-#define MD4_LEN_OFFSET      (MD4_BLOCK_SIZE - MD4_LEN_SIZE)
-#define MD4_DIGEST_SIZE     16  /* 128 bits = 16 bytes */
+#define MD2_BLOCK_SIZE		64	/* 512 bits = 64 bytes */
+#define MD2_LEN_SIZE	 	 8	/*  64 bits =  8 bytes */
+#define MD2_LEN_OFFSET      (MD2_BLOCK_SIZE - MD2_LEN_SIZE)
+#define MD2_DIGEST_SIZE     16  /* 128 bits = 16 bytes */
 
-#define MD4_PADDING_PATTERN 	0x80
-#define MD4_ROUND_NUM			64
+#define MD2_PADDING_PATTERN 	0x80
+#define MD2_ROUND_NUM			64
 
-#define HASH_BLOCK_SIZE		MD4_BLOCK_SIZE
-#define HASH_LEN_SIZE		MD4_LEN_SIZE
-#define HASH_LEN_OFFSET		MD4_LEN_OFFSET
-#define HASH_DIGEST_SIZE	MD4_DIGEST_SIZE
+#define HASH_BLOCK_SIZE		MD2_BLOCK_SIZE
+#define HASH_LEN_SIZE		MD2_LEN_SIZE
+#define HASH_LEN_OFFSET		MD2_LEN_OFFSET
+#define HASH_DIGEST_SIZE	MD2_DIGEST_SIZE
 
-#define HASH_PADDING_PATTERN	MD4_PADDING_PATTERN
-#define HASH_ROUND_NUM			MD4_ROUND_NUM
+#define HASH_PADDING_PATTERN	MD2_PADDING_PATTERN
+#define HASH_ROUND_NUM			MD2_ROUND_NUM
 
 typedef uint32_t (*md5_func)(uint32_t x, uint32_t y, uint32_t z);
 
@@ -72,7 +72,7 @@ static const pi[256] =
     0xDB, 0x99, 0x8D, 0x33, 0x9F, 0x11, 0x83, 0x14,
 };
 
-/* SHA1 Constants */
+/* MD2 Constants */
 static uint32_t T[3] = 
 {
     0x00000000, /* Round 1, nothing */
@@ -123,7 +123,7 @@ static uint32_t H(uint32_t x, uint32_t y, uint32_t z)
 }
 
 
-/* MD4 Functions */
+/* MD2 Functions */
 static md5_func g[3] =
 {
 	F, G, H
@@ -138,14 +138,14 @@ static md5_func g[3] =
  *   Format: "abc" + 1 + 0 x 423 + 0x18
  */
 
-int MD4_Init(MD4_CTX *c)
+int MD2_Init(MD2_CTX *c)
 {
 	if (NULL == c)
     {
         return ERR_INV_PARAM;
     }
 
-	memset(c, 0, sizeof(MD4_CTX));
+	memset(c, 0, sizeof(MD2_CTX));
 
 	c->hash.a = 0x67452301; /* little endian */
 	c->hash.b = 0xEFCDAB89;
@@ -158,7 +158,7 @@ int MD4_Init(MD4_CTX *c)
 	return ERR_OK;
 }
 
-static int MD4_PrepareScheduleWord(const void *block, uint32_t *X)
+static int MD2_PrepareScheduleWord(const void *block, uint32_t *X)
 {
 	uint32_t i;
 
@@ -176,16 +176,16 @@ static int MD4_PrepareScheduleWord(const void *block, uint32_t *X)
 }
 
 #if 0
-#define MD4_OP(a,b,c,d,k,s,i) \
+#define MD2_OP(a,b,c,d,k,s,i) \
     a = b + ((a + (g[(i-1)/16])(b, c, d) + X[k] + T[i-1])<<(s))
 #else
-#define MD4_OP(a,b,c,d,k,s) \
+#define MD2_OP(a,b,c,d,k,s) \
     a = ROTL(a + (g[idx/16])(b, c, d) + X[k] + T[idx/16], s); \
     DBG("%02d: a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x, X=0x%08x, T=0x%08x\n", idx, a, b, c, d, X[k], T[idx/16]); \
     idx ++;
 #endif
 
-static int MD4_ProcessBlock(MD4_CTX *ctx, const void *block)
+static int MD2_ProcessBlock(MD2_CTX *ctx, const void *block)
 {
     //uint32_t i;
 	//uint32_t t;
@@ -206,7 +206,7 @@ static int MD4_ProcessBlock(MD4_CTX *ctx, const void *block)
 #endif
 
 	/* prepare schedule word */
-	MD4_PrepareScheduleWord(block, X);
+	MD2_PrepareScheduleWord(block, X);
 
 	a = ctx->hash.a;
 	b = ctx->hash.b;
@@ -216,22 +216,22 @@ static int MD4_ProcessBlock(MD4_CTX *ctx, const void *block)
     idx = 0;
 
     /* Round 1 */
-    MD4_OP(a, b, c, d,  0,  3); MD4_OP(d, a, b, c,  1,  7); MD4_OP(c, d, a, b,  2, 11); MD4_OP(b, c, d, a,  3, 19);
-    MD4_OP(a, b, c, d,  4,  3); MD4_OP(d, a, b, c,  5,  7); MD4_OP(c, d, a, b,  6, 11); MD4_OP(b, c, d, a,  7, 19);
-    MD4_OP(a, b, c, d,  8,  3); MD4_OP(d, a, b, c,  9,  7); MD4_OP(c, d, a, b, 10, 11); MD4_OP(b, c, d, a, 11, 19);
-    MD4_OP(a, b, c, d, 12,  3); MD4_OP(d, a, b, c, 13,  7); MD4_OP(c, d, a, b, 14, 11); MD4_OP(b, c, d, a, 15, 19);
+    MD2_OP(a, b, c, d,  0,  3); MD2_OP(d, a, b, c,  1,  7); MD2_OP(c, d, a, b,  2, 11); MD2_OP(b, c, d, a,  3, 19);
+    MD2_OP(a, b, c, d,  4,  3); MD2_OP(d, a, b, c,  5,  7); MD2_OP(c, d, a, b,  6, 11); MD2_OP(b, c, d, a,  7, 19);
+    MD2_OP(a, b, c, d,  8,  3); MD2_OP(d, a, b, c,  9,  7); MD2_OP(c, d, a, b, 10, 11); MD2_OP(b, c, d, a, 11, 19);
+    MD2_OP(a, b, c, d, 12,  3); MD2_OP(d, a, b, c, 13,  7); MD2_OP(c, d, a, b, 14, 11); MD2_OP(b, c, d, a, 15, 19);
 
     /* Round 2 */
-    MD4_OP(a, b, c, d,  0,  3); MD4_OP(d, a, b, c,  4,  5); MD4_OP(c, d, a, b,  8,  9); MD4_OP(b, c, d, a, 12, 13);
-    MD4_OP(a, b, c, d,  1,  3); MD4_OP(d, a, b, c,  5,  5); MD4_OP(c, d, a, b,  9,  9); MD4_OP(b, c, d, a, 13, 13);
-    MD4_OP(a, b, c, d,  2,  3); MD4_OP(d, a, b, c,  6,  5); MD4_OP(c, d, a, b, 10,  9); MD4_OP(b, c, d, a, 14, 13);
-    MD4_OP(a, b, c, d,  3,  3); MD4_OP(d, a, b, c,  7,  5); MD4_OP(c, d, a, b, 11,  9); MD4_OP(b, c, d, a, 15, 13);
+    MD2_OP(a, b, c, d,  0,  3); MD2_OP(d, a, b, c,  4,  5); MD2_OP(c, d, a, b,  8,  9); MD2_OP(b, c, d, a, 12, 13);
+    MD2_OP(a, b, c, d,  1,  3); MD2_OP(d, a, b, c,  5,  5); MD2_OP(c, d, a, b,  9,  9); MD2_OP(b, c, d, a, 13, 13);
+    MD2_OP(a, b, c, d,  2,  3); MD2_OP(d, a, b, c,  6,  5); MD2_OP(c, d, a, b, 10,  9); MD2_OP(b, c, d, a, 14, 13);
+    MD2_OP(a, b, c, d,  3,  3); MD2_OP(d, a, b, c,  7,  5); MD2_OP(c, d, a, b, 11,  9); MD2_OP(b, c, d, a, 15, 13);
 
     /* Round 3 */
-    MD4_OP(a, b, c, d,  0,  3); MD4_OP(d, a, b, c,  8,  9); MD4_OP(c, d, a, b,  4, 11); MD4_OP(b, c, d, a, 12, 15);
-    MD4_OP(a, b, c, d,  2,  3); MD4_OP(d, a, b, c, 10,  9); MD4_OP(c, d, a, b,  6, 11); MD4_OP(b, c, d, a, 14, 15);
-    MD4_OP(a, b, c, d,  1,  3); MD4_OP(d, a, b, c,  9,  9); MD4_OP(c, d, a, b,  5, 11); MD4_OP(b, c, d, a, 13, 15);
-    MD4_OP(a, b, c, d,  3,  3); MD4_OP(d, a, b, c, 11,  9); MD4_OP(c, d, a, b,  7, 11); MD4_OP(b, c, d, a, 15, 15);
+    MD2_OP(a, b, c, d,  0,  3); MD2_OP(d, a, b, c,  8,  9); MD2_OP(c, d, a, b,  4, 11); MD2_OP(b, c, d, a, 12, 15);
+    MD2_OP(a, b, c, d,  2,  3); MD2_OP(d, a, b, c, 10,  9); MD2_OP(c, d, a, b,  6, 11); MD2_OP(b, c, d, a, 14, 15);
+    MD2_OP(a, b, c, d,  1,  3); MD2_OP(d, a, b, c,  9,  9); MD2_OP(c, d, a, b,  5, 11); MD2_OP(b, c, d, a, 13, 15);
+    MD2_OP(a, b, c, d,  3,  3); MD2_OP(d, a, b, c, 11,  9); MD2_OP(c, d, a, b,  7, 11); MD2_OP(b, c, d, a, 15, 15);
 
 #if 0
 	for (t=0; t<HASH_ROUND_NUM; t++)
@@ -262,7 +262,7 @@ static int MD4_ProcessBlock(MD4_CTX *ctx, const void *block)
 	return ERR_OK;
 }
 
-int MD4_Update(MD4_CTX *c, const void *data, unsigned long len)
+int MD2_Update(MD2_CTX *c, const void *data, unsigned long len)
 {
 	uint32_t copy_len = 0;
 
@@ -287,7 +287,7 @@ int MD4_Update(MD4_CTX *c, const void *data, unsigned long len)
 			/* process the block in context buffer */
 			copy_len = HASH_BLOCK_SIZE - c->last.used;
 			memcpy(&c->last.buf[c->last.used], data, copy_len);
-			MD4_ProcessBlock(c, &c->last.buf);
+			MD2_ProcessBlock(c, &c->last.buf);
 
             c->total += HASH_BLOCK_SIZE;
 
@@ -313,7 +313,7 @@ int MD4_Update(MD4_CTX *c, const void *data, unsigned long len)
 		/* process data blocks */
 		while (len > HASH_BLOCK_SIZE)
 		{
-			MD4_ProcessBlock(c, data);
+			MD2_ProcessBlock(c, data);
             c->total += HASH_BLOCK_SIZE;
 
 			data = (uint8_t *)data + HASH_BLOCK_SIZE;
@@ -328,7 +328,7 @@ int MD4_Update(MD4_CTX *c, const void *data, unsigned long len)
 	return ERR_OK;
 }
 
-int MD4_Final(unsigned char *md, MD4_CTX *c)
+int MD2_Final(unsigned char *md, MD2_CTX *c)
 {
 	uint32_t *buf;
 
@@ -347,7 +347,7 @@ int MD4_Final(unsigned char *md, MD4_CTX *c)
         c->last.used++;
 
 		memset(&c->last.buf[c->last.used], 0, HASH_BLOCK_SIZE - c->last.used);
-		MD4_ProcessBlock(c, &c->last.buf);
+		MD2_ProcessBlock(c, &c->last.buf);
 
 		memset(&c->last.buf[0], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE);
 		c->last.used = 0;
@@ -356,7 +356,7 @@ int MD4_Final(unsigned char *md, MD4_CTX *c)
         //*(uint32_t *)&(c->last.buf[HASH_LEN_OFFSET+3]) = (total >> 32) & 0xFFFFFFFF;
         htole32c(&(c->last.buf[HASH_LEN_OFFSET]), (c->total << 3) & 0xFFFFFFFF);
         htole32c(&(c->last.buf[HASH_LEN_OFFSET + 3]), ((c->total << 3) >> 32) & 0xFFFFFFFF);
-		MD4_ProcessBlock(c, &c->last.buf);
+		MD2_ProcessBlock(c, &c->last.buf);
 	}
 	else /* 0 <= last.used < HASH_BLOCK_SIZE - HASH_LEN_SIZE */
 	{
@@ -373,7 +373,7 @@ int MD4_Final(unsigned char *md, MD4_CTX *c)
         //*(uint32_t *)&(c->last.buf[HASH_LEN_OFFSET+3]) = (total >> 32) & 0xFFFFFFFF;
         htole32c(&(c->last.buf[HASH_LEN_OFFSET]), (c->total << 3) & 0xFFFFFFFF);
         htole32c(&(c->last.buf[HASH_LEN_OFFSET + 3]), ((c->total << 3) >> 32) & 0xFFFFFFFF);
-		MD4_ProcessBlock(c, &c->last.buf);
+		MD2_ProcessBlock(c, &c->last.buf);
 	}
 
     /* LE format, different from SHA family(big endian) */
@@ -386,18 +386,18 @@ int MD4_Final(unsigned char *md, MD4_CTX *c)
 	return ERR_OK;
 }
 
-unsigned char *MD4(const unsigned char *d, unsigned long n, unsigned char *md)
+unsigned char *MD2(const unsigned char *d, unsigned long n, unsigned char *md)
 {
-    MD4_CTX c;
+    MD2_CTX c;
 
     if ((NULL == d) || (NULL == md))
     {
         return NULL;
     }
 
-    MD4_Init(&c);
-    MD4_Update(&c, d, n);
-    MD4_Final(md, &c);
+    MD2_Init(&c);
+    MD2_Update(&c, d, n);
+    MD2_Final(md, &c);
 
     return md;
 }
