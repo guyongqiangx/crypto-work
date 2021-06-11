@@ -68,11 +68,11 @@ static const uint64_t K512[HASH_ROUND_NUM] =
 };
 #else
 /* b'01 100001, 0x61 */
-#define SHA3_PADDING_PAT1        0x61
+#define SHA3_PADDING_PAT1        0x86
 
 /* b'01 100000...00000001, 0x60...0x01 */
-#define SHA3_PADDING_PAT2_BEGIN  0x60
-#define SHA3_PADDING_PAT2_END    0x01
+#define SHA3_PADDING_PAT2_BEGIN  0x06
+#define SHA3_PADDING_PAT2_END    0x80
 #endif
 
 #if 1
@@ -576,10 +576,6 @@ int SHA3_Update(SHA3_CTX *c, const void *data, size_t len)
 
 int SHA3_Final(unsigned char *md, SHA3_CTX *c)
 {
-	uint64_t *buf;
-    uint64_t *S;
-    uint32_t i;
-
     if ((NULL == c) || (NULL == md))
     {
         return ERR_INV_PARAM;
@@ -595,7 +591,7 @@ int SHA3_Final(unsigned char *md, SHA3_CTX *c)
         memset(&c->last.buf[c->last.used], 0, (c->r - 1) - c->last.used);
         c->last.used = c->r - 1;
 
-        c->last.buf[c->last.used] = SHA3_PADDING_PAT2_BEGIN;
+        c->last.buf[c->last.used] = SHA3_PADDING_PAT2_END;
         c->last.used++;
     }
     else /* if (c->last.used == (c->r - 1)) */ /* only 1 bytes left, padding 0x61 */
@@ -609,12 +605,7 @@ int SHA3_Final(unsigned char *md, SHA3_CTX *c)
 
     dump_lane(c->lane);
 
-	buf = (uint64_t *)md;
-    S = (uint64_t *)&c->lane[0][0];
-    for (i=0; i<c->ol/8; i++)
-    {
-        buf[i] = htobe64(S[i]);
-    }
+    memcpy(md, &c->lane[0][0], c->ol);
 
 	return ERR_OK;
 }
