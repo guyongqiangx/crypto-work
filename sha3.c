@@ -35,12 +35,28 @@
  *   https://cryptologie.net/article/387/byte-ordering-and-bit-numbering-in-keccak-and-sha-3/
  */
 
-/* b'01 100001, 0x61 */
+/*
+ * SHA3 Delimiter + Padding
+ *             01 + 10*1
+ */
+
+/* 01 10 0001 <--reverse-- 1000 01 10, 1 byte, 0x86 */
 #define SHA3_PADDING_PAT1        0x86
 
-/* b'01 100000...00000001, 0x60...0x01 */
+/* 01 10 0000....0000 0001 <--reverse-- 0000 01 10....1000 0000, 2 bytes, 0x06...0x80 */
 #define SHA3_PADDING_PAT2_BEGIN  0x06
 #define SHA3_PADDING_PAT2_END    0x80
+
+/*
+ * SHA3 XOF Delimiter + Padding
+ *               1111 + 10*1
+ */
+/* 1111 1001 <--reverse-- 1001 1111, 1 byte, 0x9F */
+#define SHA3_PADDING_PAT3        0x9F
+
+/* 1111 1000....0000 0001 <--reverse 0001 1111....1000 0000, 2 bytes, 0x1F...0x80 */
+#define SHA3_PADDING_PAT4_BEGIN  0x1F
+#define SHA3_PADDING_PAT4_END    0x80
 
 /* ROTate Left (circular left shift) */
 static uint64_t ROTL(uint64_t x, uint8_t shift)
