@@ -610,7 +610,7 @@ int SHA3_Final(unsigned char *md, SHA3_CTX *c)
     dump_lane(c->lane);
 
 	buf = (uint64_t *)md;
-    S = (uint64_t *)c->lane[0][0];
+    S = (uint64_t *)&c->lane[0][0];
     for (i=0; i<c->ol/8; i++)
     {
         buf[i] = htobe64(S[i]);
