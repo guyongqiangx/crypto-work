@@ -16,6 +16,12 @@ typedef struct {
 	uint64_t low;  /*  low 64 bits */
 } uint128_t;
 
+/*
+ * Standard:
+ *   SHA-3 Standard: Permutation-Based Hash and Extendable-Output Functions
+ *   https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf
+ */
+
 typedef enum sha3_algorithm {
     SHA3_224,
     SHA3_256,

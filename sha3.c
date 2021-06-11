@@ -30,6 +30,9 @@
  * |---------------|------------------------|
  * | q>2           | M||0x06||0x00...||0x80 |
  * |---------------|------------------------|
+ *
+ * refer:
+ *   https://cryptologie.net/article/387/byte-ordering-and-bit-numbering-in-keccak-and-sha-3/
  */
 
 /* b'01 100001, 0x61 */
@@ -94,31 +97,27 @@ static uint32_t rho(uint64_t A[5][5])
     uint32_t t;
 
     memset(Ap, 0, sizeof(Ap));
-    /* A'[0,0,z]=A[0,0,z] */
+    /* let A'[0,0,z]=A[0,0,z] */
     memcpy(Ap[0], A[0], sizeof(Ap[0]));
 
-    /* (x,y) = (1,0) */
+    /* let (x,y) = (1,0) */
     x = 1;
     y = 0;
     #if 0
-    /* Note: Ap[0][0] is not been set */
+    /* calculate directly */
     for (t=0; t<24; t++)
     {
-        printf("[%u, %u]=%3d ", y, x, (t+1)*(t+2)/2);
-        if (t%5==4)
-            printf("\n");
         Ap[y][x] = ROTL(A[y][x], ((t+1)*(t+2)/2)%64);
         m = x;
         x = y;
         y = (2*m + 3*y) % 5;
     }
-    printf("\n");
     #else
-    /* Note: Ap[0][0] is not been set */
+    /* look up table */
     for (t=0; t<24; t++)
     {
         Ap[y][x] = ROTL(A[y][x], Rp[y][x]%64);
-        /* (x,y) = (y,(2x+3y)%5) */
+        /* let (x,y) = (y,(2x+3y)%5) */
         m = x;
         x = y;
         y = (2*m+3*y) % 5;
