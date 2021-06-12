@@ -4,7 +4,7 @@
 #include "utils.h"
 #include "md2.h"
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #define DBG(...) printf(__VA_ARGS__)
@@ -18,25 +18,8 @@
 #define DUMP_ROUND_DATA 0
 #endif
 
-#define MD2_BLOCK_SIZE		64	/* 512 bits = 64 bytes */
-#define MD2_LEN_SIZE	 	 8	/*  64 bits =  8 bytes */
-#define MD2_LEN_OFFSET      (MD2_BLOCK_SIZE - MD2_LEN_SIZE)
-#define MD2_DIGEST_SIZE     16  /* 128 bits = 16 bytes */
-
-#define MD2_PADDING_PATTERN 	0x80
-#define MD2_ROUND_NUM			64
-
 #define HASH_BLOCK_SIZE		16
 #define MD2_CHECKSUM_SIZE   16
-
-#define HASH_LEN_SIZE		MD2_LEN_SIZE
-#define HASH_LEN_OFFSET		MD2_LEN_OFFSET
-#define HASH_DIGEST_SIZE	MD2_DIGEST_SIZE
-
-#define HASH_PADDING_PATTERN	MD2_PADDING_PATTERN
-#define HASH_ROUND_NUM			MD2_ROUND_NUM
-
-typedef uint32_t (*md5_func)(uint32_t x, uint32_t y, uint32_t z);
 
 static const uint8_t pi[256] =
 {
@@ -284,13 +267,17 @@ int MD2_Final(unsigned char *md, MD2_CTX *c)
     pat = padding_len;
 
     memset(&c->last.buf[c->last.used], pat, padding_len);
-	c->total += c->last.used;
+	c->total += HASH_BLOCK_SIZE;
+
+	/* Process Padding Block */
     MD2_ProcessBlock(c, &c->last.buf);
 
     c->last.used = 0;
 
-    /* Append 16 bytes checksum after padding */
-	c->update_checksum = 0;
+	c->total += HASH_BLOCK_SIZE;
+
+    /* Process Checksum Block */
+	c->update_checksum = 0; /* don't need to update checksum this time */
     MD2_ProcessBlock(c, c->checksum);
 
     memcpy(md, &c->X[0], 16);
