@@ -54,6 +54,10 @@ static unsigned int next_pi_digit(void)
         "901224953430146549585371050792279689258923542019956112129021960864034418";
     static unsigned int pos = 0;
 
+	/*
+	 * 危险：取到字符串的最后一位了！！！
+	 * 构造MD2的S盒，会调用256次
+	 */
     if (pos == 730)
     {
         printf("WARNING!! pi string is not long enough, wrap around!\n");
@@ -63,6 +67,9 @@ static unsigned int next_pi_digit(void)
     return pi[pos++]-'0';
 }
 
+/*
+ * 基于pi字符串数组构造rand函数用于生成0~n-1的随机数
+ */
 static unsigned int rand(unsigned int n)
 {
     unsigned int x, y;
@@ -84,6 +91,7 @@ static unsigned int rand(unsigned int n)
 
 	/*
 	 * 这里使用n进行整除和取模，所以n不能为0
+	 * 同时基于n进行取模，所以返回值介于0~n
 	 */
     if (x < (n*(y/n))) /* division here is integer division */
     {
