@@ -35,6 +35,7 @@ typedef struct md2_context {
 
 int MD2_Init(MD2_CTX *c);
 int MD2_Update(MD2_CTX *c, const void *data, unsigned long len);
+/* int MD2_Update(MD2_CTX *c, const unsigned char *data, unsigned long len); */
 int MD2_Final(unsigned char *md, MD2_CTX *c);
 unsigned char *MD2(const unsigned char *d, unsigned long n, unsigned char *md);
 #endif

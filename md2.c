@@ -19,6 +19,9 @@
 #endif
 
 #define HASH_BLOCK_SIZE		16
+#define HASH_DIGEST_SIZE	16
+#define HASH_ROUND_NUM		18
+
 #define MD2_CHECKSUM_SIZE   16
 
 static const uint8_t pi[256] =
@@ -87,7 +90,7 @@ static int MD2_UpdateChecksum(MD2_CTX *ctx, const uint8_t *M)
     }
 
     /* update checksum */
-    for (j=0; j<16; j++)
+    for (j=0; j<HASH_BLOCK_SIZE; j++)
     {
         c = M[j];
         ctx->checksum[j] = pi[c ^ ctx->L];
@@ -124,7 +127,7 @@ static int MD2_ProcessBlock(MD2_CTX *ctx, const void *block)
 	}
 
 	/* Copy block into X */
-	for (j=0; j<16; j++)
+	for (j=0; j<HASH_BLOCK_SIZE; j++)
 	{
 		X[16+j] = M[j];
 		X[32+j] = X[16+j] ^ X[j];
@@ -133,7 +136,7 @@ static int MD2_ProcessBlock(MD2_CTX *ctx, const void *block)
 	t = 0;
 
 	/* Do 18 rounds */
-	for (j=0; j<18; j++)
+	for (j=0; j<HASH_ROUND_NUM; j++)
 	{
 		/* Round j */
 		for (k=0; k<48; k++)
@@ -146,7 +149,7 @@ static int MD2_ProcessBlock(MD2_CTX *ctx, const void *block)
 
 #if (DUMP_BLOCK_HASH == 1)
 	DBG(" HASH: ");
-	for (j=0; j<16; j++)
+	for (j=0; j<HASH_DIGEST_SIZE; j++)
 	{
 		DBG("%02X", ctx->X[j]);
 	}
@@ -250,7 +253,7 @@ int MD2_Final(unsigned char *md, MD2_CTX *c)
 	c->total += HASH_BLOCK_SIZE;
 
 	/* output message digest */
-    memcpy(md, &c->X[0], 16);
+    memcpy(md, c->X, HASH_DIGEST_SIZE);
 
 	return ERR_OK;
 }
