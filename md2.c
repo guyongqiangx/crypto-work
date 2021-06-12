@@ -24,7 +24,15 @@
 
 #define MD2_CHECKSUM_SIZE   16
 
-static const uint8_t pi[256] =
+/*
+ * Refer: How is the MD2 hash function S-table constructed from Pi?
+ * https://crypto.stackexchange.com/questions/11935/how-is-the-md2-hash-function-s-table-constructed-from-pi
+ */
+/*
+ * Permutation of 0..255 constructed from the digits of pi.
+ * It gives a "random" nonlinear byte substitution operation.
+ */
+static const uint8_t pi_subst[256] =
 {
     0x29, 0x2E, 0x43, 0xC9, 0xA2, 0xD8, 0x7C, 0x01,
     0x3D, 0x36, 0x54, 0xA1, 0xEC, 0xF0, 0x06, 0x13,
@@ -93,7 +101,7 @@ static int MD2_UpdateChecksum(MD2_CTX *ctx, const uint8_t *M)
     for (j=0; j<HASH_BLOCK_SIZE; j++)
     {
         c = M[j];
-        ctx->checksum[j] = pi[c ^ ctx->L];
+        ctx->checksum[j] = pi_subst[c ^ ctx->L];
         ctx->L = ctx->checksum[j];
     }
 
@@ -141,7 +149,7 @@ static int MD2_ProcessBlock(MD2_CTX *ctx, const void *block)
 		/* Round j */
 		for (k=0; k<48; k++)
 		{
-			t = X[k] = X[k] ^ pi[t];
+			t = X[k] = X[k] ^ pi_subst[t];
 		}
 
 		t = (t + j) % 256;
