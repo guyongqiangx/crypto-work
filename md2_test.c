@@ -21,26 +21,32 @@ int main(int argc, char * argv[])
     MD2_Update(&ctx, data, len);
 	MD2_Final(hash, &ctx);
 
-	printf("md2 result:\n");
+	printf("md2(\"abc\") result:\n");
 
 	//print_buffer(hash, 20);
 	for (i=0; i<16; i++)
 		printf("%02x", hash[i]);
 	printf("\n");
 
-#if 0
-	md5_init();
-	md5_update("abc", 3);
-	md5_update("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", 55);
-	md5_final(hash);
-
-	printf("md5 result:\n");
-
-	//print_buffer(hash, 20);
+	MD2("", 0, &hash);
+	printf("md2(\"\") result:\n");
 	for (i=0; i<16; i++)
 		printf("%02x", hash[i]);
 	printf("\n");
-#endif
+
+
+	MD2("a", 1, &hash);
+	printf("md2(\"a\") result:\n");
+	for (i=0; i<16; i++)
+		printf("%02x", hash[i]);
+	printf("\n");
+
+	MD2("message digest", strlen("message digest"), &hash);
+	printf("md2(\"message digest\") result:\n");
+	for (i=0; i<16; i++)
+		printf("%02x", hash[i]);
+	printf("\n");
+
 
 #if 1
 	//printf("openssl dgst -md2 abc.txt\n");
