@@ -84,6 +84,25 @@ sha512_test.o : sha512_test.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 #
+# rules for md2
+#
+MD2_OBJ := md2.o
+MD2_OBJ += md2_test.o
+MD2_OBJ += $(COMM_OBJ)
+
+MD2_TARGET = md2_test
+
+MD2: $(MD2_OBJ)
+	$(CC) $(CFLAGS) $(MD2_OBJ) -o $(MD2_TARGET) $(LIBS) $(INCLUDE)
+	$(STRIP) --strip-unneeded $(MD2_TARGET)
+
+md2.o : md2.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+md2_test.o : md2_test.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+#
 # rules for md4
 #
 MD4_OBJ := md4.o
@@ -182,6 +201,7 @@ OBJ = $(SHA1_OBJ) $(SHA1_TARGET)
 OBJ += $(SHA256_OBJ) $(SHA256_TARGET)
 OBJ += $(SHA512_OBJ) $(SHA512_TARGET)
 OBJ += $(SHA3_OBJ) $(SHA3_TARGET)
+OBJ += $(MD2_OBJ) $(MD2_TARGET)
 OBJ += $(MD4_OBJ) $(MD4_TARGET)
 OBJ += $(MD5_OBJ) $(MD5_TARGET)
 OBJ += $(SM3_OBJ) $(SM3_TARGET)

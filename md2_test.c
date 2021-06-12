@@ -43,8 +43,8 @@ int main(int argc, char * argv[])
 #endif
 
 #if 1
-	printf("openssl dgst -md2 abc.txt\n");
-	system("openssl dgst -md2 abc.txt");
+	//printf("openssl dgst -md2 abc.txt\n");
+	//system("openssl dgst -md2 abc.txt");
 #else
 	//system("stat 58.txt");
 	printf("openssl dgst -md2 58.txt\n");

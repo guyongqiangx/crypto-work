@@ -16,26 +16,25 @@ typedef struct md2_context {
     /* message total length in bytes */
     uint64_t total;
 
-    /* intermedia hash value for each block */
-    struct {
-        uint32_t a;
-        uint32_t b;
-        uint32_t c;
-        uint32_t d;
-        uint32_t e;
-    }hash;
+	/* 48 bytes buffer */
+	uint8_t X[48];
 
     /* last block */
     struct {
         uint32_t used;     /* used bytes */
-        uint8_t  buf[64];  /* block data buffer */
+        uint8_t  buf[16];  /* block data buffer */
     }last;
+
+	uint8_t update_checksum;
+    uint8_t checksum[16]; /* checksum */
+    uint8_t L;
+
 }MD2_CTX;
 
 /* https://www.openssl.org/docs/man1.1.0/man3/MD5_Init.html */
 
 int MD2_Init(MD2_CTX *c);
-int MD2_Update(MD2_CTX *c, const unsigned char *data, unsigned long len);
+int MD2_Update(MD2_CTX *c, const void *data, unsigned long len);
 int MD2_Final(unsigned char *md, MD2_CTX *c);
 unsigned char *MD2(const unsigned char *d, unsigned long n, unsigned char *md);
 #endif
