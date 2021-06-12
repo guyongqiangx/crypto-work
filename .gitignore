@@ -1,6 +1,6 @@
-sha
-sha1
-sha512
-hmac
-*.o
-*_test
+./sha
+./sha1
+./sha512
+./hmac
+./*.o
+./*_test
