@@ -4,7 +4,7 @@
 #include "utils.h"
 #include "md2.h"
 
-//#define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
 #define DBG(...) printf(__VA_ARGS__)
@@ -57,14 +57,6 @@ static const uint8_t pi[256] =
     0xDB, 0x99, 0x8D, 0x33, 0x9F, 0x11, 0x83, 0x14,
 };
 
-/*
- * "abc" -->   0x61,     0x62,     0x63
- *   Origin: 0b0110 0001 0110 0010 0110 0011
- *  Padding: 0b0110 0001 0110 0010 0110 0011 1000 0000 .... 0000 0000  0000 0000 .... 0001 1000
- *                                          (|<-------------------->|)(|<------- 0x18 ------->|)
- *   Format: "abc" + 1 + 0 x 423 + 0x18
- */
-
 int MD2_Init(MD2_CTX *c)
 {
 	if (NULL == c)
@@ -84,39 +76,15 @@ int MD2_Init(MD2_CTX *c)
 	return ERR_OK;
 }
 
-#if 0
-static int MD2_Padding(MD2_CTX *ctx, const void *block)
-{
-    return ERR_OK;
-}
-
-static int MD2_AppendChecksum(MD2_CTX *ctx, const void *block)
-{
-    uint8_t checksum[16];
-    uint32_t i;
-
-    /* clear checksum */
-    memset(checksum, 0, sizeof(checksum));
-
-    for (i=0; i<16; i++)
-    {
-        
-    }
-    return ERR_OK;
-}
-#endif
-static int MD2_UpdateChecksum(MD2_CTX *ctx, const void *block)
+static int MD2_UpdateChecksum(MD2_CTX *ctx, const uint8_t *M)
 {
 	uint32_t j;
     uint8_t c;
-	uint8_t *M;
 
-    if ((NULL == ctx) || (NULL == block))
+    if ((NULL == ctx) || (NULL == M))
     {
         return ERR_INV_PARAM;
     }
-
-	M = (uint8_t *)block;
 
     /* update checksum */
     for (j=0; j<16; j++)
@@ -141,17 +109,19 @@ static int MD2_ProcessBlock(MD2_CTX *ctx, const void *block)
     }
 
 #if (DUMP_BLOCK_DATA == 1)
+	DBG("------------------------------------------------------\n");
     DBG("BLOCK: %llu\n", ctx->total/HASH_BLOCK_SIZE);
+	DBG(" DATA:\n");
     print_buffer(block, HASH_BLOCK_SIZE, " ");
 #endif
 
-	if (ctx->update_checksum == 1)
-	{
-		MD2_UpdateChecksum(ctx, block);
-	}
-
 	X = (uint8_t *)ctx->X;
 	M = (uint8_t *)block;
+
+	if (ctx->update_checksum == 1)
+	{
+		MD2_UpdateChecksum(ctx, M);
+	}
 
 	/* Copy block into X */
 	for (j=0; j<16; j++)
@@ -178,7 +148,7 @@ static int MD2_ProcessBlock(MD2_CTX *ctx, const void *block)
 	DBG(" HASH: ");
 	for (j=0; j<16; j++)
 	{
-		DBG("%02x", ctx->X[j]);
+		DBG("%02X", ctx->X[j]);
 	}
 	DBG("\n");
 #endif
@@ -267,19 +237,19 @@ int MD2_Final(unsigned char *md, MD2_CTX *c)
     pat = padding_len;
 
     memset(&c->last.buf[c->last.used], pat, padding_len);
-	c->total += HASH_BLOCK_SIZE;
 
 	/* Process Padding Block */
     MD2_ProcessBlock(c, &c->last.buf);
+	c->total += HASH_BLOCK_SIZE;
 
     c->last.used = 0;
-
-	c->total += HASH_BLOCK_SIZE;
 
     /* Process Checksum Block */
 	c->update_checksum = 0; /* don't need to update checksum this time */
     MD2_ProcessBlock(c, c->checksum);
+	c->total += HASH_BLOCK_SIZE;
 
+	/* output message digest */
     memcpy(md, &c->X[0], 16);
 
 	return ERR_OK;
