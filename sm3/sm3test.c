@@ -50,37 +50,37 @@ struct HASH_ITEM {
     { /* 0 */
         "",
         0,
-        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        "1ab21d8355cfa17f8e61194831e81a8f22bec8c728fefb747ed035eb5082aa2b"
     },
     { /* 1 */
         "a",
         1,
-        "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+        "623476ac18f65a2909e43c7fec61b49c7e764a91a18ccb82f1917a29c86c5e88"
     },
     { /* 2 */
         "abc",
         3,
-        "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        "66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0"
     },
     { /* 3 */
         "message digest",
         14,
-        "f7846f55cf23e14eebeab5b4e1550cad5b509e3348fbc4efa3a1413d393cb650"
+        "c522a942e89bd80d97dd666e7a5531b36188c9817149e9b258dfe51ece98ed77"
     },
     { /* 4 */
         "abcdefghijklmnopqrstuvwxyz",
         26,
-        "71c480df93d6ae2f1efad1447c66c9525e316218cf51fc8d9ed832f2daf18b73"
+        "b80fe97a4da24afc277564f66a359ef440462ad28dcc6d63adb24d5c20a61595"
     },
     { /* 5 */
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
         62,
-        "db4bfcbd4da0cd85a60c3c37d3fbd8805c77f15fc6b1fdfe614ee0a7c8fdb4c0"
+        "2971d10c8842b70c979e55063480c50bacffd90e98e2e60d2512ab8abfdfcec5"
     },
     { /* 6 */
         "12345678901234567890123456789012345678901234567890123456789012345678901234567890",
         80,
-        "f371bc4a311f2b009eef952dd83ca80e2b60026c8e935592d0f9c308453c813e"
+        "ad81805321f3e69d251235bf886a564844873b56dd7dde400f055b7dde39307a"
     },
 };
 
