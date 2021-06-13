@@ -102,7 +102,12 @@ static int MD2_UpdateChecksum(MD2_CTX *ctx, const uint8_t *M)
     for (j=0; j<HASH_BLOCK_SIZE; j++)
     {
         c = M[j];
-        ctx->checksum[j] = S[c ^ ctx->L];
+        /*
+         * ctx->checksum[j] = S[c ^ ctx->L];
+         * Description error in rfc1319, see:
+         *   https://www.rfc-editor.org/rfc/inline-errata/rfc1319.html#eid555
+         */
+        ctx->checksum[j] ^= S[c ^ ctx->L];
         ctx->L = ctx->checksum[j];
     }
 
