@@ -1,7 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+#include <stdio.h>  /* printf, fopen, fread, fclose... */
+#include <stdlib.h> /* exit */
+#include <string.h> /* strlen */
+#include <unistd.h> /* getopt */
 
 #include "md2.h"
 
@@ -187,6 +187,17 @@ static void digest_stdin(const char *argv0)
     printf("\n");
 }
 
+/*
+ * $ md2 -h
+ * Usage:
+ * Common options: [-x|-f file|-s string|-h]
+ * Hash a string:
+ *         md2 -s string
+ * Hash a file:
+ *         md2 -f file [-k key]
+ * -x      Internal string hash test
+ * -h      Display this message
+ */
 int main(int argc, char *argv[])
 {
     int ch;
