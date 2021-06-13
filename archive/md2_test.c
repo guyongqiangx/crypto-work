@@ -9,7 +9,7 @@ int main(int argc, char * argv[])
 	char data[]="abc";
 	//char data[]="abcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 	//uint8_t buf[SHA1_BLOCK_SIZE];
-	uint8_t hash[16];
+	unsigned char hash[16];
 	uint32_t i, len = 0;
     MD2_CTX ctx;
 
@@ -34,7 +34,6 @@ int main(int argc, char * argv[])
 		printf("%02x", hash[i]);
 	printf("\n");
 
-
 	MD2("a", 1, &hash);
 	printf("md2(\"a\") result:\n");
 	for (i=0; i<16; i++)
@@ -46,7 +45,6 @@ int main(int argc, char * argv[])
 	for (i=0; i<16; i++)
 		printf("%02x", hash[i]);
 	printf("\n");
-
 
 #if 1
 	//printf("openssl dgst -md2 abc.txt\n");

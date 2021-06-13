@@ -275,7 +275,7 @@ int MD4_Update(MD4_CTX *c, const void *data, unsigned long len)
 	else
 	{
 		/* process data blocks */
-		while (len > HASH_BLOCK_SIZE)
+		while (len >= HASH_BLOCK_SIZE)
 		{
 			MD4_ProcessBlock(c, data);
             c->total += HASH_BLOCK_SIZE;
