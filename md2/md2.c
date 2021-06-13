@@ -27,12 +27,9 @@
 #define MD2_CHECKSUM_SIZE   16
 
 /*
- * Refer: How is the MD2 hash function S-table constructed from Pi?
- * https://crypto.stackexchange.com/questions/11935/how-is-the-md2-hash-function-s-table-constructed-from-pi
- */
-/*
- * Permutation of 0..255 constructed from the digits of pi.
- * It gives a "random" nonlinear byte substitution operation.
+ * 参考:
+ * md2中用于随机置换的S盒是如何生成的？
+ * https://blog.csdn.net/guyongqiangx/article/details/117856118
  */
 static const uint8_t S[256] =
 {
