@@ -7,14 +7,16 @@
 
 #ifdef DEBUG
 #define DBG(...) printf(__VA_ARGS__)
-#define DUMP_BLOCK_DATA 1
-#define DUMP_BLOCK_HASH 1
-#define DUMP_ROUND_DATA 1
+#define DUMP_BLOCK_DATA     1
+#define DUMP_BLOCK_CHECKSUM 1
+#define DUMP_BLOCK_HASH     1
+#define DUMP_ROUND_DATA     1
 #else
 #define DBG(...)
-#define DUMP_BLOCK_DATA 0
-#define DUMP_BLOCK_HASH 0
-#define DUMP_ROUND_DATA 0
+#define DUMP_BLOCK_DATA     0
+#define DUMP_BLOCK_CHECKSUM 0
+#define DUMP_BLOCK_HASH     0
+#define DUMP_ROUND_DATA     0
 #endif
 
 #define HASH_BLOCK_SIZE		16
@@ -31,7 +33,7 @@
  * Permutation of 0..255 constructed from the digits of pi.
  * It gives a "random" nonlinear byte substitution operation.
  */
-static const uint8_t pi_subst[256] =
+static const uint8_t S[256] =
 {
     0x29, 0x2E, 0x43, 0xC9, 0xA2, 0xD8, 0x7C, 0x01,
     0x3D, 0x36, 0x54, 0xA1, 0xEC, 0xF0, 0x06, 0x13,
@@ -100,10 +102,14 @@ static int MD2_UpdateChecksum(MD2_CTX *ctx, const uint8_t *M)
     for (j=0; j<HASH_BLOCK_SIZE; j++)
     {
         c = M[j];
-        ctx->checksum[j] = pi_subst[c ^ ctx->L];
+        ctx->checksum[j] = S[c ^ ctx->L];
         ctx->L = ctx->checksum[j];
     }
 
+#if (DUMP_BLOCK_CHECKSUM == 1)
+    DBG("CHECKSUM:\n");
+    print_buffer(ctx->checksum, HASH_BLOCK_SIZE, "    ");
+#endif
     return ERR_OK;
 }
 
@@ -119,10 +125,10 @@ static int MD2_ProcessBlock(MD2_CTX *ctx, const void *block)
     }
 
 #if (DUMP_BLOCK_DATA == 1)
-    DBG("------------------------------------------------------\n");
-    DBG("BLOCK: %llu\n", ctx->total/HASH_BLOCK_SIZE);
-    DBG(" DATA:\n");
-    print_buffer(block, HASH_BLOCK_SIZE, " ");
+    DBG("---------------------------------------------------------\n");
+    DBG("   BLOCK: %llu\n", ctx->total/HASH_BLOCK_SIZE);
+    DBG("    DATA:\n");
+    print_buffer(block, HASH_BLOCK_SIZE, "    ");
 #endif
 
     X = (uint8_t *)ctx->X;
@@ -148,17 +154,17 @@ static int MD2_ProcessBlock(MD2_CTX *ctx, const void *block)
         /* Round j */
         for (k=0; k<48; k++)
         {
-            t = X[k] = X[k] ^ pi_subst[t];
+            t = X[k] = X[k] ^ S[t];
         }
 
         t = (t + j) % 256;
     }
 
 #if (DUMP_BLOCK_HASH == 1)
-    DBG(" HASH: ");
+    DBG("    HASH: ");
     for (j=0; j<HASH_DIGEST_SIZE; j++)
     {
-        DBG("%02X", ctx->X[j]);
+        DBG("%02x", ctx->X[j]);
     }
     DBG("\n");
 #endif
