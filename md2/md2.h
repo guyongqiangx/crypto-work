@@ -25,7 +25,6 @@ typedef struct md2_context {
         uint8_t  buf[16];  /* block data buffer */
     }last;
 
-    uint8_t update_checksum;
     uint8_t checksum[16]; /* checksum */
     uint8_t L;
 }MD2_CTX;
