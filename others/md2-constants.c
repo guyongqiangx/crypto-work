@@ -4,7 +4,7 @@
  * Refer: How is the MD2 hash function S-table constructed from Pi?
  * https://crypto.stackexchange.com/questions/11935/how-is-the-md2-hash-function-s-table-constructed-from-pi
  *
- * Ëã·¨ÃèÊö:
+ * ç®—æ³•æè¿°:
  *
  * S = [0, 1, ..., 255]
  * digits_Pi = [3, 1, 4, 1, 5, 9, ...] # the digits of pi
@@ -34,13 +34,13 @@
  */
 
 /*
- * »ñÈ¡pi³£Á¿µÄÏÂÒ»¸ö×Ö·ûÖµ(µÚÒ»Î»ÊÇÕûÊý3)
+ * èŽ·å–piå¸¸é‡çš„ä¸‹ä¸€ä¸ªå­—ç¬¦å€¼(ç¬¬ä¸€ä½æ˜¯æ•´æ•°3)
  */
 static unsigned int next_pi_digit(void)
 {
     /*
-     * PythonÊ¹ÓÃ sympy ¹¤¾ß°ü¿ÉÒÔÇáËÉ»ñµÃÒ»Ð©ÊýÑ§³£Á¿µÄ¸ß¾«¶ÈÊýÖµ
-     * ¾ßÌå²Î¿¼:
+     * Pythonä½¿ç”¨ sympy å·¥å…·åŒ…å¯ä»¥è½»æ¾èŽ·å¾—ä¸€äº›æ•°å­¦å¸¸é‡çš„é«˜ç²¾åº¦æ•°å€¼
+     * å…·ä½“å‚è€ƒ:
      * https://blog.csdn.net/zhuoqingjoking97298/article/details/106635679
      *
      */
@@ -57,10 +57,10 @@ static unsigned int next_pi_digit(void)
         "901224953430146549585371050792279689258923542019956112129021960864034418";
     static unsigned int pos = 0;
 
-	/*
-	 * Î£ÏÕ£ºÈ¡µ½×Ö·û´®µÄ×îºóÒ»Î»ÁË£¡£¡£¡
-	 * ¹¹ÔìMD2µÄSºÐ£¬256¸öÔªËØ£¬Êµ¼Ê»áµ÷ÓÃ722´Î
-	 */
+    /*
+     * å±é™©ï¼šå–åˆ°å­—ç¬¦ä¸²çš„æœ€åŽä¸€ä½äº†ï¼ï¼ï¼
+     * æž„é€ MD2çš„Sç›’ï¼Œ256ä¸ªå…ƒç´ ï¼Œå®žé™…ä¼šè°ƒç”¨722æ¬¡
+     */
     if (pos == 730)
     {
         printf("WARNING!! pi string is not long enough, wrap around!\n");
@@ -71,51 +71,51 @@ static unsigned int next_pi_digit(void)
 }
 
 /*
- * »ùÓÚpi×Ö·û´®Êý×é¹¹Ôìrandº¯ÊýÓÃÓÚÉú³É0~n-1µÄËæ»úÊý
+ * åŸºäºŽpiå­—ç¬¦ä¸²æ•°ç»„æž„é€ randå‡½æ•°ç”¨äºŽç”Ÿæˆ0~n-1çš„éšæœºæ•°
  */
 static unsigned int rand(unsigned int n)
 {
     unsigned int x, y;
 
-	/* ¹¹Ôì1Î»Ëæ»úÊýx */
+    /* æž„é€ 1ä½éšæœºæ•°x */
     x = next_pi_digit();
     y = 10;
 
-	/* ¹¹Ôì2Î»Ëæ»úÊýx */
+    /* æž„é€ 2ä½éšæœºæ•°x */
     if (n > 10)
     {
         x = x * 10 + next_pi_digit();
         y = 100;
     }
 
-	/* ¹¹Ôì3Î»Ëæ»úÊýx */
+    /* æž„é€ 3ä½éšæœºæ•°x */
     if (n > 100)
     {
         x = x * 10 + next_pi_digit();
         y = 1000;
     }
 
-	/*
-	 * ÕâÀïÊ¹ÓÃn½øÐÐÕû³ýºÍÈ¡Ä££¬ËùÒÔn²»ÄÜÎª0
-	 * ÓÉÓÚ»ùÓÚn½øÐÐÈ¡Ä££¬ËùÒÔ·µ»ØÖµ½éÓÚ0~n
-	 */
+    /*
+     * è¿™é‡Œä½¿ç”¨nè¿›è¡Œæ•´é™¤å’Œå–æ¨¡ï¼Œæ‰€ä»¥nä¸èƒ½ä¸º0
+     * ç”±äºŽåŸºäºŽnè¿›è¡Œå–æ¨¡ï¼Œæ‰€ä»¥è¿”å›žå€¼ä»‹äºŽ0~n
+     */
     if (x < (n*(y/n))) /* division here is integer division */
     {
         return x % n;
     }
     else
     {
-		/*
-		 * ×ßµ½ÕâÀï£¬»á·¢Éúrand(n)ÄÚµÝ¹éµ÷ÓÃrand(n), ÕæµÄ²»»á²úÉúÎÞÏÞÑ­»·Âð£¿
-		 * ´ð°¸ÊÇ²»»á£¬ÒòÎªÄÚ²¿xµÄ×´Ì¬»áËæ×Ånext_pi_digit()ÖµµÄ²»Í¬¶ø±ä»¯
-		 */
+        /*
+         * èµ°åˆ°è¿™é‡Œï¼Œä¼šå‘ç”Ÿrand(n)å†…é€’å½’è°ƒç”¨rand(n), çœŸçš„ä¸ä¼šäº§ç”Ÿæ— é™å¾ªçŽ¯å—ï¼Ÿ
+         * ç­”æ¡ˆæ˜¯ä¸ä¼šï¼Œå› ä¸ºå†…éƒ¨xçš„çŠ¶æ€ä¼šéšç€next_pi_digit()å€¼çš„ä¸åŒè€Œå˜åŒ–
+         */
         /* x value is too large, don't use it */
         return rand(n);
     }
 }
 
 /*
- * Éú³Émd2Ëã·¨ÖÐµÄÎ±Ëæ»úSºÐ
+ * ç”Ÿæˆmd2ç®—æ³•ä¸­çš„ä¼ªéšæœºSç›’
  */
 static int generate_s_box(unsigned int *S, unsigned int size)
 {
@@ -123,18 +123,18 @@ static int generate_s_box(unsigned int *S, unsigned int size)
     unsigned int j;
     unsigned int tmp;
 
-	/* ³õÊ¼»¯Ëæ»úÖÃ»»Êý×éÎªS[0, 1, 2, ..., 255] */
+    /* åˆå§‹åŒ–éšæœºç½®æ¢æ•°ç»„ä¸ºS[0, 1, 2, ..., 255] */
     for (i=0; i<size; i++)
     {
         S[i] = i;
     }
 
-	/* i = 2, 3, ..., 256 */
+    /* i = 2, 3, ..., 256 */
     for (i=2; i<size+1; i++)
     {
-		/* ¸ù¾Ýrand(i)²úÉúµÄÎ±Ëæ»úÊýj£¬¶ÔS[j]ºÍS[i-1]½øÐÐ½»»» */
+        /* æ ¹æ®rand(i)äº§ç”Ÿçš„ä¼ªéšæœºæ•°jï¼Œå¯¹S[j]å’ŒS[i-1]è¿›è¡Œäº¤æ¢ */
         j = rand(i);
-		/* printf("S[%3d]=0x%02X <--> S[%3d]=0x%02X\n", j, S[j], i-1, S[i-1]); */
+        /* printf("S[%3d]=0x%02X <--> S[%3d]=0x%02X\n", j, S[j], i-1, S[i-1]); */
         tmp = S[j];
         S[j] = S[i-1];
         S[i-1] = tmp;
