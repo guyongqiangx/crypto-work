@@ -1,9 +1,10 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "utils.h"
 #include "md2.h"
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #define DBG(...) printf(__VA_ARGS__)
