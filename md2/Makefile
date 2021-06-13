@@ -14,7 +14,7 @@ LIBS    =
 INCLUDE =
 CFLAGS  = -Wall -g -O2
 
-SRCS    = utils.c md2.c md2_test.c
+SRCS    = utils.c md2.c md2test.c
 TARGET  = md2
 
 OBJS 	= $(SRCS:.c=.o)
