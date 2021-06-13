@@ -4,18 +4,20 @@
 #include "utils.h"
 #include "md2.h"
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #define DBG(...) printf(__VA_ARGS__)
-#define DUMP_BLOCK_DATA 1
-#define DUMP_BLOCK_HASH 1
-#define DUMP_ROUND_DATA 1
+#define DUMP_BLOCK_DATA     1
+#define DUMP_BLOCK_CHECKSUM 1
+#define DUMP_BLOCK_HASH     1
+#define DUMP_ROUND_DATA     1
 #else
 #define DBG(...)
-#define DUMP_BLOCK_DATA 0
-#define DUMP_BLOCK_HASH 0
-#define DUMP_ROUND_DATA 0
+#define DUMP_BLOCK_DATA     0
+#define DUMP_BLOCK_CHECKSUM 0
+#define DUMP_BLOCK_HASH     0
+#define DUMP_ROUND_DATA     0
 #endif
 
 #define HASH_BLOCK_SIZE		16
@@ -32,7 +34,7 @@
  * Permutation of 0..255 constructed from the digits of pi.
  * It gives a "random" nonlinear byte substitution operation.
  */
-static const uint8_t pi_subst[256] =
+static const uint8_t S[256] =
 {
     0x29, 0x2E, 0x43, 0xC9, 0xA2, 0xD8, 0x7C, 0x01,
     0x3D, 0x36, 0x54, 0xA1, 0xEC, 0xF0, 0x06, 0x13,
@@ -70,26 +72,26 @@ static const uint8_t pi_subst[256] =
 
 int MD2_Init(MD2_CTX *c)
 {
-	if (NULL == c)
+    if (NULL == c)
     {
         return ERR_INV_PARAM;
     }
 
-	memset(c, 0, sizeof(MD2_CTX));
-	c->last.used = 0;
+    memset(c, 0, sizeof(MD2_CTX));
+    c->last.used = 0;
 
-	/* Clear checksum */
-	memset(c->checksum, 0, sizeof(c->checksum));
+    /* Clear checksum */
+    memset(c->checksum, 0, sizeof(c->checksum));
 
     c->L = 0;
-	c->update_checksum = 1;
+    c->update_checksum = 1;
 
-	return ERR_OK;
+    return ERR_OK;
 }
 
 static int MD2_UpdateChecksum(MD2_CTX *ctx, const uint8_t *M)
 {
-	uint32_t j;
+    uint32_t j;
     uint8_t c;
 
     if ((NULL == ctx) || (NULL == M))
@@ -101,18 +103,27 @@ static int MD2_UpdateChecksum(MD2_CTX *ctx, const uint8_t *M)
     for (j=0; j<HASH_BLOCK_SIZE; j++)
     {
         c = M[j];
-        ctx->checksum[j] = pi_subst[c ^ ctx->L];
+        /*
+         * ctx->checksum[j] = S[c ^ ctx->L];
+         * Description error in rfc1319, see:
+         *   https://www.rfc-editor.org/rfc/inline-errata/rfc1319.html#eid555
+         */
+        ctx->checksum[j] ^= S[c ^ ctx->L];
         ctx->L = ctx->checksum[j];
     }
 
-	return ERR_OK;
+#if (DUMP_BLOCK_CHECKSUM == 1)
+    DBG("CHECKSUM:\n");
+    print_buffer(ctx->checksum, HASH_BLOCK_SIZE, "    ");
+#endif
+    return ERR_OK;
 }
 
 static int MD2_ProcessBlock(MD2_CTX *ctx, const void *block)
 {
-	uint32_t j, k;
-	uint32_t t;
-	uint8_t *X, *M;
+    uint32_t j, k;
+    uint32_t t;
+    uint8_t *X, *M;
 
     if ((NULL == ctx) || (NULL == block))
     {
@@ -120,117 +131,117 @@ static int MD2_ProcessBlock(MD2_CTX *ctx, const void *block)
     }
 
 #if (DUMP_BLOCK_DATA == 1)
-	DBG("------------------------------------------------------\n");
-    DBG("BLOCK: %llu\n", ctx->total/HASH_BLOCK_SIZE);
-	DBG(" DATA:\n");
-    print_buffer(block, HASH_BLOCK_SIZE, " ");
+    DBG("---------------------------------------------------------\n");
+    DBG("   BLOCK: %llu\n", ctx->total/HASH_BLOCK_SIZE);
+    DBG("    DATA:\n");
+    print_buffer(block, HASH_BLOCK_SIZE, "    ");
 #endif
 
-	X = (uint8_t *)ctx->X;
-	M = (uint8_t *)block;
+    X = (uint8_t *)ctx->X;
+    M = (uint8_t *)block;
 
-	if (ctx->update_checksum == 1)
-	{
-		MD2_UpdateChecksum(ctx, M);
-	}
+    if (ctx->update_checksum == 1)
+    {
+        MD2_UpdateChecksum(ctx, M);
+    }
 
-	/* Copy block into X */
-	for (j=0; j<HASH_BLOCK_SIZE; j++)
-	{
-		X[16+j] = M[j];
-		X[32+j] = X[16+j] ^ X[j];
-	}
+    /* Copy block into X */
+    for (j=0; j<HASH_BLOCK_SIZE; j++)
+    {
+        X[16+j] = M[j];
+        X[32+j] = X[16+j] ^ X[j];
+    }
 
-	t = 0;
+    t = 0;
 
-	/* Do 18 rounds */
-	for (j=0; j<HASH_ROUND_NUM; j++)
-	{
-		/* Round j */
-		for (k=0; k<48; k++)
-		{
-			t = X[k] = X[k] ^ pi_subst[t];
-		}
+    /* Do 18 rounds */
+    for (j=0; j<HASH_ROUND_NUM; j++)
+    {
+        /* Round j */
+        for (k=0; k<48; k++)
+        {
+            t = X[k] = X[k] ^ S[t];
+        }
 
-		t = (t + j) % 256;
-	}
+        t = (t + j) % 256;
+    }
 
 #if (DUMP_BLOCK_HASH == 1)
-	DBG(" HASH: ");
-	for (j=0; j<HASH_DIGEST_SIZE; j++)
-	{
-		DBG("%02X", ctx->X[j]);
-	}
-	DBG("\n");
+    DBG("    HASH: ");
+    for (j=0; j<HASH_DIGEST_SIZE; j++)
+    {
+        DBG("%02x", ctx->X[j]);
+    }
+    DBG("\n");
 #endif
 
-	return ERR_OK;
+    return ERR_OK;
 }
 
 int MD2_Update(MD2_CTX *c, const void *data, unsigned long len)
 {
-	uint32_t copy_len = 0;
+    uint32_t copy_len = 0;
 
     if ((NULL == c) || (NULL == data))
     {
         return ERR_INV_PARAM;
     }
 
-	/* has used data */
-	if (c->last.used != 0)
-	{
-		/* less than 1 block in total, combine data */
-		if (c->last.used + len < HASH_BLOCK_SIZE)
-		{
-			memcpy(&c->last.buf[c->last.used], data, len);
-			c->last.used += len;
+    /* has used data */
+    if (c->last.used != 0)
+    {
+        /* less than 1 block in total, combine data */
+        if (c->last.used + len < HASH_BLOCK_SIZE)
+        {
+            memcpy(&c->last.buf[c->last.used], data, len);
+            c->last.used += len;
 
-			return ERR_OK;
-		}
-		else /* more than 1 block */
-		{
-			/* process the block in context buffer */
-			copy_len = HASH_BLOCK_SIZE - c->last.used;
-			memcpy(&c->last.buf[c->last.used], data, copy_len);
-			MD2_ProcessBlock(c, &c->last.buf);
+            return ERR_OK;
+        }
+        else /* more than 1 block */
+        {
+            /* process the block in context buffer */
+            copy_len = HASH_BLOCK_SIZE - c->last.used;
+            memcpy(&c->last.buf[c->last.used], data, copy_len);
+            MD2_ProcessBlock(c, &c->last.buf);
 
             c->total += HASH_BLOCK_SIZE;
 
-			data = (uint8_t *)data + copy_len;
-			len -= copy_len;
+            data = (uint8_t *)data + copy_len;
+            len -= copy_len;
 
-			/* reset context buffer */
-			memset(&c->last.buf[0], 0, HASH_BLOCK_SIZE);
-			c->last.used = 0;
-		}
-	}
+            /* reset context buffer */
+            memset(&c->last.buf[0], 0, HASH_BLOCK_SIZE);
+            c->last.used = 0;
+        }
+    }
 
-	/* less than 1 block, copy to context buffer */
-	if (len < HASH_BLOCK_SIZE)
-	{
-		memcpy(&c->last.buf[c->last.used], data, len);
-		c->last.used += len;
+    /* less than 1 block, copy to context buffer */
+    if (len < HASH_BLOCK_SIZE)
+    {
+        memcpy(&c->last.buf[c->last.used], data, len);
+        c->last.used += len;
 
-		return ERR_OK;
-	}
-	else
-	{
-		/* process data blocks */
-		while (len > HASH_BLOCK_SIZE)
-		{
-			MD2_ProcessBlock(c, data);
+        return ERR_OK;
+    }
+    else
+    {
+        /* process data blocks */
+        while (len >= HASH_BLOCK_SIZE)
+        {
+            MD2_ProcessBlock(c, data);
             c->total += HASH_BLOCK_SIZE;
 
-			data = (uint8_t *)data + HASH_BLOCK_SIZE;
-			len -= HASH_BLOCK_SIZE;
-		}
+            data = (uint8_t *)data + HASH_BLOCK_SIZE;
+            len -= HASH_BLOCK_SIZE;
+        }
 
-		/* copy rest data to context buffer */
-		memcpy(&c->last.buf[0], data, len);
-		c->last.used = len;
-	}
+        /* copy rest data to context buffer */
+        memcpy(&c->last.buf[0], data, len);
+        c->last.used = len;
+    }
 
-	return ERR_OK;
+    return ERR_OK;
 }
 
 int MD2_Final(unsigned char *md, MD2_CTX *c)
@@ -249,21 +260,21 @@ int MD2_Final(unsigned char *md, MD2_CTX *c)
 
     memset(&c->last.buf[c->last.used], pat, padding_len);
 
-	/* Process Padding Block */
+    /* Process Padding Block */
     MD2_ProcessBlock(c, &c->last.buf);
-	c->total += HASH_BLOCK_SIZE;
+    c->total += HASH_BLOCK_SIZE;
 
     c->last.used = 0;
 
     /* Process Checksum Block */
-	c->update_checksum = 0; /* don't need to update checksum this time */
+    c->update_checksum = 0; /* don't need to update checksum this time */
     MD2_ProcessBlock(c, c->checksum);
-	c->total += HASH_BLOCK_SIZE;
+    c->total += HASH_BLOCK_SIZE;
 
-	/* output message digest */
+    /* output message digest */
     memcpy(md, c->X, HASH_DIGEST_SIZE);
 
-	return ERR_OK;
+    return ERR_OK;
 }
 
 unsigned char *MD2(const unsigned char *d, unsigned long n, unsigned char *md)
