@@ -154,7 +154,7 @@ static int digest_file(const char *argv0, const char *filename)
 
         fclose(f);
 
-        printf("%s(\"%s\") = ", argv0, filename);
+        printf("%s(%s) = ", argv0, filename);
         print_digest(digest);
         printf("\n");
 
@@ -182,7 +182,7 @@ static void digest_stdin(const char *argv0)
     }
     MD2_Final(digest, &c);
 
-    printf("%s(\"stdin\") = ", argv0);
+    printf("%s(stdin) = ", argv0);
     print_digest(digest);
     printf("\n");
 }
