@@ -27,12 +27,9 @@
 #define MD2_CHECKSUM_SIZE   16
 
 /*
- * Refer: How is the MD2 hash function S-table constructed from Pi?
- * https://crypto.stackexchange.com/questions/11935/how-is-the-md2-hash-function-s-table-constructed-from-pi
- */
-/*
- * Permutation of 0..255 constructed from the digits of pi.
- * It gives a "random" nonlinear byte substitution operation.
+ * 参考:
+ * md2中用于随机置换的S盒是如何生成的？
+ * https://blog.csdn.net/guyongqiangx/article/details/117856118
  */
 static const uint8_t S[256] =
 {
@@ -80,11 +77,11 @@ int MD2_Init(MD2_CTX *c)
     memset(c, 0, sizeof(MD2_CTX));
     c->last.used = 0;
 
+    /* Clear X */
+    /* Clear last.buf */
     /* Clear checksum */
-    memset(c->checksum, 0, sizeof(c->checksum));
 
     c->L = 0;
-    c->update_checksum = 1;
 
     return ERR_OK;
 }
@@ -140,10 +137,7 @@ static int MD2_ProcessBlock(MD2_CTX *ctx, const void *block)
     X = (uint8_t *)ctx->X;
     M = (uint8_t *)block;
 
-    if (ctx->update_checksum == 1)
-    {
-        MD2_UpdateChecksum(ctx, M);
-    }
+    MD2_UpdateChecksum(ctx, M);
 
     /* Copy block into X */
     for (j=0; j<HASH_BLOCK_SIZE; j++)
@@ -257,19 +251,17 @@ int MD2_Final(unsigned char *md, MD2_CTX *c)
     /* Append Padding Bytes */
     padding_len = HASH_BLOCK_SIZE - c->last.used;
     pat = padding_len;
-
     memset(&c->last.buf[c->last.used], pat, padding_len);
 
     /* Process Padding Block */
-    MD2_ProcessBlock(c, &c->last.buf);
+    MD2_ProcessBlock(c, c->last.buf);
     c->total += HASH_BLOCK_SIZE;
-
     c->last.used = 0;
 
     /* Process Checksum Block */
-    c->update_checksum = 0; /* don't need to update checksum this time */
-    MD2_ProcessBlock(c, c->checksum);
-    c->total += HASH_BLOCK_SIZE;
+    memcpy(&c->last.buf[c->last.used], c->checksum, HASH_BLOCK_SIZE);
+    c->last.used = HASH_BLOCK_SIZE;
+    MD2_ProcessBlock(c, c->last.buf);
 
     /* output message digest */
     memcpy(md, c->X, HASH_DIGEST_SIZE);
