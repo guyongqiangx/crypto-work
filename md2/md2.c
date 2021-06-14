@@ -81,38 +81,55 @@ int MD2_Init(MD2_CTX *c)
     /* Clear last.buf */
     /* Clear checksum */
 
-    c->L = 0;
-
     return ERR_OK;
 }
 
 static int MD2_UpdateChecksum(MD2_CTX *ctx, const uint8_t *M)
 {
     uint32_t j;
-    uint8_t c;
+    uint8_t c, L;
 
     if ((NULL == ctx) || (NULL == M))
     {
         return ERR_INV_PARAM;
     }
 
+    L = ctx->checksum[15];
+
     /* update checksum */
     for (j=0; j<HASH_BLOCK_SIZE; j++)
     {
         c = M[j];
         /*
-         * ctx->checksum[j] = S[c ^ ctx->L];
+         * ctx->checksum[j] = S[c ^ L];
          * Description error in rfc1319, see:
          *   https://www.rfc-editor.org/rfc/inline-errata/rfc1319.html#eid555
          */
-        ctx->checksum[j] ^= S[c ^ ctx->L];
-        ctx->L = ctx->checksum[j];
+        ctx->checksum[j] ^= S[c ^ L];
+        L = ctx->checksum[j];
     }
 
 #if (DUMP_BLOCK_CHECKSUM == 1)
     DBG("CHECKSUM:\n");
     print_buffer(ctx->checksum, HASH_BLOCK_SIZE, "    ");
 #endif
+    return ERR_OK;
+}
+
+static int MD2_PrepareScheduleWord(MD2_CTX *ctx, const void *block)
+{
+    uint32_t j;
+    uint8_t *X, *M;
+
+    X = (uint8_t *)ctx->X;
+    M = (uint8_t *)block;
+
+    for (j=0; j<HASH_BLOCK_SIZE; j++)
+    {
+        X[16+j] = M[j];
+        X[32+j] = X[16+j] ^ X[j];
+    }
+
     return ERR_OK;
 }
 
@@ -140,11 +157,7 @@ static int MD2_ProcessBlock(MD2_CTX *ctx, const void *block)
     MD2_UpdateChecksum(ctx, M);
 
     /* Copy block into X */
-    for (j=0; j<HASH_BLOCK_SIZE; j++)
-    {
-        X[16+j] = M[j];
-        X[32+j] = X[16+j] ^ X[j];
-    }
+    MD2_PrepareScheduleWord(ctx, M);
 
     t = 0;
 

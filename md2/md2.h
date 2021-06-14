@@ -26,7 +26,6 @@ typedef struct md2_context {
     }last;
 
     uint8_t checksum[16]; /* checksum */
-    uint8_t L;
 }MD2_CTX;
 
 /* https://www.openssl.org/docs/man1.1.0/man3/MD5_Init.html */
