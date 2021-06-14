@@ -61,7 +61,7 @@
 /* ROTate Left (circular left shift) */
 static uint64_t ROTL(uint64_t x, uint8_t shift)
 {
-	return (x << shift) | (x >> (64 - shift));
+    return (x << shift) | (x >> (64 - shift));
 }
 
 static uint32_t theta(uint64_t A[5][5])
@@ -251,14 +251,14 @@ int SHA3_Init(SHA3_CTX *c, SHA3_ALG alg)
         return ERR_INV_PARAM;
     }
 
-	memset(c, 0, sizeof(SHA3_CTX));
+    memset(c, 0, sizeof(SHA3_CTX));
 
     /* bits */
     c->l = 6;
     c->w = 64; /* c->w = 2 ^ l */
 
     /* bytes */
-	c->b = 200; /* 1600 bits, c->b = 25 * 2 ^ c->l; */
+    c->b = 200; /* 1600 bits, c->b = 25 * 2 ^ c->l; */
     switch (alg)
     {
         case SHA3_224:
@@ -290,12 +290,12 @@ int SHA3_Init(SHA3_CTX *c, SHA3_ALG alg)
 
     c->nr = 24; /* nr = 24 = 12 + 2 * l */
 
-	return ERR_OK;
+    return ERR_OK;
 }
 
 static int SHA3_PrepareScheduleWord(SHA3_CTX *ctx, const void *block)
 {
-	uint32_t i;
+    uint32_t i;
     uint64_t *data;
     uint64_t temp[25];
 
@@ -343,13 +343,13 @@ static int SHA3_PrepareScheduleWord(SHA3_CTX *ctx, const void *block)
     dump_lane(ctx->lane);
 #endif
 
-	return ERR_OK;
+    return ERR_OK;
 }
 
 /* r bytes for each block */
 static int SHA3_ProcessBlock(SHA3_CTX *ctx, const void *block)
 {
-	uint32_t t;
+    uint32_t t;
 
     if ((NULL == ctx) || (NULL == block))
     {
@@ -402,70 +402,70 @@ static int SHA3_ProcessBlock(SHA3_CTX *ctx, const void *block)
     print_buffer(&ctx->lane[0][0], ctx->b, " ");
 #endif
 
-	return ERR_OK;
+    return ERR_OK;
 }
 
 int SHA3_Update(SHA3_CTX *c, const void *data, size_t len)
 {
-	uint64_t copy_len = 0;
+    uint64_t copy_len = 0;
 
     if ((NULL == c) || (NULL == data))
     {
         return ERR_INV_PARAM;
     }
 
-	/* has used data */
-	if (c->last.used != 0)
-	{
-		/* less than 1 block in total, combine data */
-		if (c->last.used + len < c->r)
-		{
-			memcpy(&c->last.buf[c->last.used], data, len);
-			c->last.used += len;
+    /* has used data */
+    if (c->last.used != 0)
+    {
+        /* less than 1 block in total, combine data */
+        if (c->last.used + len < c->r)
+        {
+            memcpy(&c->last.buf[c->last.used], data, len);
+            c->last.used += len;
 
-			return ERR_OK;
-		}
-		else /* more than 1 block */
-		{
-			/* process the block in context buffer */
-			copy_len = c->r - c->last.used;
-			memcpy(&c->last.buf[c->last.used], data, copy_len);
-			SHA3_ProcessBlock(c, &c->last.buf);
+            return ERR_OK;
+        }
+        else /* more than 1 block */
+        {
+            /* process the block in context buffer */
+            copy_len = c->r - c->last.used;
+            memcpy(&c->last.buf[c->last.used], data, copy_len);
+            SHA3_ProcessBlock(c, &c->last.buf);
 
-			data = (uint8_t *)data + copy_len;
-			len -= copy_len;
+            data = (uint8_t *)data + copy_len;
+            len -= copy_len;
 
-			/* reset context buffer */
-			memset(&c->last.buf[0], 0, c->r);
-			c->last.used = 0;
-		}
-	}
+            /* reset context buffer */
+            memset(&c->last.buf[0], 0, c->r);
+            c->last.used = 0;
+        }
+    }
 
-	/* less than 1 block, copy to context buffer */
-	if (len < c->r)
-	{
-		memcpy(&c->last.buf[c->last.used], data, len);
-		c->last.used += len;
+    /* less than 1 block, copy to context buffer */
+    if (len < c->r)
+    {
+        memcpy(&c->last.buf[c->last.used], data, len);
+        c->last.used += len;
 
-		return ERR_OK;
-	}
-	else
-	{
-		/* process data blocks */
-		while (len >= c->r)
-		{
-			SHA3_ProcessBlock(c, data);
+        return ERR_OK;
+    }
+    else
+    {
+        /* process data blocks */
+        while (len >= c->r)
+        {
+            SHA3_ProcessBlock(c, data);
 
-			data = (uint8_t *)data + c->r;
-			len -= c->r;
-		}
+            data = (uint8_t *)data + c->r;
+            len -= c->r;
+        }
 
-		/* copy rest data to context buffer */
-		memcpy(&c->last.buf[0], data, len);
-		c->last.used = len;
-	}
+        /* copy rest data to context buffer */
+        memcpy(&c->last.buf[0], data, len);
+        c->last.used = len;
+    }
 
-	return ERR_OK;
+    return ERR_OK;
 }
 
 int SHA3_Final(unsigned char *md, SHA3_CTX *c)
@@ -501,7 +501,7 @@ int SHA3_Final(unsigned char *md, SHA3_CTX *c)
 
     memcpy(md, &c->lane[0][0], c->ol);
 
-	return ERR_OK;
+    return ERR_OK;
 }
 
 unsigned char *SHA3(SHA3_ALG alg, const unsigned char *d, size_t n, unsigned char *md)

@@ -12,8 +12,8 @@ typedef unsigned short      uint16_t;
 typedef unsigned int        uint32_t;
 typedef unsigned long long  uint64_t;
 typedef struct {
-	uint64_t high; /* high 64 bits */
-	uint64_t low;  /*  low 64 bits */
+    uint64_t high; /* high 64 bits */
+    uint64_t low;  /*  low 64 bits */
 } uint128_t;
 
 /*
