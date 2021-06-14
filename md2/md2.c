@@ -24,7 +24,8 @@
 #define HASH_DIGEST_SIZE	16
 #define HASH_ROUND_NUM		18
 
-#define MD2_CHECKSUM_SIZE   16
+/* 只有MD2才会计算一个block大小的CheckSum数据 */
+#define MD2_CHECKSUM_SIZE   HASH_BLOCK_SIZE
 
 /*
  * 参考:
@@ -81,34 +82,41 @@ int MD2_Init(MD2_CTX *c)
     /* Clear last.buf */
     /* Clear checksum */
 
-    c->L = 0;
-
     return ERR_OK;
 }
 
+/* 计算单个block的Checksum，下一个block的Checksum需要叠加上一个block的Checksum */
 static int MD2_UpdateChecksum(MD2_CTX *ctx, const uint8_t *M)
 {
     uint32_t j;
-    uint8_t c;
+    uint8_t c, L;
 
     if ((NULL == ctx) || (NULL == M))
     {
         return ERR_INV_PARAM;
     }
 
+    /*
+     * rfc1319 3.2节处理Checksum时:
+     * 1. 开始处理前，"Set L to 0"，而Checksum全部为0，所以相当于L=Checksum[15]
+     * 2. 循环处理数据块的每一个bytes时有"Set L to C[j]"，数据块处理结束时L=Checksum[15]
+     */
+    L = ctx->checksum[15];
+
     /* update checksum */
     for (j=0; j<HASH_BLOCK_SIZE; j++)
     {
         c = M[j];
         /*
-         * ctx->checksum[j] = S[c ^ ctx->L];
+         * ctx->checksum[j] = S[c ^ L];
          * Description error in rfc1319, see:
          *   https://www.rfc-editor.org/rfc/inline-errata/rfc1319.html#eid555
          */
-        ctx->checksum[j] ^= S[c ^ ctx->L];
-        ctx->L = ctx->checksum[j];
+        ctx->checksum[j] ^= S[c ^ L];
+        L = ctx->checksum[j];
     }
 
+/* 打印每一块的Checksum数据 */
 #if (DUMP_BLOCK_CHECKSUM == 1)
     DBG("CHECKSUM:\n");
     print_buffer(ctx->checksum, HASH_BLOCK_SIZE, "    ");
@@ -116,6 +124,29 @@ static int MD2_UpdateChecksum(MD2_CTX *ctx, const uint8_t *M)
     return ERR_OK;
 }
 
+/* 预处理每个block输入数据 */
+static int MD2_PrepareScheduleWord(MD2_CTX *ctx, const void *block)
+{
+    uint32_t j;
+    uint8_t *X, *M;
+
+    X = (uint8_t *)ctx->X;
+    M = (uint8_t *)block;
+
+    /*
+     * 将单块数据的内容处理后放入缓冲区X的后32字节,
+     * 前16字节为上一块数据处理后的内容)
+     */
+    for (j=0; j<HASH_BLOCK_SIZE; j++)
+    {
+        X[16+j] = M[j];
+        X[32+j] = X[16+j] ^ X[j];
+    }
+
+    return ERR_OK;
+}
+
+/* 处理单个block数据 */
 static int MD2_ProcessBlock(MD2_CTX *ctx, const void *block)
 {
     uint32_t j, k;
@@ -137,17 +168,16 @@ static int MD2_ProcessBlock(MD2_CTX *ctx, const void *block)
     X = (uint8_t *)ctx->X;
     M = (uint8_t *)block;
 
+    /* 更新Checksum */
     MD2_UpdateChecksum(ctx, M);
 
-    /* Copy block into X */
-    for (j=0; j<HASH_BLOCK_SIZE; j++)
-    {
-        X[16+j] = M[j];
-        X[32+j] = X[16+j] ^ X[j];
-    }
+    /* 预处理每个block输入数据 */
+    /* Copy block i into X. */
+    MD2_PrepareScheduleWord(ctx, M);
 
     t = 0;
 
+    /* 对每个block数据进行18轮处理 */
     /* Do 18 rounds */
     for (j=0; j<HASH_ROUND_NUM; j++)
     {
@@ -172,6 +202,11 @@ static int MD2_ProcessBlock(MD2_CTX *ctx, const void *block)
     return ERR_OK;
 }
 
+/*
+ * 管理输入数据
+ * 1. 将每个完整block的数据提交MD2_ProcessBlock处理
+ * 2. 将不足一个block的部分存放到last.buf缓冲区中
+ */
 int MD2_Update(MD2_CTX *c, const void *data, unsigned long len)
 {
     uint32_t copy_len = 0;
@@ -181,10 +216,12 @@ int MD2_Update(MD2_CTX *c, const void *data, unsigned long len)
         return ERR_INV_PARAM;
     }
 
-    /* has used data */
+    /*
+     * 如果缓冲区还有上一次处理剩余的数据，先凑足一个block处理后，再逐个block处理本次的数据
+     */
     if (c->last.used != 0)
     {
-        /* less than 1 block in total, combine data */
+        /* 剩余数据和新数据一起还不够一个block，则复制到缓冲区 */
         if (c->last.used + len < HASH_BLOCK_SIZE)
         {
             memcpy(&c->last.buf[c->last.used], data, len);
@@ -192,9 +229,9 @@ int MD2_Update(MD2_CTX *c, const void *data, unsigned long len)
 
             return ERR_OK;
         }
-        else /* more than 1 block */
+        else
         {
-            /* process the block in context buffer */
+            /* 将缓冲区的数据凑够一个block处理 */
             copy_len = HASH_BLOCK_SIZE - c->last.used;
             memcpy(&c->last.buf[c->last.used], data, copy_len);
             MD2_ProcessBlock(c, &c->last.buf);
@@ -204,13 +241,12 @@ int MD2_Update(MD2_CTX *c, const void *data, unsigned long len)
             data = (uint8_t *)data + copy_len;
             len -= copy_len;
 
-            /* reset context buffer */
             memset(&c->last.buf[0], 0, HASH_BLOCK_SIZE);
             c->last.used = 0;
         }
     }
 
-    /* less than 1 block, copy to context buffer */
+    /* 剩余数据不够一个block了，复制到缓冲区 */
     if (len < HASH_BLOCK_SIZE)
     {
         memcpy(&c->last.buf[c->last.used], data, len);
@@ -220,7 +256,7 @@ int MD2_Update(MD2_CTX *c, const void *data, unsigned long len)
     }
     else
     {
-        /* process data blocks */
+        /* 逐块处理数据 */
         while (len >= HASH_BLOCK_SIZE)
         {
             MD2_ProcessBlock(c, data);
@@ -230,7 +266,7 @@ int MD2_Update(MD2_CTX *c, const void *data, unsigned long len)
             len -= HASH_BLOCK_SIZE;
         }
 
-        /* copy rest data to context buffer */
+        /* 将剩余数据复制到缓冲区 */
         memcpy(&c->last.buf[0], data, len);
         c->last.used = len;
     }
@@ -238,6 +274,11 @@ int MD2_Update(MD2_CTX *c, const void *data, unsigned long len)
     return ERR_OK;
 }
 
+/*
+ * 管理数据最后的填充，附加计算好的Checksum
+ * 将剩余数据提交MD2_ProcessBlock处理
+ * 返回最终的哈希值
+ */
 int MD2_Final(unsigned char *md, MD2_CTX *c)
 {
     uint8_t pat;
@@ -249,25 +290,32 @@ int MD2_Final(unsigned char *md, MD2_CTX *c)
     }
 
     /* Append Padding Bytes */
+    /* 剩余数据存放在last.buf缓冲区中，计算需要填充的长度
+     * 如果原来的数据刚好是一整块，没有剩余，则再新增一整块
+     */
     padding_len = HASH_BLOCK_SIZE - c->last.used;
+    /* MD2填充时填充i个值为i的数据, "i" bytes of value "i" */
     pat = padding_len;
     memset(&c->last.buf[c->last.used], pat, padding_len);
 
     /* Process Padding Block */
+    /* 处理填充的数据块 */
     MD2_ProcessBlock(c, c->last.buf);
     c->total += HASH_BLOCK_SIZE;
     c->last.used = 0;
 
     /* Process Checksum Block */
+    /* 最后处理一个block的Checksum数据 */
     memcpy(&c->last.buf[c->last.used], c->checksum, HASH_BLOCK_SIZE);
     c->last.used = HASH_BLOCK_SIZE;
     MD2_ProcessBlock(c, c->last.buf);
 
-    /* output message digest */
+    /* 所有数据处理完成后，48字节缓冲区的前16个字节就是哈希值 */
     memcpy(md, c->X, HASH_DIGEST_SIZE);
 
     return ERR_OK;
 }
+
 
 unsigned char *MD2(const unsigned char *d, unsigned long n, unsigned char *md)
 {
