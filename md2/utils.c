@@ -62,7 +62,6 @@ int print_buffer(const void *buf, unsigned long len, const char *indent)
     {
         if (i%DUMP_LINE_SIZE == 0)
         {
-            //printf((sizeof(size_t) == 8)?"%s%04lX:":"%s%04X:", indent, i);
             printf("%s%04lX:", indent, i);
         }
 
