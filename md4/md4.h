@@ -33,7 +33,6 @@ typedef struct md4_context {
 }MD4_CTX;
 
 /* https://www.openssl.org/docs/man1.1.0/man3/MD5_Init.html */
-
 int MD4_Init(MD4_CTX *c);
 int MD4_Update(MD4_CTX *c, const void *data, unsigned long len);
 int MD4_Final(unsigned char *md, MD4_CTX *c);
