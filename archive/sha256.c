@@ -130,7 +130,7 @@ int SHA256_Init(SHA256_CTX *c)
 	return ERR_OK;
 }
 
-static int SHA256_PrepareScheduleWord(const void *block, uint32_t *W)
+static int SHA256_PrepareScheduleWord(const uint32_t *block, uint32_t *W)
 {
 	uint32_t t;
 
@@ -142,7 +142,7 @@ static int SHA256_PrepareScheduleWord(const void *block, uint32_t *W)
 	for (t=0; t<HASH_ROUND_NUM; t++)
 	{
 		if (t<=15) /*  0 <= t <= 15 */
-			W[t] = be32toh(DWORD(block, t));
+			W[t] = be32toh(block[t]);
 		else	   /* 16 <= t <= 79 */
 			W[t] = sigma1(W[t-2]) + W[t-7] + sigma0(W[t-15]) + W[t-16];
 	}
@@ -270,7 +270,7 @@ int SHA256_Update(SHA256_CTX *c, const void *data, size_t len)
 	else
 	{
 		/* process data blocks */
-		while (len > HASH_BLOCK_SIZE)
+		while (len >= HASH_BLOCK_SIZE)
 		{
 			SHA256_ProcessBlock(c, data);
             c->total += HASH_BLOCK_SIZE;
@@ -289,7 +289,8 @@ int SHA256_Update(SHA256_CTX *c, const void *data, size_t len)
 
 int SHA256_Final(unsigned char *md, SHA256_CTX *c)
 {
-	uint32_t *buf;
+	uint32_t *temp;
+    //uint64_t *buf;
 
     if ((NULL == c) || (NULL == md))
     {
@@ -310,9 +311,13 @@ int SHA256_Final(unsigned char *md, SHA256_CTX *c)
 
 		memset(&c->last.buf[0], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE);
         c->last.used = 0;
- 
-		//*(uint64_t *)&(c->last.buf[HASH_LEN_OFFSET]) = htobe64(c->total << 3);
-		htobe64c(&(c->last.buf[HASH_LEN_OFFSET]), c->total << 3);
+
+        /* save length */
+        //buf = (uint64_t *)&(c->last.buf[HASH_LEN_OFFSET]);
+        //*buf = htobe64(c->total << 3);
+        temp = (uint32_t *)&(c->last.buf[HASH_LEN_OFFSET]);
+        temp[0] = htobe32((c->total << 3) >> 32 & 0xFFFFFFFF);
+        temp[1] = htobe32((c->total << 3) & 0xFFFFFFFF);
 
 		SHA256_ProcessBlock(c, &c->last.buf);
 	}
@@ -327,21 +332,25 @@ int SHA256_Final(unsigned char *md, SHA256_CTX *c)
         /* padding 0s */
 		memset(&c->last.buf[c->last.used], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE - c->last.used);
 
-		//*(uint64_t *)&c->last.buf[HASH_LEN_OFFSET] = htobe64(c->total << 3);
-		htobe64c(&(c->last.buf[HASH_LEN_OFFSET]), c->total << 3);
+        /* save length */
+        //buf = (uint64_t *)&(c->last.buf[HASH_LEN_OFFSET]);
+        //*buf = htobe64(c->total << 3);
+        temp = (uint32_t *)&(c->last.buf[HASH_LEN_OFFSET]);
+        temp[0] = htobe32((c->total << 3) >> 32 & 0xFFFFFFFF);
+        temp[1] = htobe32((c->total << 3) & 0xFFFFFFFF);
 
 		SHA256_ProcessBlock(c, &c->last.buf);
 	}
 
-	buf = (uint32_t *)md;
-	buf[0] = htobe32(c->hash.a);
-	buf[1] = htobe32(c->hash.b);
-	buf[2] = htobe32(c->hash.c);
-	buf[3] = htobe32(c->hash.d);
-	buf[4] = htobe32(c->hash.e);
-	buf[5] = htobe32(c->hash.f);
-	buf[6] = htobe32(c->hash.g);
-	buf[7] = htobe32(c->hash.h);
+	temp = (uint32_t *)md;
+	temp[0] = htobe32(c->hash.a);
+	temp[1] = htobe32(c->hash.b);
+	temp[2] = htobe32(c->hash.c);
+	temp[3] = htobe32(c->hash.d);
+	temp[4] = htobe32(c->hash.e);
+	temp[5] = htobe32(c->hash.f);
+	temp[6] = htobe32(c->hash.g);
+	temp[7] = htobe32(c->hash.h);
 
 	return ERR_OK;
 }

@@ -4,7 +4,7 @@
 #include "utils.h"
 #include "md4.h"
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #define DBG(...) printf(__VA_ARGS__)
@@ -122,7 +122,7 @@ int MD4_Init(MD4_CTX *c)
 	return ERR_OK;
 }
 
-static int MD4_PrepareScheduleWord(const void *block, uint32_t *X)
+static int MD4_PrepareScheduleWord(const uint32_t *block, uint32_t *X)
 {
 	uint32_t i;
 
@@ -133,7 +133,7 @@ static int MD4_PrepareScheduleWord(const void *block, uint32_t *X)
 
     for (i=0; i<16; i++)
     {
-        X[i] = DWORD(block, i);
+        X[i] = le32toh(block[i]);
     }
 
 	return ERR_OK;
@@ -294,7 +294,7 @@ int MD4_Update(MD4_CTX *c, const void *data, unsigned long len)
 
 int MD4_Final(unsigned char *md, MD4_CTX *c)
 {
-	uint32_t *buf;
+	uint32_t *temp;
 
     if ((NULL == c) || (NULL == md))
     {
@@ -316,10 +316,11 @@ int MD4_Final(unsigned char *md, MD4_CTX *c)
 		memset(&c->last.buf[0], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE);
 		c->last.used = 0;
 
-		//*(uint32_t *)&(c->last.buf[HASH_LEN_OFFSET]) = total & 0xFFFFFFFF;
-        //*(uint32_t *)&(c->last.buf[HASH_LEN_OFFSET+3]) = (total >> 32) & 0xFFFFFFFF;
-        htole32c(&(c->last.buf[HASH_LEN_OFFSET]), (c->total << 3) & 0xFFFFFFFF);
-        htole32c(&(c->last.buf[HASH_LEN_OFFSET + 3]), ((c->total << 3) >> 32) & 0xFFFFFFFF);
+        /* save length */
+        temp = (uint32_t *)&(c->last.buf[HASH_LEN_OFFSET]);
+        temp[0] = htole32((c->total << 3) & 0xFFFFFFFF);
+        temp[1] = htole32(((c->total << 3) >> 32) & 0xFFFFFFFF);
+
 		MD4_ProcessBlock(c, &c->last.buf);
 	}
 	else /* 0 <= last.used < HASH_BLOCK_SIZE - HASH_LEN_SIZE */
@@ -333,19 +334,20 @@ int MD4_Final(unsigned char *md, MD4_CTX *c)
         /* padding 0s */
 		memset(&c->last.buf[c->last.used], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE - c->last.used);
 
-		//*(uint32_t *)&(c->last.buf[HASH_LEN_OFFSET]) = total & 0xFFFFFFFF;
-        //*(uint32_t *)&(c->last.buf[HASH_LEN_OFFSET+3]) = (total >> 32) & 0xFFFFFFFF;
-        htole32c(&(c->last.buf[HASH_LEN_OFFSET]), (c->total << 3) & 0xFFFFFFFF);
-        htole32c(&(c->last.buf[HASH_LEN_OFFSET + 3]), ((c->total << 3) >> 32) & 0xFFFFFFFF);
+        /* save length */
+        temp = (uint32_t *)&(c->last.buf[HASH_LEN_OFFSET]);
+        temp[0] = htole32((c->total << 3) & 0xFFFFFFFF);
+        temp[1] = htole32(((c->total << 3) >> 32) & 0xFFFFFFFF);
+
 		MD4_ProcessBlock(c, &c->last.buf);
 	}
 
     /* LE format, different from SHA family(big endian) */
-	buf = (uint32_t *)md;
-	buf[0] = c->hash.a;
-	buf[1] = c->hash.b;
-	buf[2] = c->hash.c;
-	buf[3] = c->hash.d;
+	temp = (uint32_t *)md;
+	temp[0] = htole32(c->hash.a);
+	temp[1] = htole32(c->hash.b);
+	temp[2] = htole32(c->hash.c);
+	temp[3] = htole32(c->hash.d);
 
 	return ERR_OK;
 }

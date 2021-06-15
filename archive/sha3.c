@@ -4,7 +4,11 @@
 #include "utils.h"
 #include "sha3.h"
 
-#define DEBUG
+//#define DEBUG
+
+#define DWORD(b,i) (((uint32_t *)(b))[(i)])
+#define QWORD(b,i) (((uint64_t *)(b))[(i)])
+
 
 #ifdef DEBUG
 #define DBG(...) printf(__VA_ARGS__)

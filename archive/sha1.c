@@ -4,7 +4,7 @@
 #include "utils.h"
 #include "sha1.h"
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #define DBG(...) printf(__VA_ARGS__)
@@ -120,7 +120,7 @@ int SHA1_Init(SHA_CTX *c)
 	return ERR_OK;
 }
 
-static int SHA1_PrepareScheduleWord(const void *block, uint32_t *W)
+static int SHA1_PrepareScheduleWord(const uint32_t *block, uint32_t *W)
 {
 	uint32_t t;
 
@@ -132,7 +132,7 @@ static int SHA1_PrepareScheduleWord(const void *block, uint32_t *W)
 	for (t=0; t<HASH_ROUND_NUM; t++)
 	{
 		if (t<=15) /*  0 <= t <= 15 */
-			W[t] = be32toh(DWORD(block, t));
+			W[t] = be32toh(block[t]);
 		else	   /* 16 <= t <= 79 */
 			W[t] = ROTL(W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16], 1);
 	}
@@ -248,7 +248,7 @@ int SHA1_Update(SHA_CTX *c, const void *data, size_t len)
 	else
 	{
 		/* process data blocks */
-		while (len > HASH_BLOCK_SIZE)
+		while (len >= HASH_BLOCK_SIZE)
 		{
 			SHA1_ProcessBlock(c, data);
             c->total += HASH_BLOCK_SIZE;
@@ -267,7 +267,8 @@ int SHA1_Update(SHA_CTX *c, const void *data, size_t len)
 
 int SHA1_Final(unsigned char *md, SHA_CTX *c)
 {
-	uint32_t *buf;
+	uint32_t *temp;
+    //uint64_t *buf;
 
     if ((NULL == c) || (NULL == md))
     {
@@ -288,9 +289,14 @@ int SHA1_Final(unsigned char *md, SHA_CTX *c)
 
 		memset(&c->last.buf[0], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE);
         c->last.used = 0;
- 
-		// *(uint64_t *)&(c->last.buf[HASH_LEN_OFFSET]) = htobe64(c->total << 3);
-		htobe64c(&(c->last.buf[HASH_LEN_OFFSET]), c->total << 3);
+
+        /* save length */
+        //buf = (uint64_t *)&(c->last.buf[HASH_LEN_OFFSET]);
+        //*buf = htobe64(c->total << 3);
+        temp = (uint32_t *)&(c->last.buf[HASH_LEN_OFFSET]);
+        temp[0] = htobe32((c->total << 3) >> 32 & 0xFFFFFFFF);
+        temp[1] = htobe32((c->total << 3) & 0xFFFFFFFF);
+
 		SHA1_ProcessBlock(c, &c->last.buf);
 	}
 	else /* 0 <= last.used < HASH_BLOCK_SIZE - HASH_LEN_SIZE */
@@ -304,17 +310,22 @@ int SHA1_Final(unsigned char *md, SHA_CTX *c)
         /* padding 0s */
 		memset(&c->last.buf[c->last.used], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE - c->last.used);
 
-		// *(uint64_t *)&c->last.buf[HASH_LEN_OFFSET] = htobe64(c->total << 3);
-		htobe64c(&(c->last.buf[HASH_LEN_OFFSET]), c->total << 3);
+        /* save length */
+        //buf = (uint64_t *)&(c->last.buf[HASH_LEN_OFFSET]);
+        //*buf = htobe64(c->total << 3);
+        temp = (uint32_t *)&(c->last.buf[HASH_LEN_OFFSET]);
+        temp[0] = htobe32((c->total << 3) >> 32 & 0xFFFFFFFF);
+        temp[1] = htobe32((c->total << 3) & 0xFFFFFFFF);
+
 		SHA1_ProcessBlock(c, &c->last.buf);
 	}
 
-	buf = (uint32_t *)md;
-	buf[0] = htobe32(c->hash.a);
-	buf[1] = htobe32(c->hash.b);
-	buf[2] = htobe32(c->hash.c);
-	buf[3] = htobe32(c->hash.d);
-	buf[4] = htobe32(c->hash.e);
+	temp = (uint32_t *)md;
+	temp[0] = htobe32(c->hash.a);
+	temp[1] = htobe32(c->hash.b);
+	temp[2] = htobe32(c->hash.c);
+	temp[3] = htobe32(c->hash.d);
+	temp[4] = htobe32(c->hash.e);
 
 	return ERR_OK;
 }

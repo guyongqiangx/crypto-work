@@ -156,7 +156,7 @@ int SHA512_Init(SHA512_CTX *c)
 	return ERR_OK;
 }
 
-static int SHA512_PrepareScheduleWord(const void *block, uint64_t *W)
+static int SHA512_PrepareScheduleWord(const uint64_t *block, uint64_t *W)
 {
 	uint32_t t;
 
@@ -168,7 +168,7 @@ static int SHA512_PrepareScheduleWord(const void *block, uint64_t *W)
 	for (t=0; t<HASH_ROUND_NUM; t++)
 	{
 		if (t<=15) /*  0 <= t <= 15 */
-			W[t] = be64toh(QWORD(block, t));
+			W[t] = be64toh(block[t]);
 		else	   /* 16 <= t <= 79 */
 			W[t] = sigma1(W[t-2]) + W[t-7] + sigma0(W[t-15]) + W[t-16];
 	}
@@ -326,7 +326,7 @@ int SHA512_Update(SHA512_CTX *c, const void *data, size_t len)
 	else
 	{
 		/* process data blocks */
-		while (len > HASH_BLOCK_SIZE)
+		while (len >= HASH_BLOCK_SIZE)
 		{
 			SHA512_ProcessBlock(c, data);
 			SHA512_UpdateTotal(&c->total, HASH_BLOCK_SIZE);
@@ -345,7 +345,7 @@ int SHA512_Update(SHA512_CTX *c, const void *data, size_t len)
 
 int SHA512_Final(unsigned char *md, SHA512_CTX *c)
 {
-	uint64_t *buf;
+	uint64_t *temp;
 
     if ((NULL == c) || (NULL == md))
     {
@@ -368,8 +368,11 @@ int SHA512_Final(unsigned char *md, SHA512_CTX *c)
 
         memset(&c->last.buf[0], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE);
         //SHA512_SaveTotal(&c->last.buf[HASH_LEN_OFFSET], &c->total);
-        htobe64c(&c->last.buf[HASH_LEN_OFFSET], c->total.high);
-        htobe64c(&c->last.buf[HASH_LEN_OFFSET+8], c->total.low);
+        //htobe64c(&c->last.buf[HASH_LEN_OFFSET], c->total.high);
+        //htobe64c(&c->last.buf[HASH_LEN_OFFSET+8], c->total.low);
+        temp = (uint64_t *)&(c->last.buf[HASH_LEN_OFFSET]);
+        temp[0] = htobe64(c->total.high);
+        temp[1] = htobe64(c->total.low);
 
         SHA512_ProcessBlock(c, &c->last.buf);
 	}
@@ -384,8 +387,11 @@ int SHA512_Final(unsigned char *md, SHA512_CTX *c)
         /* padding 0s */
         memset(&c->last.buf[c->last.used], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE - c->last.used);
         //SHA512_SaveTotal(&c->last.buf[HASH_LEN_OFFSET], &c->total);
-        htobe64c(&c->last.buf[HASH_LEN_OFFSET], c->total.high);
-        htobe64c(&c->last.buf[HASH_LEN_OFFSET+8], c->total.low);
+        //htobe64c(&c->last.buf[HASH_LEN_OFFSET], c->total.high);
+        //htobe64c(&c->last.buf[HASH_LEN_OFFSET+8], c->total.low);
+        temp = (uint64_t *)&(c->last.buf[HASH_LEN_OFFSET]);
+        temp[0] = htobe64(c->total.high);
+        temp[1] = htobe64(c->total.low);
 
         SHA512_ProcessBlock(c, &c->last.buf);
 	}
@@ -393,15 +399,15 @@ int SHA512_Final(unsigned char *md, SHA512_CTX *c)
 	DBG("%016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx\n", 
 		c->hash.a, c->hash.b, c->hash.c, c->hash.d, c->hash.e, c->hash.f, c->hash.g, c->hash.h);
 
-	buf = (uint64_t *)md;
-	buf[0] = htobe64(c->hash.a);
-	buf[1] = htobe64(c->hash.b);
-	buf[2] = htobe64(c->hash.c);
-	buf[3] = htobe64(c->hash.d);
-	buf[4] = htobe64(c->hash.e);
-	buf[5] = htobe64(c->hash.f);
-	buf[6] = htobe64(c->hash.g);
-	buf[7] = htobe64(c->hash.h);
+	temp = (uint64_t *)md;
+	temp[0] = htobe64(c->hash.a);
+	temp[1] = htobe64(c->hash.b);
+	temp[2] = htobe64(c->hash.c);
+	temp[3] = htobe64(c->hash.d);
+	temp[4] = htobe64(c->hash.e);
+	temp[5] = htobe64(c->hash.f);
+	temp[6] = htobe64(c->hash.g);
+	temp[7] = htobe64(c->hash.h);
 
 	return ERR_OK;
 }
