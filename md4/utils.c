@@ -25,6 +25,32 @@ unsigned long le32ctoh(const unsigned char *data)
     return x;
 }
 
+/* LE: unsigned long long to 8 bytes unsigned char */
+int htole64c(unsigned char *data, unsigned long long x)
+{
+    *data    = (unsigned char)( x	  &0xff);
+    *data ++ = (unsigned char)((x>> 8)&0xff);
+    *data ++ = (unsigned char)((x>>16)&0xff);
+    *data ++ = (unsigned char)((x>>24)&0xff);
+    *data ++ = (unsigned char)((x>>32)&0xff);
+    *data ++ = (unsigned char)((x>>40)&0xff);
+    *data ++ = (unsigned char)((x>>48)&0xff);
+    *data    = (unsigned char)((x>>56)&0xff);
+
+    return 0;
+}
+
+/* BE: unsigned long to 4 bytes unsigned char */
+int htobe32c(unsigned char *data, unsigned long x)
+{
+    *data ++ = (unsigned char)((x>>24)&0xff);
+    *data ++ = (unsigned char)((x>>16)&0xff);
+    *data ++ = (unsigned char)((x>> 8)&0xff);
+    *data    = (unsigned char)( x     &0xff);
+
+    return 0;
+}
+
 /* BE: unsigned long long to 8 bytes unsigned char */
 int htobe64c(unsigned char *data, unsigned long long x)
 {
