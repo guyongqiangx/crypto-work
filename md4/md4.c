@@ -260,14 +260,12 @@ int MD4_Update(MD4_CTX *c, const void *data, unsigned long len)
 
 int MD4_Final(unsigned char *md, MD4_CTX *c)
 {
-    uint32_t *buf;
-
     if ((NULL == c) || (NULL == md))
     {
         return ERR_INV_PARAM;
     }
 
-    /* Last block should be less thant HASH_BLOCK_SIZE - HASH_LEN_SIZE */
+    /* Last block should be less than HASH_BLOCK_SIZE - HASH_LEN_SIZE */
     if (c->last.used >= (HASH_BLOCK_SIZE - HASH_LEN_SIZE))
     {
         c->total += c->last.used;
@@ -303,11 +301,10 @@ int MD4_Final(unsigned char *md, MD4_CTX *c)
     }
 
     /* LE for MD4/MD5, different from SHA family(Big Endian) */
-    buf = (uint32_t *)md;
-    buf[0] = c->hash.a;
-    buf[1] = c->hash.b;
-    buf[2] = c->hash.c;
-    buf[3] = c->hash.d;
+    htole32c(md    , c->hash.a);
+    htole32c(md + 4, c->hash.a);
+    htole32c(md + 8, c->hash.a);
+    htole32c(md +16, c->hash.a);
 
     return ERR_OK;
 }
