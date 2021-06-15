@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "utils.h"
 
-/* unsigned long (32 bits) to little endian char buffer */
+/* LE: unsigned long to 4 bytes unsigned char */
 int htole32c(unsigned char *data, unsigned long x)
 {
     *data ++ = (unsigned char)( x     &0xff);
@@ -12,33 +12,20 @@ int htole32c(unsigned char *data, unsigned long x)
     return 0;
 }
 
-/* unsigned long long (64 bits) to little endian char buffer */
-int htole64c(unsigned char *data, unsigned long long x)
+/* LE: 4 bytes unsigned char to unsigned long */
+unsigned long le32ctoh(const unsigned char *data)
 {
-    *data    = (unsigned char)( x	  &0xff);
-    *data ++ = (unsigned char)((x>> 8)&0xff);
-    *data ++ = (unsigned char)((x>>16)&0xff);
-    *data ++ = (unsigned char)((x>>24)&0xff);
-    *data ++ = (unsigned char)((x>>32)&0xff);
-    *data ++ = (unsigned char)((x>>40)&0xff);
-    *data ++ = (unsigned char)((x>>48)&0xff);
-    *data    = (unsigned char)((x>>56)&0xff);
+    unsigned long x;
 
-    return 0;
+    x =  (unsigned long)data[0]
+      | ((unsigned long)data[1] <<  8)
+      | ((unsigned long)data[2] << 16)
+      | ((unsigned long)data[3] << 24);
+
+    return x;
 }
 
-/* unsigned long (32 bits) to big endian char buffer */
-int htobe32c(unsigned char *data, unsigned long x)
-{
-    *data ++ = (unsigned char)((x>>24)&0xff);
-    *data ++ = (unsigned char)((x>>16)&0xff);
-    *data ++ = (unsigned char)((x>> 8)&0xff);
-    *data    = (unsigned char)( x     &0xff);
-
-    return 0;
-}
-
-/* unsigned long long (64 bits) to big endian char buffer */
+/* BE: unsigned long long to 8 bytes unsigned char */
 int htobe64c(unsigned char *data, unsigned long long x)
 {
     *data ++ = (unsigned char)((x>>56)&0xff);
@@ -53,6 +40,22 @@ int htobe64c(unsigned char *data, unsigned long long x)
     return 0;
 }
 
+/* BE: 8 bytes unsigned char to unsigned long long */
+unsigned long long be64ctoh(const unsigned char *data)
+{
+    unsigned long long x;
+
+    x = ((unsigned long long)data[0] << 56)
+      | ((unsigned long long)data[1] << 48)
+      | ((unsigned long long)data[2] << 40)
+      | ((unsigned long long)data[3] << 32)
+      | ((unsigned long long)data[4] << 24)
+      | ((unsigned long long)data[5] << 16)
+      | ((unsigned long long)data[6] <<  8)
+      |  (unsigned long long)data[7];
+
+    return x;
+}
 
 #define DUMP_LINE_SIZE 16
 int print_buffer(const void *buf, unsigned long len, const char *indent)
@@ -62,7 +65,6 @@ int print_buffer(const void *buf, unsigned long len, const char *indent)
     {
         if (i%DUMP_LINE_SIZE == 0)
         {
-            //printf((sizeof(size_t) == 8)?"%s%04lX:":"%s%04X:", indent, i);
             printf("%s%04lX:", indent, i);
         }
 
