@@ -10,7 +10,7 @@
 #define DBG(...) printf(__VA_ARGS__)
 #define DUMP_BLOCK_DATA 1
 #define DUMP_BLOCK_HASH 1
-#define DUMP_ROUND_DATA 0
+#define DUMP_ROUND_DATA 1
 #else
 #define DBG(...)
 #define DUMP_BLOCK_DATA 0
@@ -28,10 +28,10 @@
 
 typedef uint32_t (*md4_func)(uint32_t x, uint32_t y, uint32_t z);
 
-/* MD4 Round Constants */
+/* MD4 Round Constants, refer rfc1320, section 3.4 */
 static uint32_t T[3] = 
 {
-    0x00000000, /* Round 1( 0 ~ 15), nothing */
+    0x00000000, /* Round 1( 0 ~ 15), placeholder of T[idx/16] in MD4_OP */
     0x5A827999, /* Round 2(16 ~ 31), square root of 2 */
     0x6ED9EBA1, /* Round 3(32 ~ 47), square root of 3 */
 };
@@ -41,6 +41,10 @@ static uint32_t ROTL(uint32_t x, uint8_t shift)
 {
     return (x << shift) | (x >> (32 - shift));
 }
+
+/*
+ * F/G/H definition, refer rfc1320, section 3.4
+ */
 
 /*
  * Condition
@@ -88,7 +92,7 @@ int MD4_Init(MD4_CTX *c)
 
     memset(c, 0, sizeof(MD4_CTX));
 
-    /* MD4 Initial Value */
+    /* MD4 Initial Value, refer rfc1320, section 3.3 */
     c->hash.a = 0x67452301; /* little endian */
     c->hash.b = 0xEFCDAB89;
     c->hash.c = 0x98BADCFE;
@@ -103,15 +107,17 @@ int MD4_Init(MD4_CTX *c)
 static int MD4_PrepareScheduleWord(const unsigned char *block, uint32_t *X)
 {
     uint32_t i;
+    uint32_t *temp;
 
     if ((NULL == block) || (NULL == X))
     {
         return ERR_INV_PARAM;
     }
 
+    temp = (uint32_t *)block;
     for (i=0; i<HASH_BLOCK_SIZE/4; i++)
     {
-        X[i] = le32ctoh(&block[i*4]);
+        X[i] = le32toh(temp[i]);
     }
 
     return ERR_OK;
@@ -128,6 +134,7 @@ static int MD4_PrepareScheduleWord(const unsigned char *block, uint32_t *X)
     idx ++;
 #endif
 
+/* Process Message in 16-Word Blocks, refer rfc1320, section 3.4 */
 static int MD4_ProcessBlock(MD4_CTX *ctx, const void *block)
 {
     uint32_t X[HASH_BLOCK_SIZE/4];
@@ -147,7 +154,7 @@ static int MD4_ProcessBlock(MD4_CTX *ctx, const void *block)
 #endif
 
 #if (DUMP_BLOCK_HASH == 1)
-    DBG("      IV: %08x%08x%08x%08x\n",
+    DBG("  (LE)IV: %08x %08x %08x %08x\n",
         ctx->hash.a, ctx->hash.b, ctx->hash.c, ctx->hash.d);
 #endif
 
@@ -185,7 +192,7 @@ static int MD4_ProcessBlock(MD4_CTX *ctx, const void *block)
     ctx->hash.d += D;
 
 #if (DUMP_BLOCK_HASH == 1)
-    DBG("    HASH: %08x%08x%08x%08x\n",
+    DBG(" (LE)OUT: %08x %08x %08x %08x\n",
         ctx->hash.a, ctx->hash.b, ctx->hash.c, ctx->hash.d);
 #endif
 
@@ -260,6 +267,8 @@ int MD4_Update(MD4_CTX *c, const void *data, unsigned long len)
 
 int MD4_Final(unsigned char *md, MD4_CTX *c)
 {
+    uint32_t *temp;
+
     if ((NULL == c) || (NULL == md))
     {
         return ERR_INV_PARAM;
@@ -280,8 +289,11 @@ int MD4_Final(unsigned char *md, MD4_CTX *c)
         memset(&c->last.buf[0], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE);
         c->last.used = 0;
 
-        htole32c(&(c->last.buf[HASH_LEN_OFFSET]), (c->total << 3) & 0xFFFFFFFF);
-        htole32c(&(c->last.buf[HASH_LEN_OFFSET + 3]), ((c->total << 3) >> 32) & 0xFFFFFFFF);
+        /* save length */
+        temp = (uint32_t *)&(c->last.buf[HASH_LEN_OFFSET]);
+        temp[0] = htole32((c->total << 3) & 0xFFFFFFFF);
+        temp[1] = htole32(((c->total << 3) >> 32) & 0xFFFFFFFF);
+
         MD4_ProcessBlock(c, &c->last.buf);
     }
     else /* 0 <= last.used < HASH_BLOCK_SIZE - HASH_LEN_SIZE */
@@ -295,16 +307,20 @@ int MD4_Final(unsigned char *md, MD4_CTX *c)
         /* padding 0s */
         memset(&c->last.buf[c->last.used], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE - c->last.used);
 
-        htole32c(&(c->last.buf[HASH_LEN_OFFSET]), (c->total << 3) & 0xFFFFFFFF);
-        htole32c(&(c->last.buf[HASH_LEN_OFFSET + 3]), ((c->total << 3) >> 32) & 0xFFFFFFFF);
+        /* save length */
+        temp = (uint32_t *)&(c->last.buf[HASH_LEN_OFFSET]);
+        temp[0] = htole32((c->total << 3) & 0xFFFFFFFF);
+        temp[1] = htole32(((c->total << 3) >> 32) & 0xFFFFFFFF);
+
         MD4_ProcessBlock(c, &c->last.buf);
     }
 
     /* LE for MD4/MD5, different from SHA family(Big Endian) */
-    htole32c(md    , c->hash.a);
-    htole32c(md + 4, c->hash.a);
-    htole32c(md + 8, c->hash.a);
-    htole32c(md +16, c->hash.a);
+    temp = (uint32_t *)md;
+    temp[0] = htole32(c->hash.a);
+    temp[1] = htole32(c->hash.b);
+    temp[2] = htole32(c->hash.c);
+    temp[3] = htole32(c->hash.d);
 
     return ERR_OK;
 }
