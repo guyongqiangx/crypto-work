@@ -27,9 +27,10 @@
 #define MD2_CHECKSUM_SIZE   16
 
 /*
- * 参考:
- * md2中用于随机置换的S盒是如何生成的？
- * https://blog.csdn.net/guyongqiangx/article/details/117856118
+ *
+ * How the S Box of MD2 are generated from Pi digits?
+ * Refere: https://blog.csdn.net/guyongqiangx/article/details/117856118
+ *
  */
 static const uint8_t S[256] =
 {
