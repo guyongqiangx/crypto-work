@@ -1,3 +1,8 @@
+/*
+ * @  File: 
+ * @Author: Gu Yongqiang
+ * @  Blog: https://blog.csdn.net/guyongqiangx
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,57 +10,151 @@
 #include "sha256.h"
 #include "hmac.h"
 
+// $ echo -n "Sample message for keylen=blocklen" > input.txt
+// $ hexdump -Cv input.txt
+// 00000000  53 61 6d 70 6c 65 20 6d  65 73 73 61 67 65 20 66  |Sample message f|
+// 00000010  6f 72 20 6b 65 79 6c 65  6e 3d 62 6c 6f 63 6b 6c  |or keylen=blockl|
+// 00000020  65 6e                                             |en|
+// 00000022
+// $ echo -n "00010203 04050607 08090A0B 0C0D0E0F 10111213 14151617 18191A1B 1C1D1E1F 20212223 24252627 28292A2B 2C2D2E2F 30313233 34353637 38393A3B 3C3D3E3F" | xxd -r -ps > hmac-sha256-key.bin
+// $ hexdump -Cv hmac-sha256-key.bin
+// 00000000  00 01 02 03 04 05 06 07  08 09 0a 0b 0c 0d 0e 0f  |................|
+// 00000010  10 11 12 13 14 15 16 17  18 19 1a 1b 1c 1d 1e 1f  |................|
+// 00000020  20 21 22 23 24 25 26 27  28 29 2a 2b 2c 2d 2e 2f  | !"#$%&'()*+,-./|
+// 00000030  30 31 32 33 34 35 36 37  38 39 3a 3b 3c 3d 3e 3f  |0123456789:;<=>?|
+// 00000040
+// $ xxd -i < hmac-sha256-key.bin
+//   0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
+//   0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+//   0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23,
+//   0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
+//   0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b,
+//   0x3c, 0x3d, 0x3e, 0x3f
+
+
 int main(int argc, char * argv[])
 {
-	char data[]="abc";
-    char key[]="I Love China!";
-	//char data[]="abcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
-	//uint8_t buf[HMAC_BLOCK_SIZE];
-	uint8_t hash[32];
-	uint32_t i, len = 0;
+    uint8_t hash[32];
+    uint32_t i, len = 0;
 
     HMAC_CTX ctx;
-    
-	memset(hash, 0, sizeof(hash));
 
-	HMAC_Init_ex(&ctx, key, strlen(key), NULL, NULL);
+#if 0
+    char data[]="Sample message for keylen=blocklen";
+    char key[] =
+    {
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
+        0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+        0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23,
+        0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
+        0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b,
+        0x3c, 0x3d, 0x3e, 0x3f
+    };
+
+    
+    memset(hash, 0, sizeof(hash));
+
+    printf("Test 1:\n");
+    HMAC_Init_ex(&ctx, key, sizeof(key)/sizeof(key[0]), NULL, NULL);
     HMAC_Update(&ctx, data, strlen(data));
     HMAC_Final(&ctx, hash, &len);
 
     printf("hmac result:\n");
     print_buffer(hash, 32, " ");
 
-	//print_buffer(hash, 20);
-	for (i=0; i<32; i++)
-		printf("%02x", hash[i]);
-	printf("\n");
+    //print_buffer(hash, 20);
+    for (i=0; i<32; i++)
+        printf("%02x", hash[i]);
+    printf("\n");
+#endif
 
 #if 0
-	hmac_init();
-	hmac_update("abc", 3);
-	hmac_update("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", 55);
-	hmac_final(hash);
+    printf("Test 2:\n");
+    {
+        char data2[]="Sample message for keylen<blocklen";
+        char key2[] =
+        {
+            0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
+            0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+            0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
+        };
 
-	printf("hmac result:\n");
+        HMAC_Init_ex(&ctx, key2, sizeof(key2)/sizeof(key2[0]), NULL, NULL);
+        HMAC_Update(&ctx, data2, strlen(data2));
+        HMAC_Final(&ctx, hash, &len);
 
-	//print_buffer(hash, 20);
-	for (i=0; i<20; i++)
-		printf("%02x", hash[i]);
-	printf("\n");
+        printf("hmac result:\n");
+        print_buffer(hash, 32, " ");
+
+        //print_buffer(hash, 20);
+        for (i=0; i<32; i++)
+            printf("%02x", hash[i]);
+        printf("\n");
+    }
+#endif
+
+#if 0
+    printf("Test 3:\n");
+    {
+        char data3[]="Sample message for keylen=blocklen";
+        char key3[] =
+        {
+            0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
+            0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+            0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23,
+            0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
+            0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b,
+            0x3c, 0x3d, 0x3e, 0x3f, 0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47,
+            0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f, 0x50, 0x51, 0x52, 0x53,
+            0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b, 0x5c, 0x5d, 0x5e, 0x5f,
+            0x60, 0x61, 0x62, 0x63
+        };
+
+        HMAC_Init_ex(&ctx, key3, sizeof(key3)/sizeof(key3[0]), NULL, NULL);
+        HMAC_Update(&ctx, data3, strlen(data3));
+        HMAC_Final(&ctx, hash, &len);
+
+        printf("hmac result:\n");
+        print_buffer(hash, 32, " ");
+
+        //print_buffer(hash, 20);
+        for (i=0; i<32; i++)
+            printf("%02x", hash[i]);
+        printf("\n");
+    }
 #endif
 
 #if 1
-	printf("openssl dgst -sha256 -hmac \"I Love China!\" abc.txt\n");
-	system("openssl dgst -sha256 -hmac \"I Love China!\" abc.txt\n");
-#else
-	//system("stat 58.txt");
-	printf("openssl dgst -hmac \"I Love China!\" 58.txt\n");
-	system("openssl dgst -hmac \"I Love China!\" 58.txt");
-#endif
-	printf("press any key to exit...\n");
-	getchar();
+    printf("Test 4:\n");
+    {
+        char data4[]="Sample message for keylen<blocklen, with truncated tag";
+        char key4[] =
+        {
+            0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
+            0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+            0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23,
+            0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
+            0x30
+        };
 
-	return 0;
+        HMAC_Init_ex(&ctx, key4, sizeof(key4)/sizeof(key4[0]), NULL, NULL);
+        HMAC_Update(&ctx, data4, strlen(data4));
+        HMAC_Final(&ctx, hash, &len);
+
+        printf("hmac result:\n");
+        print_buffer(hash, 32, " ");
+
+        //print_buffer(hash, 20);
+        for (i=0; i<32; i++)
+            printf("%02x", hash[i]);
+        printf("\n");
+    }
+#endif
+
+    printf("press any key to exit...\n");
+    getchar();
+
+    return 0;
 }
 
 

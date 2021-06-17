@@ -28,6 +28,8 @@ static HASH_CTX ctxs[] =
 }
 #endif
 
+// extern int print_buffer(const void *buf, unsigned long len, const char *indent);
+
 int HMAC_Init_ex(HMAC_CTX *ctx, const void *key, int key_len,
                  const EVP_MD *md, ENGINE *impl)
 {
@@ -39,23 +41,25 @@ int HMAC_Init_ex(HMAC_CTX *ctx, const void *key, int key_len,
     ctx->block_size = 64;
     ctx->digest_size = 32;
 
-    hash = malloc(sizeof(SHA256_CTX));
+    hash = (SHA256_CTX *)malloc(sizeof(SHA256_CTX));
     ctx->impl = hash;
 
+    printf("Key0 is:\n");
+    print_buffer(key, key_len, " ");
     if (key_len <= ctx->block_size)
     {
         memset(ctx->padding, 0, ctx->block_size - key_len);
-        memcpy(&ctx->padding[ctx->block_size - key_len], key, key_len);
+        memcpy(&ctx->padding[0], key, key_len);
     }
-    else
+    else /* key_len > block_size, do hash first to convert key */
     {
         unsigned char temp[32];
         SHA256(key, key_len, temp);
         memset(ctx->padding, 0, ctx->block_size - ctx->digest_size);
-        memcpy(&ctx->padding[ctx->block_size - ctx->digest_size], temp, ctx->digest_size);
+        memcpy(&ctx->padding[0], temp, ctx->digest_size);
     }
 
-    printf("padding:\n");
+    printf("Key 0 again:\n");
     print_buffer(ctx->padding, ctx->block_size, " ");
 
     for (i=0; i<ctx->block_size; i++)
@@ -64,18 +68,21 @@ int HMAC_Init_ex(HMAC_CTX *ctx, const void *key, int key_len,
         ctx->outer[i] = ctx->padding[i] ^ 0x5c;
     }
 
-    printf("inner:\n");
+    printf("Key0 ^ ipad:\n");
     print_buffer(ctx->inner, ctx->block_size, " ");
-    printf("outer:\n");
+    printf("K0 xor opad:\n");
     print_buffer(ctx->outer, ctx->block_size, " ");
 
     SHA256_Init(ctx->impl);
+
+    /* H(Si) */
     SHA256_Update(ctx->impl, ctx->inner, ctx->block_size);
 
     return 0;
 }
 int HMAC_Update(HMAC_CTX *ctx, const unsigned char *data, size_t len)
 {
+    /* H(Y0Y1...Yn-1) */
     SHA256_Update(ctx->impl, data, len);
 
     return 0;
@@ -89,14 +96,22 @@ int HMAC_Final(HMAC_CTX *ctx, unsigned char *md, unsigned int *len)
     /* S = H(K^ipad || text) */
     SHA256_Final(sha256_hash, ctx->impl);
 
+    printf("Hash((Key^ipad)||text)\n");
+    print_buffer(sha256_hash, ctx->digest_size, " ");
+
     SHA256_Init(ctx->impl);
 
-    /* H(K^opad || S) */
+    /* H(So) */
     SHA256_Update(ctx->impl, ctx->outer, ctx->block_size);
+    /* H() */
     SHA256_Update(ctx->impl, sha256_hash, ctx->digest_size);
 
     memset(sha256_hash, 0, sizeof(sha256_hash));
+
+    /* H() */
     SHA256_Final(sha256_hash, ctx->impl);
+    printf("Hash((K0^opad)||Hash((K0^ipad)||text))\n");
+    print_buffer(sha256_hash, ctx->digest_size, " ");
 
     memcpy(md, sha256_hash, 32);
     *len = ctx->digest_size;

@@ -1,3 +1,8 @@
+/*
+ * @  File: 
+ * @Author: Gu Yongqiang
+ * @  Blog: https://blog.csdn.net/guyongqiangx
+ */
 #ifndef __HMAC__H
 
 /*
@@ -26,15 +31,24 @@
 #include "sha256.h"
 
 typedef enum hmac_alg{
+    MHAC_MD4,
 	HMAC_MD5,
 	HMAC_SHA1,
 	HMAC_SHA224,
 	HMAC_SHA256,
+    HMAC_SHA256_224,
+
 	HMAC_SHA384,
-	HMAC_SHA512
+	HMAC_SHA512,
+
+    HMAC_SHA512_224,
+    HMAC_SHA512_256,
+    HMAC_SHA512_384,
+
+    HMAC_SM3,
 }HMAC_ALG;
 
-typedef struct hamac_context {
+typedef struct hmac_context {
     HMAC_ALG alg;
     void *impl;
     uint32_t block_size;

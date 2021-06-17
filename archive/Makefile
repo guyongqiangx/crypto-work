@@ -11,8 +11,7 @@ INCLUDE = -I ./
 
 .PHONY: all SHA1 SHA256 SHA512 SHA3 MD5 SM3 HMAC help common
 
-# all: MD2 MD4 MD5 SHA1 SHA256 SHA512 SHA3 SM3 HMAC
-all: MD2 MD4 MD5 SHA1 SHA256 SHA512 SHA3 SM3
+all: MD2 MD4 MD5 SHA1 SHA256 SHA512 SHA3 SM3 HMAC
 
 help:
 	@echo "Support Targets: MD5 SHA1 SHA512 SHA3 SM3 HMAC"
@@ -51,7 +50,7 @@ SHA256_OBJ := sha256.o
 SHA256_OBJ += sha256_test.o
 SHA256_OBJ += $(COMM_OBJ)
 
-SHA256_TARGET = sha256_test
+SHA256_TARGET = sha256test
 
 SHA256: $(SHA256_OBJ) common
 	$(CC) $(CFLAGS) $(SHA256_OBJ) -o $(SHA256_TARGET) $(LIBS) $(INCLUDE)
@@ -62,7 +61,7 @@ SHA256: $(SHA256_OBJ) common
 sha256.o : sha256.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-sha256_test.o : sha256_test.c
+sha256test.o : sha256test.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 #
@@ -182,7 +181,7 @@ sha3_test.o : sha3_test.c
 #
 # rules for HMAC
 #
-HMAC_OBJ := hmac.o
+HMAC_OBJ := hmac.o sha256.o
 HMAC_OBJ += hmac_test.o
 HMAC_OBJ += $(COMM_OBJ)
 
