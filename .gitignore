@@ -7,4 +7,5 @@ sha512/sha512
 sha3/sha3
 sm3/sm3
 
+.vscode
 */*.o
