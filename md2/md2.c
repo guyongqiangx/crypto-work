@@ -20,9 +20,9 @@
 #define DUMP_ROUND_DATA     0
 #endif
 
-#define HASH_BLOCK_SIZE		16
-#define HASH_DIGEST_SIZE	16
-#define HASH_ROUND_NUM		18
+#define HASH_BLOCK_SIZE     16
+#define HASH_DIGEST_SIZE    16
+#define HASH_ROUND_NUM      18
 
 #define MD2_CHECKSUM_SIZE   16
 

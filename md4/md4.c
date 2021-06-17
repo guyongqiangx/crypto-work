@@ -18,18 +18,26 @@
 #define DUMP_ROUND_DATA 0
 #endif
 
-#define HASH_BLOCK_SIZE         64	/* 512 bits = 64 bytes */
-#define HASH_LEN_SIZE           8	/*  64 bits =  8 bytes */
-#define HASH_LEN_OFFSET         (HASH_BLOCK_SIZE - HASH_LEN_SIZE)
-#define HASH_DIGEST_SIZE        16  /* 128 bits = 16 bytes */
+#define MD4_BLOCK_SIZE          64  /* 512 bits = 64 bytes */
+#define MD4_LEN_SIZE            8   /*  64 bits =  8 bytes */
+#define MD4_LEN_OFFSET          (MD4_BLOCK_SIZE - MD4_LEN_SIZE)
+#define MD4_DIGEST_SIZE 16  /* 128 bits = 16 bytes */
 
-#define HASH_PADDING_PATTERN	0x80
-#define HASH_ROUND_NUM			64
+#define MD4_PADDING_PATTERN     0x80
+#define MD4_ROUND_NUM           64
+
+#define HASH_BLOCK_SIZE         MD4_BLOCK_SIZE
+#define HASH_LEN_SIZE           MD4_LEN_SIZE
+#define HASH_LEN_OFFSET         MD4_LEN_OFFSET
+#define HASH_DIGEST_SIZE        MD4_DIGEST_SIZE
+
+#define HASH_PADDING_PATTERN    MD4_PADDING_PATTERN
+#define HASH_ROUND_NUM          MD4_ROUND_NUM
 
 typedef uint32_t (*md4_func)(uint32_t x, uint32_t y, uint32_t z);
 
 /* MD4 Round Constants, refer rfc1320, section 3.4 */
-static uint32_t T[3] = 
+static uint32_t T[3] =
 {
     0x00000000, /* Round 1( 0 ~ 15), placeholder of T[idx/16] in MD4_OP */
     0x5A827999, /* Round 2(16 ~ 31), square root of 2 */

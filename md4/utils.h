@@ -1,25 +1,25 @@
 #ifndef __UTILS__H
 #define __UTILS__H
 
-#define	ENDIAN_LITTLE	1234
-#define	ENDIAN_BIG   	4321
+#define ENDIAN_LITTLE  1234
+#define ENDIAN_BIG     4321
 
 #define ENDIANNESS ENDIAN_LITTLE
 
-/* Swap bytes in 16 bit value.  */
+/* Swap bytes in 16 bit value. */
 #define __bswap_16(x) \
      ((unsigned short int)     \
       ((((x) >> 8) & 0xff)     \
      | (((x) & 0xff) << 8)))
 
-/* Swap bytes in 32 bit value.  */
+/* Swap bytes in 32 bit value. */
 #define __bswap_32(x)    \
      ((((x) & 0xff000000) >> 24)  \
      | (((x) & 0x00ff0000) >>  8) \
      | (((x) & 0x0000ff00) <<  8) \
      | (((x) & 0x000000ff) << 24))
 
-/* Swap bytes in 64 bit value.  */
+/* Swap bytes in 64 bit value. */
 #define __bswap_64(x)               \
      ((((x) & 0xff00000000000000ull) >> 56)  \
      | (((x) & 0x00ff000000000000ull) >> 40) \
