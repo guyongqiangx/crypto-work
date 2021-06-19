@@ -1,59 +1,6 @@
 #include <stdio.h>
 #include "utils.h"
 
-/* unsigned long (32 bits) to little endian char buffer */
-int htole32c(unsigned char *data, unsigned long x)
-{
-    *data ++ = (unsigned char)( x     &0xff);
-    *data ++ = (unsigned char)((x>> 8)&0xff);
-    *data ++ = (unsigned char)((x>>16)&0xff);
-    *data    = (unsigned char)((x>>24)&0xff);
-
-    return 0;
-}
-
-/* unsigned long long (64 bits) to little endian char buffer */
-int htole64c(unsigned char *data, unsigned long long x)
-{
-    *data    = (unsigned char)( x	  &0xff);
-    *data ++ = (unsigned char)((x>> 8)&0xff);
-    *data ++ = (unsigned char)((x>>16)&0xff);
-    *data ++ = (unsigned char)((x>>24)&0xff);
-    *data ++ = (unsigned char)((x>>32)&0xff);
-    *data ++ = (unsigned char)((x>>40)&0xff);
-    *data ++ = (unsigned char)((x>>48)&0xff);
-    *data    = (unsigned char)((x>>56)&0xff);
-
-    return 0;
-}
-
-/* unsigned long (32 bits) to big endian char buffer */
-int htobe32c(unsigned char *data, unsigned long x)
-{
-    *data ++ = (unsigned char)((x>>24)&0xff);
-    *data ++ = (unsigned char)((x>>16)&0xff);
-    *data ++ = (unsigned char)((x>> 8)&0xff);
-    *data    = (unsigned char)( x     &0xff);
-
-    return 0;
-}
-
-/* unsigned long long (64 bits) to big endian char buffer */
-int htobe64c(unsigned char *data, unsigned long long x)
-{
-    *data ++ = (unsigned char)((x>>56)&0xff);
-    *data ++ = (unsigned char)((x>>48)&0xff);
-    *data ++ = (unsigned char)((x>>40)&0xff);
-    *data ++ = (unsigned char)((x>>32)&0xff);
-    *data ++ = (unsigned char)((x>>24)&0xff);
-    *data ++ = (unsigned char)((x>>16)&0xff);
-    *data ++ = (unsigned char)((x>> 8)&0xff);
-    *data    = (unsigned char)( x	  &0xff);
-
-    return 0;
-}
-
-
 #define DUMP_LINE_SIZE 16
 int print_buffer(const void *buf, unsigned long len, const char *indent)
 {
@@ -62,7 +9,6 @@ int print_buffer(const void *buf, unsigned long len, const char *indent)
     {
         if (i%DUMP_LINE_SIZE == 0)
         {
-            //printf((sizeof(size_t) == 8)?"%s%04lX:":"%s%04X:", indent, i);
             printf("%s%04lX:", indent, i);
         }
 

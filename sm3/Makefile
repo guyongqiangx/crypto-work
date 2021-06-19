@@ -26,7 +26,7 @@ all: sm3 test
 
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) -o $@ $(LIBS) $(INCLUDE)
-#	$(STRIP) --strip-unneeded $(TARGET)
+#	$(STRIP) --strip-all $(TARGET)
 
 test: $(TARGET)
 	@echo

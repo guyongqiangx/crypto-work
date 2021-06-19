@@ -1,3 +1,9 @@
+/*
+ * @        file: sm3test.c
+ * @ description: test tool for sm3
+ * @      author: Gu Yongqiang
+ * @        blog: https://blog.csdn.net/guyongqiangx
+ */
 #include <stdio.h>  /* printf, fopen, fread, fclose... */
 #include <stdlib.h> /* exit */
 #include <string.h> /* strlen */
@@ -82,6 +88,11 @@ struct HASH_ITEM {
         80,
         "ad81805321f3e69d251235bf886a564844873b56dd7dde400f055b7dde39307a"
     },
+    { /* 7 */
+        "abcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcd",
+        64,
+        "debe9ff92275b8a138604889c18e5a4d6fdb70e5387e5765293dcba39c0c5732"
+    },
 };
 
 /*
@@ -96,10 +107,10 @@ static int internal_digest_tests(const char *argv0)
 
     for (item=&hashes[0]; item<(&hashes[0]+sizeof(hashes)/sizeof(hashes[0])); item++)
     {
-        SM3((unsigned char*)item->str, item->len, digest);
         printf("%s(\"%s\")\n", argv0, item->str);
-        printf("Expect: %s\n", item->md);
-        printf("Result: ");
+        SM3((unsigned char*)item->str, item->len, digest);
+        printf("  Expect: %s\n", item->md);
+        printf("  Result: ");
         print_digest(digest);
         printf("\n\n");
     }
@@ -114,9 +125,10 @@ static int digest_string(const char *argv0, const unsigned char *string, uint32_
 {
     unsigned char digest[HASH_DIGEST_SIZE];
 
+    printf("%s(\"%s\") = ", argv0, string);
+
     SM3(string, len, digest);
 
-    printf("%s(\"%s\") = ", argv0, string);
     print_digest(digest);
     printf("\n");
 
@@ -145,6 +157,8 @@ static int digest_file(const char *argv0, const char *filename)
     }
     else
     {
+        printf("%s(%s) = ", argv0, filename);
+
         SM3_Init(&c);
         while ((len = fread(buf, 1, FILE_BLOCK_SIZE, f)))
         {
@@ -154,7 +168,6 @@ static int digest_file(const char *argv0, const char *filename)
 
         fclose(f);
 
-        printf("%s(%s) = ", argv0, filename);
         print_digest(digest);
         printf("\n");
 

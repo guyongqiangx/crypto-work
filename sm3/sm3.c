@@ -1,10 +1,16 @@
+/*
+ * @        file: sm3.c
+ * @ description: implementation for the SM3 Cryptographic Hash Algorithm
+ * @      author: Gu Yongqiang
+ * @        blog: https://blog.csdn.net/guyongqiangx
+ */
 #include <stdio.h>
 #include <string.h>
 
 #include "utils.h"
 #include "sm3.h"
 
-//#define DEBUG
+// #define DEBUG
 
 #ifdef DEBUG
 #define DBG(...) printf(__VA_ARGS__)
@@ -14,6 +20,7 @@
 #define DUMP_ROUND_DATA 1
 #else
 #define DBG(...)
+#define DUMP_SCHED_DATA 0
 #define DUMP_BLOCK_DATA 0
 #define DUMP_BLOCK_HASH 0
 #define DUMP_ROUND_DATA 0
@@ -99,7 +106,7 @@ int SM3_Init(SM3_CTX *c)
     return ERR_OK;
 }
 
-static int SM3_PrepareScheduleWord(const void *block, uint32_t *W, uint32_t *Wp)
+static int SM3_PrepareScheduleWord(const uint32_t *block, uint32_t *W, uint32_t *Wp)
 {
     uint32_t j;
 
@@ -112,7 +119,7 @@ static int SM3_PrepareScheduleWord(const void *block, uint32_t *W, uint32_t *Wp)
     for (j=0; j<(HASH_ROUND_NUM+4); j++)
     {
         if (j<=15) /*  0 <= j <= 15 */
-            W[j] = be32toh(DWORD(block, j));
+            W[j] = be32toh(block[j]);
         else	   /* 16 <= j <= 67 */
             W[j] = P1(W[j-16] ^ W[j-9] ^ ROTL(W[j-3],15)) ^ ROTL(W[j-13],7) ^ W[j-6];
     }
@@ -124,23 +131,45 @@ static int SM3_PrepareScheduleWord(const void *block, uint32_t *W, uint32_t *Wp)
     }
 
 #if (DUMP_SCHED_DATA == 1)
-    printf("W1...W67:\n       ");
+    printf("          W1...W67:\n");
     for (j=0; j<(HASH_ROUND_NUM+4); j++)
     {
-        printf("%08x ", W[j]);
-        if (j%8 == 7)
-            printf("\n       ");
-    }
-    printf("\n");
+        if (j%8 == 0) /* line indent */
+        {
+            printf("          ");
+        }
 
-    printf("W'1...W'63:\n       ");
+        printf("%08x ", W[j]);
+
+        if (j%8 == 7)
+        {
+            printf("\n");
+        }
+        else if (j == (HASH_ROUND_NUM+4-1))
+        {
+            printf("\n"); /* last one */
+        }
+    }
+
+    printf("          W'1...W'63:\n");
     for (j=0; j<HASH_ROUND_NUM; j++)
     {
+        if (j%8 == 0) /* line indent */
+        {
+            printf("          ");
+        }
+
         printf("%08x ", Wp[j]);
+
         if (j%8 == 7)
-            printf("\n       ");
+        {
+            printf("\n");
+        }
+        else if (j == HASH_ROUND_NUM-1)
+        {
+            printf("\n"); /* last one */
+        }
     }
-    printf("\n");
 #endif
 
     return ERR_OK;
@@ -160,8 +189,10 @@ static int SM3_ProcessBlock(SM3_CTX *ctx, const void *block)
     }
 
 #if (DUMP_BLOCK_DATA == 1)
-    DBG("BLOCK: %llu\n", ctx->total/HASH_BLOCK_SIZE);
-    print_buffer(block, HASH_BLOCK_SIZE, " ");
+    DBG("---------------------------------------------------------\n");
+    DBG("   BLOCK: %llu\n", ctx->total/HASH_BLOCK_SIZE);
+    DBG("    DATA:\n");
+    print_buffer(block, HASH_BLOCK_SIZE, "    ");
 #endif
 
     /* prepare schedule word */
@@ -177,7 +208,7 @@ static int SM3_ProcessBlock(SM3_CTX *ctx, const void *block)
     H = ctx->hash.h;
 
 #if (DUMP_BLOCK_HASH == 1)
-    DBG("   IV: %08x %08x %08x %08x %08x %08x %08x %08x\n",
+    DBG("      IV: %08x %08x %08x %08x %08x %08x %08x %08x\n",
         ctx->hash.a, ctx->hash.b, ctx->hash.c, ctx->hash.d, ctx->hash.e, ctx->hash.f, ctx->hash.g, ctx->hash.h);
 #endif
 
@@ -198,10 +229,10 @@ static int SM3_ProcessBlock(SM3_CTX *ctx, const void *block)
 
 #if (DUMP_ROUND_DATA == 1)
 #if 1 /* Don't show temp variables: SS1/SS2/TT1/TT2/W/W' */
-        DBG("   %02d: A=0x%08x, B=0x%08x, C=0x%08x, D=0x%08x, E=0x%08x, F=0x%08x, G=0x%08x, H=0x%08x\n", \
+        DBG("      %02d: A=0x%08x, B=0x%08x, C=0x%08x, D=0x%08x, E=0x%08x, F=0x%08x, G=0x%08x, H=0x%08x\n", \
                 j, A, B, C, D, E, F, G, H);
 #else
-        DBG("   %02d: SS1=0x%08x, SS2=0x%08x, TT1=0x%08x, TT2=0x%08x, W=0x%08x, Wp=0x%08x\n"\
+        DBG("      %02d: SS1=0x%08x, SS2=0x%08x, TT1=0x%08x, TT2=0x%08x, W=0x%08x, Wp=0x%08x\n"\
             "         A=0x%08x,    B=0x%08x,   C=0x%08x,   D=0x%08x, E=0x%08x, F=0x%08x, G=0x%08x, H=0x%08x\n", \
                 j, SS1, SS2, TT1, TT2, W[j], Wp[j], A, B, C, D, E, F, G, H);
 #endif
@@ -218,7 +249,7 @@ static int SM3_ProcessBlock(SM3_CTX *ctx, const void *block)
     ctx->hash.h ^= H;
 
 #if (DUMP_BLOCK_HASH == 1)
-    DBG(" HASH: %08x %08x %08x %08x %08x %08x %08x %08x\n",
+    DBG("    HASH: %08x %08x %08x %08x %08x %08x %08x %08x\n",
         ctx->hash.a, ctx->hash.b, ctx->hash.c, ctx->hash.d, ctx->hash.e, ctx->hash.f, ctx->hash.g, ctx->hash.h);
 #endif
 
@@ -293,7 +324,8 @@ int SM3_Update(SM3_CTX *c, const void *data, size_t len)
 
 int SM3_Final(unsigned char *md, SM3_CTX *c)
 {
-    uint32_t *buf;
+    uint32_t *temp;
+    //uint64_t *buf;
 
     if ((NULL == c) || (NULL == md))
     {
@@ -314,9 +346,13 @@ int SM3_Final(unsigned char *md, SM3_CTX *c)
 
         memset(&c->last.buf[0], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE);
         c->last.used = 0;
- 
-        //*(uint64_t *)&(c->last.buf[HASH_LEN_OFFSET]) = htobe64(c->total << 3);
-        htobe64c(&(c->last.buf[HASH_LEN_OFFSET]), c->total << 3);
+
+        /* save length */
+        //buf = (uint64_t *)&(c->last.buf[HASH_LEN_OFFSET]);
+        //*buf = htobe64(c->total << 3);
+        temp = (uint32_t *)&(c->last.buf[HASH_LEN_OFFSET]);
+        temp[0] = htobe32((c->total << 3) >> 32 & 0xFFFFFFFF);
+        temp[1] = htobe32((c->total << 3) & 0xFFFFFFFF);
 
         SM3_ProcessBlock(c, &c->last.buf);
     }
@@ -331,21 +367,25 @@ int SM3_Final(unsigned char *md, SM3_CTX *c)
         /* padding 0s */
         memset(&c->last.buf[c->last.used], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE - c->last.used);
 
-        //*(uint64_t *)&c->last.buf[HASH_LEN_OFFSET] = htobe64(c->total << 3);
-        htobe64c(&(c->last.buf[HASH_LEN_OFFSET]), c->total << 3);
+        /* save length */
+        //buf = (uint64_t *)&(c->last.buf[HASH_LEN_OFFSET]);
+        //*buf = htobe64(c->total << 3);
+        temp = (uint32_t *)&(c->last.buf[HASH_LEN_OFFSET]);
+        temp[0] = htobe32((c->total << 3) >> 32 & 0xFFFFFFFF);
+        temp[1] = htobe32((c->total << 3) & 0xFFFFFFFF);
 
         SM3_ProcessBlock(c, &c->last.buf);
     }
 
-    buf = (uint32_t *)md;
-    buf[0] = htobe32(c->hash.a);
-    buf[1] = htobe32(c->hash.b);
-    buf[2] = htobe32(c->hash.c);
-    buf[3] = htobe32(c->hash.d);
-    buf[4] = htobe32(c->hash.e);
-    buf[5] = htobe32(c->hash.f);
-    buf[6] = htobe32(c->hash.g);
-    buf[7] = htobe32(c->hash.h);
+    temp = (uint32_t *)md;
+    temp[0] = htobe32(c->hash.a);
+    temp[1] = htobe32(c->hash.b);
+    temp[2] = htobe32(c->hash.c);
+    temp[3] = htobe32(c->hash.d);
+    temp[4] = htobe32(c->hash.e);
+    temp[5] = htobe32(c->hash.f);
+    temp[6] = htobe32(c->hash.g);
+    temp[7] = htobe32(c->hash.h);
 
     return ERR_OK;
 }
