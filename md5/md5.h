@@ -1,3 +1,9 @@
+/*
+ * @        file: md5.h
+ * @ description: header file for md5.c
+ * @      author: Gu Yongqiang
+ * @        blog: https://blog.csdn.net/guyongqiangx
+ */
 #ifndef __ROCKY_MD5__H
 #define __ROCKY_MD5__H
 

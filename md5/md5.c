@@ -1,3 +1,9 @@
+/*
+ * @        file: md5.c
+ * @ description: implementation for the MD5 Message-Digest Algorithm
+ * @      author: Gu Yongqiang
+ * @        blog: https://blog.csdn.net/guyongqiangx
+ */
 #include <stdio.h>
 #include <string.h>
 
@@ -18,25 +24,25 @@
 #define DUMP_ROUND_DATA 0
 #endif
 
-#define MD5_BLOCK_SIZE		64	/* 512 bits = 64 bytes */
-#define MD5_LEN_SIZE	 	 8	/*  64 bits =  8 bytes */
-#define MD5_LEN_OFFSET      (MD5_BLOCK_SIZE - MD5_LEN_SIZE)
-#define MD5_DIGEST_SIZE     16  /* 128 bits = 16 bytes */
+#define MD5_BLOCK_SIZE          64  /* 512 bits = 64 bytes */
+#define MD5_LEN_SIZE            8   /*  64 bits =  8 bytes */
+#define MD5_LEN_OFFSET          (MD5_BLOCK_SIZE - MD5_LEN_SIZE)
+#define MD5_DIGEST_SIZE         16  /* 128 bits = 16 bytes */
 
-#define MD5_PADDING_PATTERN 	0x80
-#define MD5_ROUND_NUM			64
+#define MD5_PADDING_PATTERN     0x80
+#define MD5_ROUND_NUM           64
 
-#define HASH_BLOCK_SIZE		MD5_BLOCK_SIZE
-#define HASH_LEN_SIZE		MD5_LEN_SIZE
-#define HASH_LEN_OFFSET		MD5_LEN_OFFSET
-#define HASH_DIGEST_SIZE	MD5_DIGEST_SIZE
+#define HASH_BLOCK_SIZE         MD5_BLOCK_SIZE
+#define HASH_LEN_SIZE           MD5_LEN_SIZE
+#define HASH_LEN_OFFSET         MD5_LEN_OFFSET
+#define HASH_DIGEST_SIZE        MD5_DIGEST_SIZE
 
-#define HASH_PADDING_PATTERN	MD5_PADDING_PATTERN
-#define HASH_ROUND_NUM			MD5_ROUND_NUM
+#define HASH_PADDING_PATTERN    MD5_PADDING_PATTERN
+#define HASH_ROUND_NUM          MD5_ROUND_NUM
 
 typedef uint32_t (*md5_func)(uint32_t x, uint32_t y, uint32_t z);
 
-/* SHA1 Constants */
+/* MD5 Constants */
 static uint32_t T[64] = 
 {
     /* Round 1 */
@@ -62,59 +68,31 @@ static uint32_t ROTL(uint32_t x, uint8_t shift)
     return (x << shift) | (x >> (32 - shift));
 }
 
-#if 0
-/* ROTate Right (cirular right shift) */
-static uint32_t ROTR(uint32_t x, uint8_t shift)
-{
-    return (x >> shift) | (x << (32 - shift));
-}
-
-/* Right SHift */
-static uint32_t SHR(uint32_t x, uint8_t shift)
-{
-    return (x >> shift);
-}
-#endif
-
 static uint32_t F(uint32_t x, uint32_t y, uint32_t z)
 {
-    //DBG("F(0x%08x, 0x%08x, 0x%08x);\n", x, y, z);
     return (x & y) | ((~x) & z);
 }
 
 static uint32_t G(uint32_t x, uint32_t y, uint32_t z)
 {
-    //DBG("G(0x%08x, 0x%08x, 0x%08x);\n", x, y, z);
     return (x & z) | (y & (~z));
 }
 
 static uint32_t H(uint32_t x, uint32_t y, uint32_t z)
 {
-    //DBG("H(0x%08x, 0x%08x, 0x%08x);\n", x, y, z);
     return x ^ y ^ z;
 }
 
 static uint32_t I(uint32_t x, uint32_t y, uint32_t z)
 {
-    //DBG("I(0x%08x, 0x%08x, 0x%08x);\n", x, y, z);
     return y ^ (x | (~z));;
 }
-
 
 /* MD5 Functions */
 static md5_func g[4] =
 {
     F, G, H, I
 };
-
-
-/*
- * "abc" -->   0x61,     0x62,     0x63
- *   Origin: 0b0110 0001 0110 0010 0110 0011
- *  Padding: 0b0110 0001 0110 0010 0110 0011 1000 0000 .... 0000 0000  0000 0000 .... 0001 1000
- *                                          (|<-------------------->|)(|<------- 0x18 ------->|)
- *   Format: "abc" + 1 + 0 x 423 + 0x18
- */
 
 int MD5_Init(MD5_CTX *c)
 {
@@ -136,7 +114,7 @@ int MD5_Init(MD5_CTX *c)
     return ERR_OK;
 }
 
-static int MD5_PrepareScheduleWord(const void *block, uint32_t *W)
+static int MD5_PrepareScheduleWord(const uint32_t *block, uint32_t *W)
 {
     uint32_t i;
 
@@ -147,28 +125,24 @@ static int MD5_PrepareScheduleWord(const void *block, uint32_t *W)
 
     for (i=0; i<16; i++)
     {
-        W[i] = DWORD(block, i);
+        W[i] = le32toh(block[i]);
     }
 
     return ERR_OK;
 }
 
-#if 0
-#define MD5_OP(a,b,c,d,k,s,i) \
-    a = b + ((a + (g[(i-1)/16])(b, c, d) + X[k] + T[i-1])<<(s))
-#else
+#if (DUMP_ROUND_DATA == 1)
 #define MD5_OP(a,b,c,d,k,s,i) \
     a = b + ROTL(a + (g[(i-1)/16])(b, c, d) + X[k] + T[i-1], s); \
-    DBG("%02d: a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x, X=0x%08x, T=0x%08x\n", i-1, a, b, c, d, X[k], T[i-1]);
+    DBG("      %02d: a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x, X=0x%08x, T=0x%08x\n", i-1, a, b, c, d, X[k], T[i-1]);
+#else
+#define MD5_OP(a,b,c,d,k,s,i) \
+    a = b + ROTL(a + (g[(i-1)/16])(b, c, d) + X[k] + T[i-1], s);
 #endif
 
 static int MD5_ProcessBlock(MD5_CTX *ctx, const void *block)
 {
-    //uint32_t i;
-    //uint32_t t;
     uint32_t X[16];
-    //uint32_t T;
-    //uint32_t AA, BB, CC, DD;
     uint32_t a, b, c, d;
 
     if ((NULL == ctx) || (NULL == block))
@@ -177,8 +151,15 @@ static int MD5_ProcessBlock(MD5_CTX *ctx, const void *block)
     }
 
 #if (DUMP_BLOCK_DATA == 1)
-    DBG("BLOCK: %llu\n", ctx->total/HASH_BLOCK_SIZE);
-    print_buffer(block, HASH_BLOCK_SIZE, " ");
+    DBG("---------------------------------------------------------\n");
+    DBG("   BLOCK: %llu\n", ctx->total/HASH_BLOCK_SIZE);
+    DBG("    DATA:\n");
+    print_buffer(block, HASH_BLOCK_SIZE, "    ");
+#endif
+
+#if (DUMP_BLOCK_HASH == 1)
+    DBG("  (LE)IV: %08x %08x %08x %08x\n",
+        ctx->hash.a, ctx->hash.b, ctx->hash.c, ctx->hash.d);
 #endif
 
     /* prepare schedule word */
@@ -194,7 +175,6 @@ static int MD5_ProcessBlock(MD5_CTX *ctx, const void *block)
     MD5_OP(a, b, c, d,  4,  7,  5); MD5_OP(d, a, b, c,  5, 12,  6); MD5_OP(c, d, a, b,  6, 17,  7); MD5_OP(b, c, d, a,  7, 22,  8);
     MD5_OP(a, b, c, d,  8,  7,  9); MD5_OP(d, a, b, c,  9, 12, 10); MD5_OP(c, d, a, b, 10, 17, 11); MD5_OP(b, c, d, a, 11, 22, 12);
     MD5_OP(a, b, c, d, 12,  7, 13); MD5_OP(d, a, b, c, 13, 12, 14); MD5_OP(c, d, a, b, 14, 17, 15); MD5_OP(b, c, d, a, 15, 22, 16);
-
 
     /* Round 2 */
     MD5_OP(a, b, c, d,  1,  5, 17); MD5_OP(d, a, b, c,  6,  9, 18); MD5_OP(c, d, a, b, 11, 14, 19); MD5_OP(b, c, d, a,  0, 20, 20);
@@ -225,7 +205,7 @@ static int MD5_ProcessBlock(MD5_CTX *ctx, const void *block)
         a = d;
 
 #if (DUMP_ROUND_DATA == 1)
-        DBG("   %02d: T=0x%08x, W=0x%08x, a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x\n",
+        DBG("      %02d: T=0x%08x, W=0x%08x, a=0x%08x, b=0x%08x, c=0x%08x, d=0x%08x\n",
                 t, T, W[t], a, b, c, d);
 #endif
     }
@@ -236,7 +216,7 @@ static int MD5_ProcessBlock(MD5_CTX *ctx, const void *block)
     ctx->hash.c += c;
     ctx->hash.d += d;
 #if (DUMP_BLOCK_HASH == 1)
-    DBG(" HASH: %08x%08x%08x%08x\n",
+    DBG(" (LE)OUT: %08x %08x %08x %08x\n",
         ctx->hash.a, ctx->hash.b, ctx->hash.c, ctx->hash.d);
 #endif
 
@@ -311,7 +291,7 @@ int MD5_Update(MD5_CTX *c, const void *data, unsigned long len)
 
 int MD5_Final(unsigned char *md, MD5_CTX *c)
 {
-    uint32_t *buf;
+    uint32_t *temp;
 
     if ((NULL == c) || (NULL == md))
     {
@@ -333,10 +313,10 @@ int MD5_Final(unsigned char *md, MD5_CTX *c)
         memset(&c->last.buf[0], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE);
         c->last.used = 0;
 
-        //*(uint32_t *)&(c->last.buf[HASH_LEN_OFFSET]) = total & 0xFFFFFFFF;
-        //*(uint32_t *)&(c->last.buf[HASH_LEN_OFFSET+3]) = (total >> 32) & 0xFFFFFFFF;
-        htole32c(&(c->last.buf[HASH_LEN_OFFSET]), (c->total << 3) & 0xFFFFFFFF);
-        htole32c(&(c->last.buf[HASH_LEN_OFFSET + 3]), ((c->total << 3) >> 32) & 0xFFFFFFFF);
+        /* save length */
+        temp = (uint32_t *)&(c->last.buf[HASH_LEN_OFFSET]);
+        temp[0] = htole32((c->total << 3) & 0xFFFFFFFF);
+        temp[1] = htole32(((c->total << 3) >> 32) & 0xFFFFFFFF);
         MD5_ProcessBlock(c, &c->last.buf);
     }
     else /* 0 <= last.used < HASH_BLOCK_SIZE - HASH_LEN_SIZE */
@@ -350,19 +330,19 @@ int MD5_Final(unsigned char *md, MD5_CTX *c)
         /* padding 0s */
         memset(&c->last.buf[c->last.used], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE - c->last.used);
 
-        //*(uint32_t *)&(c->last.buf[HASH_LEN_OFFSET]) = total & 0xFFFFFFFF;
-        //*(uint32_t *)&(c->last.buf[HASH_LEN_OFFSET+3]) = (total >> 32) & 0xFFFFFFFF;
-        htole32c(&(c->last.buf[HASH_LEN_OFFSET]), (c->total << 3) & 0xFFFFFFFF);
-        htole32c(&(c->last.buf[HASH_LEN_OFFSET + 3]), ((c->total << 3) >> 32) & 0xFFFFFFFF);
+        /* save length */
+        temp = (uint32_t *)&(c->last.buf[HASH_LEN_OFFSET]);
+        temp[0] = htole32((c->total << 3) & 0xFFFFFFFF);
+        temp[1] = htole32(((c->total << 3) >> 32) & 0xFFFFFFFF);
         MD5_ProcessBlock(c, &c->last.buf);
     }
 
     /* LE format, different from SHA family(big endian) */
-    buf = (uint32_t *)md;
-    buf[0] = c->hash.a;
-    buf[1] = c->hash.b;
-    buf[2] = c->hash.c;
-    buf[3] = c->hash.d;
+    temp = (uint32_t *)md;
+    temp[0] = htole32(c->hash.a);
+    temp[1] = htole32(c->hash.b);
+    temp[2] = htole32(c->hash.c);
+    temp[3] = htole32(c->hash.d);
 
     return ERR_OK;
 }
