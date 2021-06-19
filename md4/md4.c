@@ -118,20 +118,18 @@ int MD4_Init(MD4_CTX *c)
     return ERR_OK;
 }
 
-static int MD4_PrepareScheduleWord(const unsigned char *block, uint32_t *X)
+static int MD4_PrepareScheduleWord(const uint32_t *block, uint32_t *X)
 {
     uint32_t i;
-    uint32_t *temp;
 
     if ((NULL == block) || (NULL == X))
     {
         return ERR_INV_PARAM;
     }
 
-    temp = (uint32_t *)block;
     for (i=0; i<HASH_BLOCK_SIZE/4; i++)
     {
-        X[i] = le32toh(temp[i]);
+        X[i] = le32toh(block[i]);
     }
 
     return ERR_OK;
