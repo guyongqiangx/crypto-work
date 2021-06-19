@@ -1,3 +1,9 @@
+/*
+ * @        file: sha1.h
+ * @ description: header file for sha1.c
+ * @      author: Gu Yongqiang
+ * @        blog: https://blog.csdn.net/guyongqiangx
+ */
 #ifndef __ROCKY_SHA1__H
 #define __ROCKY_SHA1__H
 

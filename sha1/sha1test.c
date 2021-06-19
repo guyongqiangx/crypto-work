@@ -1,3 +1,9 @@
+/*
+ * @        file: sha1test.c
+ * @ description: test tool for sha1
+ * @      author: Gu Yongqiang
+ * @        blog: https://blog.csdn.net/guyongqiangx
+ */
 #include <stdio.h>  /* printf, fopen, fread, fclose... */
 #include <stdlib.h> /* exit */
 #include <string.h> /* strlen */
@@ -96,10 +102,10 @@ static int internal_digest_tests(const char *argv0)
 
     for (item=&hashes[0]; item<(&hashes[0]+sizeof(hashes)/sizeof(hashes[0])); item++)
     {
-        SHA1((unsigned char*)item->str, item->len, digest);
         printf("%s(\"%s\")\n", argv0, item->str);
-        printf("Expect: %s\n", item->md);
-        printf("Result: ");
+        SHA1((unsigned char*)item->str, item->len, digest);
+        printf("  Expect: %s\n", item->md);
+        printf("  Result: ");
         print_digest(digest);
         printf("\n\n");
     }
@@ -114,9 +120,10 @@ static int digest_string(const char *argv0, const unsigned char *string, uint32_
 {
     unsigned char digest[HASH_DIGEST_SIZE];
 
+    printf("%s(\"%s\") = ", argv0, string);
+
     SHA1(string, len, digest);
 
-    printf("%s(\"%s\") = ", argv0, string);
     print_digest(digest);
     printf("\n");
 
@@ -145,6 +152,8 @@ static int digest_file(const char *argv0, const char *filename)
     }
     else
     {
+        printf("%s(%s) = ", argv0, filename);
+
         SHA1_Init(&c);
         while ((len = fread(buf, 1, FILE_BLOCK_SIZE, f)))
         {
@@ -154,7 +163,6 @@ static int digest_file(const char *argv0, const char *filename)
 
         fclose(f);
 
-        printf("%s(%s) = ", argv0, filename);
         print_digest(digest);
         printf("\n");
 
