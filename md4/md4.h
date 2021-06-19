@@ -1,3 +1,9 @@
+/*
+ * @        file: md4.h
+ * @ description: header file for md4.c
+ * @      author: Gu Yongqiang
+ * @        blog: https://blog.csdn.net/guyongqiangx
+ */
 #ifndef __ROCKY_MD4__H
 #define __ROCKY_MD4__H
 

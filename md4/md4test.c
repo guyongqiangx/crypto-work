@@ -1,3 +1,9 @@
+/*
+ * @        file: md4test.c
+ * @ description: test tool for md4
+ * @      author: Gu Yongqiang
+ * @        blog: https://blog.csdn.net/guyongqiangx
+ */
 #include <stdio.h>  /* printf, fopen, fread, fclose... */
 #include <stdlib.h> /* exit */
 #include <string.h> /* strlen */

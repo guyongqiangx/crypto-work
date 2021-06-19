@@ -1,3 +1,9 @@
+/*
+ * @        file: md4.c
+ * @ description: implementation for the MD4 Message-Digest Algorithm
+ * @      author: Gu Yongqiang
+ * @        blog: https://blog.csdn.net/guyongqiangx
+ */
 #include <stdio.h>
 #include <string.h>
 
