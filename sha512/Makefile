@@ -26,12 +26,15 @@ all: sha512 test
 
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) -o $@ $(LIBS) $(INCLUDE)
-#	$(STRIP) --strip-unneeded $(TARGET)
+#	$(STRIP) --strip-all $(TARGET)
 
 test: $(TARGET)
 	@echo
 	@echo "Run Test..."
-	./$(TARGET) -x
+	./$(TARGET) -a sha384 -x
+	./$(TARGET) -a sha512 -x
+	./$(TARGET) -a sha512-224 -x
+	./$(TARGET) -a sha512-256 -x
 
 clean:
 	$(RM) $(RMFLAGS) $(TARGET) $(OBJS)
