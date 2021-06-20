@@ -85,7 +85,7 @@ struct HASH_ITEM {
  * $ for alg in "sha224" "sha256"; \
  *   do \
  *     echo "Algorithm: $alg"; \
- *     for str in "" "abc" "message digest" "abcdefghijklmnopqrstuvwxyz" "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" "12345678901234567890123456789012345678901234567890123456789012345678901234567890"; \
+ *     for str in "" "a" "abc" "message digest" "abcdefghijklmnopqrstuvwxyz" "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" "12345678901234567890123456789012345678901234567890123456789012345678901234567890"; \
  *     do \
  *       echo "echo -n \"$str\" | openssl dgst -$alg"; \
  *       echo -n $str | openssl dgst -$alg; \
@@ -96,6 +96,8 @@ struct HASH_ITEM {
  * Algorithm: sha224
  * echo -n "" | openssl dgst -sha224
  * (stdin)= d14a028c2a3a2bc9476102bb288234c415a2b01f828ea62ac5b3e42f
+ * echo -n "a" | openssl dgst -sha224
+ * (stdin)= abd37534c7d9a2efb9465de931cd7055ffdb8879563ae98078d6d6d5
  * echo -n "abc" | openssl dgst -sha224
  * (stdin)= 23097d223405d8228642a477bda255b32aadbce4bda0b3f7e36c9da7
  * echo -n "message digest" | openssl dgst -sha224
@@ -110,6 +112,8 @@ struct HASH_ITEM {
  * Algorithm: sha256
  * echo -n "" | openssl dgst -sha256
  * (stdin)= e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+ * echo -n "a" | openssl dgst -sha256
+ * (stdin)= ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb
  * echo -n "abc" | openssl dgst -sha256
  * (stdin)= ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
  * echo -n "message digest" | openssl dgst -sha256
@@ -128,37 +132,37 @@ struct HASH_ITEM sha224_hashes[] =
     { /* 0 */
         "",
         0,
-        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b"
+        "d14a028c2a3a2bc9476102bb288234c415a2b01f828ea62ac5b3e42f"
     },
     { /* 1 */
         "a",
         1,
-        "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785"
+        "abd37534c7d9a2efb9465de931cd7055ffdb8879563ae98078d6d6d5"
     },
     { /* 2 */
         "abc",
         3,
-        "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61"
+        "23097d223405d8228642a477bda255b32aadbce4bda0b3f7e36c9da7"
     },
     { /* 3 */
         "message digest",
         14,
-        "f7846f55cf23e14eebeab5b4e1550cad5b509e3348fbc4efa3a1413d"
+        "2cb21c83ae2f004de7e81c3c7019cbcb65b71ab656b22d6d0c39b8eb"
     },
     { /* 4 */
         "abcdefghijklmnopqrstuvwxyz",
         26,
-        "71c480df93d6ae2f1efad1447c66c9525e316218cf51fc8d9ed832f2"
+        "45a5f72c39c5cff2522eb3429799e49e5f44b356ef926bcf390dccc2"
     },
     { /* 5 */
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
         62,
-        "db4bfcbd4da0cd85a60c3c37d3fbd8805c77f15fc6b1fdfe614ee0a7"
+        "bff72b4fcb7d75e5632900ac5f90d219e05e97a7bde72e740db393d9"
     },
     { /* 6 */
         "12345678901234567890123456789012345678901234567890123456789012345678901234567890",
         80,
-        "f371bc4a311f2b009eef952dd83ca80e2b60026c8e935592d0f9c308"
+        "b50aecbe4e9bb0b57bc5f3ae760a8e01db24f203fb3cdcd13148046e"
     },
     {   /* End */
         NULL, 0, ""

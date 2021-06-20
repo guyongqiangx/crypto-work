@@ -403,18 +403,16 @@ int SHA224_Final(unsigned char *md, SHA256_CTX *c)
 
 unsigned char *SHA224(const unsigned char *d, size_t n, unsigned char *md)
 {
-    unsigned char sha256_md[SHA256_DIGEST_SIZE];
+    SHA256_CTX c;
 
     if ((NULL == d) || (NULL == md))
     {
         return NULL;
     }
 
-    memset(sha256_md, 0, sizeof(sha256_md));
-
-    SHA256(d, n, sha256_md);
-
-    memcpy(md, sha256_md, SHA224_DIGEST_SIZE);
+    SHA224_Init(&c);
+    SHA224_Update(&c, d, n);
+    SHA224_Final(md, &c);
 
     return md;
 }

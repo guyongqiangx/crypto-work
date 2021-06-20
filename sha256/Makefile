@@ -31,7 +31,8 @@ $(TARGET): $(OBJS)
 test: $(TARGET)
 	@echo
 	@echo "Run Test..."
-	./$(TARGET) -x
+	./$(TARGET) -a sha224 -x
+	./$(TARGET) -a sha256 -x
 
 clean:
 	$(RM) $(RMFLAGS) $(TARGET) $(OBJS)
