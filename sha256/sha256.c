@@ -1,3 +1,9 @@
+/*
+ * @        file: sha256.c
+ * @ description: implementation for the SHA224/SHA256 Secure Hash Algorithm
+ * @      author: Gu Yongqiang
+ * @        blog: https://blog.csdn.net/guyongqiangx
+ */
 #include <stdio.h>
 #include <string.h>
 
@@ -18,17 +24,24 @@
 #define DUMP_ROUND_DATA 0
 #endif
 
-#define HASH_BLOCK_SIZE         64	/* 512 bits = 64 Bytes */
-#define HASH_LEN_SIZE           8	/* 64 bits = 8 bytes */
-#define HASH_LEN_OFFSET         (HASH_BLOCK_SIZE - HASH_LEN_SIZE)
+#define SHA256_BLOCK_SIZE           64  /* 512 bits = 64 Bytes */
+#define SHA256_LEN_SIZE             8   /* 64 bits = 8 bytes */
+#define SHA256_LEN_OFFSET           (SHA256_BLOCK_SIZE - SHA256_LEN_SIZE)
 
-#define SHA256_DIGEST_SIZE      32 /* 256 bits = 32 bytes */
-#define SHA224_DIGEST_SIZE      28 /* 224 bits = 28 bytes */
+#define SHA256_DIGEST_SIZE          32 /* 256 bits = 32 bytes */
+#define SHA224_DIGEST_SIZE          28 /* 224 bits = 28 bytes */
 
-#define HASH_DIGEST_SIZE        SHA256_DIGEST_SIZE
+#define SHA256_PADDING_PATTERN      0x80
+#define SHA256_ROUND_NUM            64
 
-#define HASH_PADDING_PATTERN    0x80
-#define HASH_ROUND_NUM          64
+#define HASH_BLOCK_SIZE             SHA256_BLOCK_SIZE
+#define HASH_LEN_SIZE               SHA256_LEN_SIZE
+#define HASH_LEN_OFFSET             SHA256_LEN_OFFSET
+
+#define HASH_DIGEST_SIZE            SHA256_DIGEST_SIZE      /* use sha256 digest size */
+
+#define HASH_PADDING_PATTERN        SHA256_PADDING_PATTERN
+#define HASH_ROUND_NUM              SHA256_ROUND_NUM
 
 /* SHA256 Constants */
 static const uint32_t K256[HASH_ROUND_NUM] = {
@@ -131,9 +144,9 @@ static int SHA256_PrepareScheduleWord(const uint32_t *block, uint32_t *W)
 
     for (t=0; t<HASH_ROUND_NUM; t++)
     {
-        if (t<=15) /*  0 <= t <= 15 */
+        if (t<=15)  /*  0 <= t <= 15 */
             W[t] = be32toh(block[t]);
-        else	   /* 16 <= t <= 79 */
+        else        /* 16 <= t <= 79 */
             W[t] = sigma1(W[t-2]) + W[t-7] + sigma0(W[t-15]) + W[t-16];
     }
 
@@ -153,8 +166,10 @@ static int SHA256_ProcessBlock(SHA256_CTX *ctx, const void *block)
     }
 
 #if (DUMP_BLOCK_DATA == 1)
-    DBG("BLOCK: %llu\n", ctx->total/HASH_BLOCK_SIZE);
-    print_buffer(block, HASH_BLOCK_SIZE, " ");
+    DBG("---------------------------------------------------------\n");
+    DBG("   BLOCK: %llu\n", ctx->total/HASH_BLOCK_SIZE);
+    DBG("    DATA:\n");
+    print_buffer(block, HASH_BLOCK_SIZE, "    ");
 #endif
 
     /* prepare schedule word */
@@ -170,7 +185,7 @@ static int SHA256_ProcessBlock(SHA256_CTX *ctx, const void *block)
     h = ctx->hash.h;
 
 #if (DUMP_BLOCK_HASH == 1)
-    DBG(" LAST: %08x%08x%08x%08x%08x%08x%08x%08x\n",
+    DBG("      IV: %08x %08x %08x %08x %08x %08x %08x %08x\n",
         ctx->hash.a, ctx->hash.b, ctx->hash.c, ctx->hash.d, ctx->hash.e, ctx->hash.f, ctx->hash.g, ctx->hash.h);
 #endif
 
@@ -188,8 +203,8 @@ static int SHA256_ProcessBlock(SHA256_CTX *ctx, const void *block)
         a = T1 + T2;
 
 #if (DUMP_ROUND_DATA == 1)
-        DBG("   %02d: T1=0x%08x, T2=0x%08x, W=0x%08x, \n"\
-            "        a=0x%08x,  b=0x%08x, c=0x%08x, d=0x%08x, e=0x%08x, f=0x%08x, g=0x%08x, h=0x%08x\n", \
+        DBG("      %02d: T1=0x%08x, T2=0x%08x, W=0x%08x, \n"\
+            "           a=0x%08x,  b=0x%08x, c=0x%08x, d=0x%08x, e=0x%08x, f=0x%08x, g=0x%08x, h=0x%08x\n", \
                 t, T1, T2, W[t], a, b, c, d, e, f, g, h);
 #endif
     }
@@ -204,7 +219,7 @@ static int SHA256_ProcessBlock(SHA256_CTX *ctx, const void *block)
     ctx->hash.h += h;
 
 #if (DUMP_BLOCK_HASH == 1)
-    DBG(" HASH: %08x%08x%08x%08x%08x%08x%08x%08x\n\n",
+    DBG("    HASH: %08x %08x %08x %08x %08x %08x %08x %08x\n",
         ctx->hash.a, ctx->hash.b, ctx->hash.c, ctx->hash.d, ctx->hash.e, ctx->hash.f, ctx->hash.g, ctx->hash.h);
 #endif
 

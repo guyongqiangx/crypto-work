@@ -1,3 +1,9 @@
+/*
+ * @        file: sha256.h
+ * @ description: header file for sha256.c
+ * @      author: Gu Yongqiang
+ * @        blog: https://blog.csdn.net/guyongqiangx
+ */
 #ifndef __ROCKY_SHA256__H
 #define __ROCKY_SHA256__H
 
@@ -36,7 +42,6 @@ typedef struct sha256_context {
 }SHA256_CTX;
 
 /* https://www.openssl.org/docs/man1.1.1/man3/SHA256_Final.html */
-
 int SHA224_Init(SHA256_CTX *c);
 int SHA224_Update(SHA256_CTX *c, const void *data, size_t len);
 int SHA224_Final(unsigned char *md, SHA256_CTX *c);
@@ -46,5 +51,4 @@ int SHA256_Init(SHA256_CTX *c);
 int SHA256_Update(SHA256_CTX *c, const void *data, size_t len);
 int SHA256_Final(unsigned char *md, SHA256_CTX *c);
 unsigned char *SHA256(const unsigned char *d, size_t n, unsigned char *md);
-
 #endif
