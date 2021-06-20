@@ -4,7 +4,7 @@
 #include "utils.h"
 #include "sha512.h"
 
-//#define DEBUG
+// #define DEBUG
 
 #ifdef DEBUG
 #define DBG(...) printf(__VA_ARGS__)
@@ -175,13 +175,28 @@ static int SHA512_UpdateTotal(uint128_t *x, uint64_t len)
 }
 
 #if 0
-static int SHA512_SaveTotal(uint8_t *buffer, uint128_t *len)
+static int SHA512_SaveTotal(uint64_t *buffer, uint128_t *len)
 {
-    int i;
+    buffer[0] = htobe64(len->high);
+    buffer[1] = htobe64(len->low);
 
-    for (i=0; i<HASH_LEN_SIZE; i++)
+    return ERR_OK;
+}
+#endif
+
+#if (DUMP_BLOCK_DATA == 1)
+static int SHA512_GetBlockCount(SHA512_CTX *ctx, uint128_t * count)
+{
+    if (ctx->total.high == 0)
     {
-        buffer[i] = len->d[HASH_LEN_SIZE-1-i];
+        count->low = ctx->total.low >> 10;
+        count->high = 0;
+    }
+    else
+    {
+        count->low = ctx->total.low >> 10;
+        count->low |= (ctx->total.high & 0x07FF << 54);
+        count->high = ctx->total.high >> 10;
     }
 
     return ERR_OK;
@@ -201,8 +216,20 @@ static int SHA512_ProcessBlock(SHA512_CTX *ctx, const void *block)
     }
 
 #if (DUMP_BLOCK_DATA == 1)
-    //printf("block: %d\n", ctx->total >> 10);  /* block size: 2^10 = 1024 */
-    print_buffer(block, HASH_BLOCK_SIZE, " ");
+    DBG("---------------------------------------------------------\n");
+    {
+        uint128_t count;
+        SHA512_GetBlockCount(ctx, &count);
+        if (count.high == 0)
+        {
+            DBG("   BLOCK: %llu\n", count.low);
+        }
+        else{
+            DBG("   BLOCK: %llu%016llu\n", count.high, count.low);
+        }
+    }
+    DBG("    DATA:\n");
+    print_buffer(block, HASH_BLOCK_SIZE, "    ");
 #endif
 
     /* prepare schedule word */
@@ -218,7 +245,8 @@ static int SHA512_ProcessBlock(SHA512_CTX *ctx, const void *block)
     h = ctx->hash.h;
 
 #if (DUMP_BLOCK_HASH == 1)
-    DBG("   %016llx %016llx %016llx %016llx\n   %016llx %016llx %016llx %016llx\n", \
+    DBG("      IV: %016llx %016llx %016llx %016llx\n"
+        "          %016llx %016llx %016llx %016llx\n", \
         ctx->hash.a, ctx->hash.b, ctx->hash.c, ctx->hash.d, ctx->hash.e, ctx->hash.f, ctx->hash.g, ctx->hash.h);
 #endif
 
@@ -236,9 +264,9 @@ static int SHA512_ProcessBlock(SHA512_CTX *ctx, const void *block)
          a = T1 + T2;
 
 #if (DUMP_ROUND_DATA == 1)
-        DBG("%02d:\n", t);
-        DBG("T1=0x%016llx, T2=0x%016llx, W=0x%016llx\n", T1, T2, W[t]);
-        DBG(" a=0x%016llx,  b=0x%016llx, c=0x%016llx, d=0x%016llx,\n e=0x%016llx,  f=0x%016llx, g=0x%016llx, h=0x%016llx\n", 
+        DBG("      %02d: T1=0x%016llx, T2=0x%016llx, W=0x%016llx\n", t, T1, T2, W[t]);
+        DBG("           a=0x%016llx,  b=0x%016llx, c=0x%016llx, d=0x%016llx,\n"
+            "           e=0x%016llx,  f=0x%016llx, g=0x%016llx, h=0x%016llx\n",
             a, b, c, d, e, f, g, h);
 #endif
     }
@@ -253,7 +281,8 @@ static int SHA512_ProcessBlock(SHA512_CTX *ctx, const void *block)
     ctx->hash.h += h;
 
 #if (DUMP_BLOCK_HASH == 1)
-    DBG(" HASH: %016llx %016llx %016llx %016llx\n   %016llx %016llx %016llx %016llx\n", 
+    DBG("    HASH: %016llx %016llx %016llx %016llx\n"
+        "          %016llx %016llx %016llx %016llx\n",
         ctx->hash.a, ctx->hash.b, ctx->hash.c, ctx->hash.d, ctx->hash.e, ctx->hash.f, ctx->hash.g, ctx->hash.h);
 #endif
 
@@ -350,7 +379,7 @@ int SHA512_Final(unsigned char *md, SHA512_CTX *c)
 
         memset(&c->last.buf[0], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE);
 
-        //SHA512_SaveTotal(&c->last.buf[HASH_LEN_OFFSET], &c->total);
+        // SHA512_SaveTotal(&c->last.buf[HASH_LEN_OFFSET], &c->total);
         temp = (uint64_t *)&(c->last.buf[HASH_LEN_OFFSET]);
         temp[0] = htobe64(c->total.high);
         temp[1] = htobe64(c->total.low);
@@ -368,16 +397,13 @@ int SHA512_Final(unsigned char *md, SHA512_CTX *c)
         /* padding 0s */
         memset(&c->last.buf[c->last.used], 0, HASH_BLOCK_SIZE - HASH_LEN_SIZE - c->last.used);
 
-        //SHA512_SaveTotal(&c->last.buf[HASH_LEN_OFFSET], &c->total);
+        // SHA512_SaveTotal(&c->last.buf[HASH_LEN_OFFSET], &c->total);
         temp = (uint64_t *)&(c->last.buf[HASH_LEN_OFFSET]);
         temp[0] = htobe64(c->total.high);
         temp[1] = htobe64(c->total.low);
 
         SHA512_ProcessBlock(c, &c->last.buf);
     }
-
-    DBG("%016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx\n", 
-        c->hash.a, c->hash.b, c->hash.c, c->hash.d, c->hash.e, c->hash.f, c->hash.g, c->hash.h);
 
     temp = (uint64_t *)md;
     temp[0] = htobe64(c->hash.a);
@@ -581,10 +607,12 @@ static int SHA512t_GenerateIV(SHA512_CTX *c, unsigned int t)
     SHA512_Update(c, name, strlen(name));
     SHA512_Final(md, c);
 
-    DBG("%s IV:\n", name);
-    DBG(" 0x%016llx\n 0x%016llx\n 0x%016llx\n 0x%016llx\n"\
-        " 0x%016llx\n 0x%016llx\n 0x%016llx\n 0x%016llx\n",
+#if (DUMP_BLOCK_HASH == 1)
+    DBG("      IV: (%s)\n", name);
+    DBG("          %016llx %016llx %016llx %016llx\n"
+        "          %016llx %016llx %016llx %016llx\n", \
         c->hash.a, c->hash.b, c->hash.c, c->hash.d, c->hash.e, c->hash.f, c->hash.g, c->hash.h);
+#endif
 
     c->ext = t;
 
