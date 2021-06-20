@@ -1,3 +1,9 @@
+/*
+ * @        file: sha512.h
+ * @ description: header file for sha512.c
+ * @      author: Gu Yongqiang
+ * @        blog: https://blog.csdn.net/guyongqiangx
+ */
 #ifndef __ROCKY_SHA512__H
 #define __ROCKY_SHA512__H
 
@@ -12,8 +18,8 @@ typedef unsigned short     uint16_t;
 typedef unsigned int       uint32_t;
 typedef unsigned long long uint64_t;
 typedef struct {
-	uint64_t high; /* high 64 bits */
-	uint64_t low;  /*  low 64 bits */
+    uint64_t high; /* high 64 bits */
+    uint64_t low;  /*  low 64 bits */
 } uint128_t;
 
 typedef struct sha512_context {
@@ -45,28 +51,24 @@ typedef struct sha512_context {
 int SHA384_Init(SHA512_CTX *c);
 int SHA384_Update(SHA512_CTX *c, const void *data, size_t len);
 int SHA384_Final(unsigned char *md, SHA512_CTX *c);
-unsigned char *SHA384(const unsigned char *d, size_t n,
-					  unsigned char *md);
+unsigned char *SHA384(const unsigned char *d, size_t n, unsigned char *md);
 
 int SHA512_Init(SHA512_CTX *c);
 int SHA512_Update(SHA512_CTX *c, const void *data, size_t len);
 int SHA512_Final(unsigned char *md, SHA512_CTX *c);
-unsigned char *SHA512(const unsigned char *d, size_t n,
-					  unsigned char *md);
+unsigned char *SHA512(const unsigned char *d, size_t n, unsigned char *md);
 
 /* SHA512/224 */
 int SHA512_224_Init(SHA512_CTX *c);
 int SHA512_224_Update(SHA512_CTX *c, const void *data, size_t len);
 int SHA512_224_Final(unsigned char *md, SHA512_CTX *c);
-unsigned char *SHA512_224(const unsigned char *d, size_t n,
-                      unsigned char *md);
+unsigned char *SHA512_224(const unsigned char *d, size_t n, unsigned char *md);
 
 /* SHA512/256 */
 int SHA512_256_Init(SHA512_CTX *c);
 int SHA512_256_Update(SHA512_CTX *c, const void *data, size_t len);
 int SHA512_256_Final(unsigned char *md, SHA512_CTX *c);
-unsigned char *SHA512_256(const unsigned char *d, size_t n,
-                      unsigned char *md);
+unsigned char *SHA512_256(const unsigned char *d, size_t n, unsigned char *md);
 
 int SHA512t_Init(SHA512_CTX *c, unsigned int t);
 int SHA512t_Update(SHA512_CTX *c, const void *data, size_t len);
