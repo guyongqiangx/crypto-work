@@ -403,12 +403,7 @@ unsigned char *SHA512(const unsigned char *d, size_t n, unsigned char *md)
     return md;
 }
 
-static int SHA512_XXX_Update(SHA512_CTX *c, const void *data, size_t len)
-{
-    return SHA512_Update(c, data, len);
-}
-
-static int SHA512_XXX_Final(unsigned char *md, unsigned int md_size, SHA512_CTX *c)
+static int SHA512_xxx_Final(unsigned char *md, unsigned int md_size, SHA512_CTX *c)
 {
     int rc = ERR_OK;
     unsigned char sha512_md[SHA512_DIGEST_SIZE];
@@ -421,25 +416,6 @@ static int SHA512_XXX_Final(unsigned char *md, unsigned int md_size, SHA512_CTX 
 
     return rc;
 }
-
-static unsigned char *SHA512_XXX(const unsigned char *d, size_t n, unsigned char *md, unsigned int md_size)
-{
-    unsigned char sha512_md[SHA512_DIGEST_SIZE];
-
-    if ((NULL == d) || (NULL == md))
-    {
-        return NULL;
-    }
-
-    memset(sha512_md, 0, sizeof(sha512_md));
-
-    SHA512(d, n, sha512_md);
-
-    memcpy(md, sha512_md, md_size);
-
-    return md;
-}
-
 
 int SHA384_Init(SHA512_CTX *c)
 {
@@ -469,17 +445,23 @@ int SHA384_Init(SHA512_CTX *c)
 
 int SHA384_Update(SHA512_CTX *c, const void *data, size_t len)
 {
-    return SHA512_XXX_Update(c, data, len);
+    return SHA512_Update(c, data, len);
 }
 
 int SHA384_Final(unsigned char *md, SHA512_CTX *c)
 {
-    return SHA512_XXX_Final(md, SHA384_DIGEST_SIZE, c);
+    return SHA512_xxx_Final(md, SHA384_DIGEST_SIZE, c);
 }
 
 unsigned char *SHA384(const unsigned char *d, size_t n, unsigned char *md)
 {
-    return SHA512_XXX(d, n, md, SHA384_DIGEST_SIZE);
+    SHA512_CTX c;
+
+    SHA384_Init(&c);
+    SHA384_Update(&c, d, n);
+    SHA384_Final(md, &c);
+
+    return md;
 }
 
 int SHA512_224_Init(SHA512_CTX *c)
@@ -510,17 +492,23 @@ int SHA512_224_Init(SHA512_CTX *c)
 
 int SHA512_224_Update(SHA512_CTX *c, const void *data, size_t len)
 {
-    return SHA512_XXX_Update(c, data, len);
+    return SHA512_Update(c, data, len);
 }
 
 int SHA512_224_Final(unsigned char *md, SHA512_CTX *c)
 {
-    return SHA512_XXX_Final(md, SHA512_224_DIGEST_SIZE, c);
+    return SHA512_xxx_Final(md, SHA512_224_DIGEST_SIZE, c);
 }
 
 unsigned char *SHA512_224(const unsigned char *d, size_t n, unsigned char *md)
 {
-    return SHA512_XXX(d, n, md, SHA512_224_DIGEST_SIZE);
+    SHA512_CTX c;
+
+    SHA512_224_Init(&c);
+    SHA512_224_Update(&c, d, n);
+    SHA512_224_Final(md, &c);
+
+    return md;
 }
 
 int SHA512_256_Init(SHA512_CTX *c)
@@ -551,17 +539,23 @@ int SHA512_256_Init(SHA512_CTX *c)
 
 int SHA512_256_Update(SHA512_CTX *c, const void *data, size_t len)
 {
-    return SHA512_XXX_Update(c, data, len);
+    return SHA512_Update(c, data, len);
 }
 
 int SHA512_256_Final(unsigned char *md, SHA512_CTX *c)
 {
-    return SHA512_XXX_Final(md, SHA512_256_DIGEST_SIZE, c);
+    return SHA512_xxx_Final(md, SHA512_256_DIGEST_SIZE, c);
 }
 
 unsigned char *SHA512_256(const unsigned char *d, size_t n, unsigned char *md)
 {
-    return SHA512_XXX(d, n, md, SHA512_256_DIGEST_SIZE);
+    SHA512_CTX c;
+
+    SHA512_256_Init(&c);
+    SHA512_256_Update(&c, d, n);
+    SHA512_256_Final(md, &c);
+
+    return md;
 }
 
 static int SHA512t_GenerateIV(SHA512_CTX *c, unsigned int t)
@@ -624,22 +618,17 @@ int SHA512t_Init(SHA512_CTX *c, unsigned int t)
 
 int SHA512t_Update(SHA512_CTX *c, const void *data, size_t len)
 {
-    return SHA512_XXX_Update(c, data, len);
+    return SHA512_Update(c, data, len);
 }
 
 int SHA512t_Final(unsigned char *md, SHA512_CTX *c)
 {
-    return SHA512_XXX_Final(md, c->ext/8, c);
+    return SHA512_xxx_Final(md, c->ext/8, c);
 }
 
 unsigned char *SHA512t(const unsigned char *d, size_t n, unsigned char *md, unsigned int t)
 {
     SHA512_CTX c;
-
-    if ((NULL == d) || (NULL == md))
-    {
-        return NULL;
-    }
 
     SHA512t_Init(&c, t);
     SHA512t_Update(&c, d, n);
