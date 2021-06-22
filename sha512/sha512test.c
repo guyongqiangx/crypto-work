@@ -573,6 +573,7 @@ int main(int argc, char *argv[])
                 alg_len = alg_len < HASH_NAME_SIZE ? alg_len : HASH_NAME_SIZE;
                 memset(alg, 0, sizeof(alg));
                 strncpy(alg, optarg, alg_len);
+                alg[alg_len] = '\0';
                 break;
             case 'x':
                 hash_internal = 1;
@@ -672,22 +673,22 @@ int main(int argc, char *argv[])
             printf("SHA512/t internal tests: %s -a sha512t -t 224 -x\n", argv[0]);
             usage(argv[0]);
         }
-        internal_digest_tests(argv[0], &ctx);
+        internal_digest_tests(alg, &ctx);
     }
 
     if (hash_str)
     {
-        digest_string(argv[0], &ctx, (unsigned char *)str, len);
+        digest_string(alg, &ctx, (unsigned char *)str, len);
     }
 
     if (hash_file)
     {
-        digest_file(argv[0], &ctx, filename);
+        digest_file(alg, &ctx, filename);
     }
 
     if (hash_stdin)
     {
-        digest_stdin(argv[0], &ctx);
+        digest_stdin(alg, &ctx);
     }
 
     return 0;
