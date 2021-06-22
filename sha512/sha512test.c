@@ -62,7 +62,7 @@ void usage(const char *argv0)
         "Hash a file:\n"
             "\t%s -a sha384|sha512|sha512-224|sha512-256|sha512t -f file\n"
         "-a\tSecure hash algorithm: \"sha384\", \"sha512\", \"sha512-224\", \"sha512-256\"\n"
-        "-t\tt value for SHA512/t, positive integer without a leading zero, (0<t<512, t%8==0, t!=384)\n"
+        "-t\tt value for SHA512/t, positive integer without a leading zero, (0<t<512, t/8=0, t!=384)\n"
         "-x\tInternal string hash test\n"
         "-h\tDisplay this message\n"
         , argv0, argv0);
@@ -335,42 +335,43 @@ struct HASH_ITEM sha512_256_hashes[] =
     }
 };
 
+/* SHA512/t tests, result is for SHA512/224, and same as SHA512-224 */
 struct HASH_ITEM sha512t_hashes[] =
 {
     { /* 0 */
         "",
         0,
-        "cdf1cc0effe26ecc0c13758f7b4a48e000615df241284185c39eb05d355bb9c8"
+        "6ed0dd02806fa89e25de060c19d3ac86cabb87d6a0ddd05c333b84f4"
     },
     { /* 1 */
         "a",
         1,
-        "cdf1cc0effe26ecc0c13758f7b4a48e000615df241284185c39eb05d355bb9c8"
+        "d5cdb9ccc769a5121d4175f2bfdd13d6310e0d3d361ea75d82108327"
     },
     { /* 2 */
         "abc",
         3,
-        "cdf1cc0effe26ecc0c13758f7b4a48e000615df241284185c39eb05d355bb9c8"
+        "4634270f707b6a54daae7530460842e20e37ed265ceee9a43e8924aa"
     },
     { /* 3 */
         "message digest",
         14,
-        "cdf1cc0effe26ecc0c13758f7b4a48e000615df241284185c39eb05d355bb9c8"
+        "ad1a4db188fe57064f4f24609d2a83cd0afb9b398eb2fcaeaae2c564"
     },
     { /* 4 */
         "abcdefghijklmnopqrstuvwxyz",
         26,
-        "cdf1cc0effe26ecc0c13758f7b4a48e000615df241284185c39eb05d355bb9c8"
+        "ff83148aa07ec30655c1b40aff86141c0215fe2a54f767d3f38743d8"
     },
     { /* 5 */
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
         62,
-        "cdf1cc0effe26ecc0c13758f7b4a48e000615df241284185c39eb05d355bb9c8"
+        "a8b4b9174b99ffc67d6f49be9981587b96441051e16e6dd036b140d3"
     },
     { /* 6 */
         "12345678901234567890123456789012345678901234567890123456789012345678901234567890",
         80,
-        "cdf1cc0effe26ecc0c13758f7b4a48e000615df241284185c39eb05d355bb9c8"
+        "ae988faaa47e401a45f704d1272d99702458fea2ddc6582827556dd2"
     },
     {   /* End */
         NULL, 0, ""
@@ -437,7 +438,7 @@ static int digest_string(const char *argv0, HASH_CTX *ctx, const unsigned char *
 {
     printf("%s(\"%s\") = ", argv0, string);
 
-    if (ctx->ext == HASH_SHA512_T)
+    if (ctx->alg == HASH_SHA512_T)
     {
         ctx->hash_ex(string, len, ctx->md, ctx->ext);
     }
@@ -529,12 +530,13 @@ static void digest_stdin(const char *argv0, HASH_CTX *ctx)
 /*
  * $ sha512 -h
  * Usage:
- * Common options: [-x|-f file|-s string| -a sha384|sha512|sha512-224|sha512-256|sha512t | -h]
+ * Common options: [-x|-f file|-s string| -a sha384|sha512|sha512-224|sha512-256|sha512t | -t num | -h]
  * Hash a string:
- *         sha512 -a sha384|sha512|sha512-224|sha512-256 -s string
+ *         sha512 -a sha384|sha512|sha512-224|sha512-256|sha512t -s string
  * Hash a file:
- *         sha512 -a sha384|sha512|sha512-224|sha512-256 -f file [-k key]
+ *         sha512 -a sha384|sha512|sha512-224|sha512-256|sha512t -f file
  * -a      Secure hash algorithm: "sha384", "sha512", "sha512-224", "sha512-256"
+ * -t      t value for SHA512/t, positive integer without a leading zero, (0<t<512, t/8=0, t!=384)
  * -x      Internal string hash test
  * -h      Display this message
  */
@@ -550,7 +552,7 @@ int main(int argc, char *argv[])
     uint32_t ext = 0;
 
     char alg[HASH_NAME_SIZE];
-    uint32_t alg_len;
+    uint32_t alg_len = 0;
 
     char *str = NULL;
     uint32_t len = 0;
@@ -560,7 +562,7 @@ int main(int argc, char *argv[])
     HASH_CTX ctx;
     memset(&ctx, 0, sizeof(HASH_CTX));
 
-    while ((ch = getopt(argc, argv, ":a:s:f:xh")) != -1)
+    while ((ch = getopt(argc, argv, "a:s:f:t:xh")) != -1)
     {
         switch(ch)
         {
@@ -579,7 +581,6 @@ int main(int argc, char *argv[])
                 len = strlen(str);
                 break;
             case 't':
-                printf("t=%s", optarg);
                 ext = atoi(optarg);
                 break;
             case 'f':
@@ -637,7 +638,8 @@ int main(int argc, char *argv[])
         ctx.final = SHA512_256_Final;
         ctx.hash = SHA512_256;
     }
-    else if ((strncmp(alg, "sha512t", alg_len) == 0) && (ext > 0 ) && (ext % 8 == 0))
+    else if ((strncmp(alg, "sha512t", alg_len) == 0)
+          && (ext > 0 ) && (ext < 512) && (ext % 8 == 0) && (ext != 384))
     {
         ctx.alg = HASH_SHA512_T;
         ctx.ext = ext;
@@ -656,6 +658,12 @@ int main(int argc, char *argv[])
 
     if (hash_internal)
     {
+        /* Only support SHA512/224 for SHA512/t test */
+        if ((ctx.alg == HASH_SHA512_T) && (ctx.ext != 224))
+        {
+            printf("SHA512/t internal tests: %s -a sha512t -t 224 -x\n", argv[0]);
+            usage(argv[0]);
+        }
         internal_digest_tests(argv[0], &ctx);
     }
 
