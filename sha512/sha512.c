@@ -422,7 +422,7 @@ unsigned char *SHA512(const unsigned char *d, size_t n, unsigned char *md)
 {
     SHA512_CTX c;
 
-    if ((NULL == d) || (0 == n) || (NULL == md))
+    if ((NULL == d) || (NULL == md))
     {
         return NULL;
     }
@@ -488,7 +488,7 @@ unsigned char *SHA384(const unsigned char *d, size_t n, unsigned char *md)
 {
     SHA512_CTX c;
 
-    if ((NULL == d) || (0 == n) || (NULL == md))
+    if ((NULL == d) || (NULL == md))
     {
         return NULL;
     }
@@ -540,7 +540,7 @@ unsigned char *SHA512_224(const unsigned char *d, size_t n, unsigned char *md)
 {
     SHA512_CTX c;
 
-    if ((NULL == d) || (0 == n) || (NULL == md))
+    if ((NULL == d) || (NULL == md))
     {
         return NULL;
     }
@@ -592,7 +592,7 @@ unsigned char *SHA512_256(const unsigned char *d, size_t n, unsigned char *md)
 {
     SHA512_CTX c;
 
-    if ((NULL == d) || (0 == n) || (NULL == md))
+    if ((NULL == d) || (NULL == md))
     {
         return NULL;
     }
@@ -678,7 +678,7 @@ unsigned char *SHA512t(const unsigned char *d, size_t n, unsigned char *md, unsi
 {
     SHA512_CTX c;
 
-    if ((NULL == d) || (0 == n) || (NULL == md))
+    if ((NULL == d) || (NULL == md))
     {
         return NULL;
     }
