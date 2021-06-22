@@ -1,10 +1,16 @@
+/*
+ * @        file: sha3.c
+ * @ description: implementation for the SHA3 Secure Hash Algorithm
+ * @      author: Gu Yongqiang
+ * @        blog: https://blog.csdn.net/guyongqiangx
+ */
 #include <stdio.h>
 #include <string.h>
 
 #include "utils.h"
 #include "sha3.h"
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #define DBG(...) printf(__VA_ARGS__)
@@ -241,6 +247,11 @@ static uint32_t iota(uint64_t A[5][5], uint32_t i)
 
 int SHA3_Init(SHA3_CTX *c, SHA3_ALG alg)
 {
+    return SHA3_Init_Ex(c, alg, 0);
+}
+
+int SHA3_Init_Ex(SHA3_CTX *c, SHA3_ALG alg, uint32_t ext)
+{
     if (NULL == c)
     {
         return ERR_INV_PARAM;
@@ -281,6 +292,16 @@ int SHA3_Init(SHA3_CTX *c, SHA3_ALG alg)
             c->c  = 128; /* 1024 bits */
             c->ol =  64; /*  512 bits */
             break;
+        case SHAKE128:
+            c->r = 136;
+            c->c = 64;
+            c->ol = ext/8;
+            break;
+        case SHAKE256:
+            c->r = 72;
+            c->c = 64;
+            c->ol = ext/8;
+            break;
         default: /* default Keccak setting: SHA3_512 */
             c->r  =  72;
             c->c  = 128;
@@ -293,7 +314,7 @@ int SHA3_Init(SHA3_CTX *c, SHA3_ALG alg)
     return ERR_OK;
 }
 
-static int SHA3_PrepareScheduleWord(SHA3_CTX *ctx, const void *block)
+static int SHA3_PrepareScheduleWord(SHA3_CTX *ctx, const uint64_t *block)
 {
     uint32_t i;
     uint64_t *data;
@@ -309,7 +330,8 @@ static int SHA3_PrepareScheduleWord(SHA3_CTX *ctx, const void *block)
         if (i<ctx->r/8)
         {
             //temp[i] = be64toh(QWORD(block, i));
-            temp[i] = QWORD(block, i);
+            //temp[i] = QWORD(block, i);
+            temp[i] = le64toh(block[i]);
         }
         else
         {
@@ -515,3 +537,13 @@ unsigned char *SHA3(SHA3_ALG alg, const unsigned char *d, size_t n, unsigned cha
     return md;
 }
 
+unsigned char *SHA3_Ex(SHA3_ALG alg, const unsigned char *d, size_t n, unsigned char *md, uint32_t ext)
+{
+    SHA3_CTX c;
+
+    SHA3_Init_Ex(&c, alg, ext);
+    SHA3_Update(&c, d, n);
+    SHA3_Final(md, &c);
+
+    return md;
+}
