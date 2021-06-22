@@ -1,3 +1,9 @@
+/*
+ * @        file: sha512.c
+ * @ description: implementation for the SHA512, SHA384, SHA512/224, SHA512/256, SHA512/t Secure Hash Algorithm
+ * @      author: Gu Yongqiang
+ * @        blog: https://blog.csdn.net/guyongqiangx
+ */
 #include <stdio.h>
 #include <string.h>
 
