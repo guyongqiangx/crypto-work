@@ -26,12 +26,24 @@ all: sha3 test
 
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) -o $@ $(LIBS) $(INCLUDE)
-#	$(STRIP) --strip-unneeded $(TARGET)
+#	$(STRIP) --strip-all $(TARGET)
 
 test: $(TARGET)
 	@echo
 	@echo "Run Test..."
-	./$(TARGET) -x
+	./$(TARGET) -a sha3-224 -x
+	./$(TARGET) -a sha3-256 -x
+	./$(TARGET) -a sha3-384 -x
+	./$(TARGET) -a sha3-512 -x
+#	./$(TARGET) -a shake128 -t 256 -x
+#	./$(TARGET) -a shake256 -t 512 -x
+	./$(TARGET) -a sha3-224 -f $(TARGET)
+	./$(TARGET) -a sha3-256 -f $(TARGET)
+	./$(TARGET) -a sha3-384 -f $(TARGET)
+	./$(TARGET) -a sha3-512 -f $(TARGET)
+#	./$(TARGET) -a shake128 -t 256 -f $(TARGET)
+#	./$(TARGET) -a shake256 -t 512 -f $(TARGET)
+
 
 clean:
 	$(RM) $(RMFLAGS) $(TARGET) $(OBJS)
