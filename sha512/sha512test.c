@@ -548,6 +548,7 @@ int main(int argc, char *argv[])
     int hash_str = 0;
     int hash_file = 0;
     int hash_stdin = 0;
+    int hash_ext = 0;
 
     /* SHA512t */
     uint32_t ext = 0;
@@ -582,6 +583,7 @@ int main(int argc, char *argv[])
                 len = strlen(str);
                 break;
             case 't':
+                hash_ext = 1;
                 ext = atoi(optarg);
                 break;
             case 'f':
@@ -639,9 +641,14 @@ int main(int argc, char *argv[])
         ctx.final = SHA512_256_Final;
         ctx.hash = SHA512_256;
     }
-    else if ((strncmp(alg, "sha512t", alg_len) == 0)
-          && (ext > 0 ) && (ext < 512) && (ext % 8 == 0) && (ext != 384))
+    else if (strncmp(alg, "sha512t", alg_len) == 0)
     {
+        /* 't' is not set, or set not as expected */
+        if ((hash_ext == 0) || (ext >= 512) || (ext%8 != 0) || (ext == 384))
+        {
+            usage(argv[0]);
+        }
+
         ctx.alg = HASH_SHA512_T;
         ctx.ext = ext;
         ctx.md_size = ext / 8;

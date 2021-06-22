@@ -36,6 +36,11 @@ test: $(TARGET)
 	./$(TARGET) -a sha512-224 -x
 	./$(TARGET) -a sha512-256 -x
 	./$(TARGET) -a sha512t -t 224 -x
+	./$(TARGET) -a sha384 -f $(TARGET)
+	./$(TARGET) -a sha512 -f $(TARGET)
+	./$(TARGET) -a sha512-224 -f $(TARGET)
+	./$(TARGET) -a sha512-256 -f $(TARGET)
+	./$(TARGET) -a sha512t -t 224 -f $(TARGET)
 
 clean:
 	$(RM) $(RMFLAGS) $(TARGET) $(OBJS)
