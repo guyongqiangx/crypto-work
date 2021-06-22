@@ -478,6 +478,7 @@ static int digest_file(const char *argv0, HASH_CTX *ctx, const char *filename)
         {
             ctx->init_ex(&ctx->impl, ctx->ext);
         }
+        else
         {
             ctx->init(&ctx->impl);
         }
@@ -658,7 +659,7 @@ int main(int argc, char *argv[])
 
     if (hash_internal)
     {
-        /* Only support SHA512/224 for SHA512/t test */
+        /* Only support SHA512/224 for SHA512/t internal test */
         if ((ctx.alg == HASH_SHA512_T) && (ctx.ext != 224))
         {
             printf("SHA512/t internal tests: %s -a sha512t -t 224 -x\n", argv[0]);
