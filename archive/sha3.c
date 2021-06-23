@@ -455,7 +455,7 @@ int SHA3_Update(SHA3_CTX *c, const void *data, size_t len)
 	else
 	{
 		/* process data blocks */
-		while (len > c->r)
+        while (len >= c->r)
 		{
 			SHA3_ProcessBlock(c, data);
 
