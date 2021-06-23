@@ -39,7 +39,7 @@ typedef struct {
     SHA3_CTX impl;
     // HASH_ALG alg;
     SHA3_ALG alg;
-    unsigned char md[HASH_DIGEST_SIZE];
+    unsigned char *md;
     uint32_t md_size;
     int (* init)(SHA3_CTX *c, SHA3_ALG alg);
     int (* update)(SHA3_CTX *c, const void *data, size_t len);
@@ -59,13 +59,13 @@ void usage(const char *argv0)
 {
     fprintf(stderr,
         "Usage:\n"
-        "Common options: [-x|-f file|-s string| -a sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256 | -t num | -h]\n"
+        "Common options: [-a sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256 [-t num]] [-x|-f file|-s string|-h]\n"
         "Hash a string:\n"
-            "\t%s -a sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256 -s string\n"
+            "\t%s -a [sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256] [-t num] -s string\n"
         "Hash a file:\n"
-            "\t%s -a sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256 -f file\n"
-        "-a\tSecure hash algorithm: \"sha3-224\", \"sha3-256\", \"sha3-384\", \"sha3-512\", \"shake128\", \"shake256\"\n"
-        "-t\tdigest length for shake128/shake256, positive integer\n"
+            "\t%s -a [sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256] [-t num] -f file\n"
+        "-a\tSecure hash algorithm: \"sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256\"\n"
+        "-t\tdigest length required for shake128/shake256, positive integer\n"
         "-x\tInternal string hash test\n"
         "-h\tDisplay this message\n"
         , argv0, argv0);
@@ -711,6 +711,10 @@ int main(int argc, char *argv[])
         usage(argv[0]);
     }
 
+    /* allocate buffer for message digest */
+    ctx.md = (unsigned char *)malloc(ctx.md_size);
+    memset(ctx.md, 0, ctx.md_size);
+
     if (hash_internal)
     {
         internal_digest_tests(alg, &ctx);
@@ -730,6 +734,9 @@ int main(int argc, char *argv[])
     {
         digest_stdin(alg, &ctx);
     }
+
+    free(ctx.md);
+    ctx.md = NULL;
 
     return 0;
 }
