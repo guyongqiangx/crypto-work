@@ -51,6 +51,8 @@ typedef struct sha3_context {
         uint8_t  buf[200];  /* block data buffer */
     }last;
 
+    SHA3_ALG alg;
+
     /*
      * |-------------------------------------------------------------|
      * | l          | 0    | 1    | 2    | 3    | 4    | 5    | 6    |
@@ -72,6 +74,10 @@ typedef struct sha3_context {
     uint32_t nr; /* round number, nr = 12 + 2l */
 
     uint32_t ol; /* output hash length in bytes */
+
+    uint32_t absorbing; /* 1: absorbe; 0: squeeze */
+
+    uint32_t ext;
 }SHA3_CTX;
 
 int SHA3_Init(SHA3_CTX *c, SHA3_ALG alg);
@@ -79,6 +85,6 @@ int SHA3_Update(SHA3_CTX *c, const void *data, size_t len);
 int SHA3_Final(unsigned char *md, SHA3_CTX *c);
 unsigned char *SHA3(SHA3_ALG alg, const unsigned char *d, size_t n, unsigned char *md);
 
-int SHA3_Init_Ex(SHA3_CTX *c, SHA3_ALG alg, uint32_t ext);
-unsigned char *SHA3_Ex(SHA3_ALG alg, const unsigned char *d, size_t n, unsigned char *md, uint32_t ext);
+int SHA3_XOF_Init(SHA3_CTX *c, SHA3_ALG alg, uint32_t ext);
+unsigned char *SHA3_XOF(SHA3_ALG alg, const unsigned char *d, size_t n, unsigned char *md, uint32_t ext);
 #endif

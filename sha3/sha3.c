@@ -247,11 +247,6 @@ static uint32_t iota(uint64_t A[5][5], uint32_t i)
 
 int SHA3_Init(SHA3_CTX *c, SHA3_ALG alg)
 {
-    return SHA3_Init_Ex(c, alg, 0);
-}
-
-int SHA3_Init_Ex(SHA3_CTX *c, SHA3_ALG alg, uint32_t ext)
-{
     if (NULL == c)
     {
         return ERR_INV_PARAM;
@@ -270,6 +265,7 @@ int SHA3_Init_Ex(SHA3_CTX *c, SHA3_ALG alg, uint32_t ext)
 
     /* bytes */
     c->b = 200; /* 1600 bits, c->b = 25 * 2 ^ c->l; */
+    c->alg = alg;
     switch (alg)
     {
         case SHA3_224:
@@ -287,29 +283,16 @@ int SHA3_Init_Ex(SHA3_CTX *c, SHA3_ALG alg, uint32_t ext)
             c->c  =  96; /*  768 bits */
             c->ol =  48; /*  384 bits */
             break;
+        default: /* default Keccak setting: SHA3_512 */
         case SHA3_512:
             c->r  =  72; /*  576 bits */
             c->c  = 128; /* 1024 bits */
             c->ol =  64; /*  512 bits */
             break;
-        case SHAKE128:
-            c->r = 136;
-            c->c = 64;
-            c->ol = ext/8;
-            break;
-        case SHAKE256:
-            c->r = 72;
-            c->c = 64;
-            c->ol = ext/8;
-            break;
-        default: /* default Keccak setting: SHA3_512 */
-            c->r  =  72;
-            c->c  = 128;
-            c->ol =  64;
-            break;
     }
 
     c->nr = 24; /* nr = 24 = 12 + 2 * l */
+    c->absorbing = 1; /* absorbing phase */
 
     return ERR_OK;
 }
@@ -373,7 +356,7 @@ static int SHA3_ProcessBlock(SHA3_CTX *ctx, const void *block)
 {
     uint32_t t;
 
-    if ((NULL == ctx) || (NULL == block))
+    if ((NULL == ctx) || (ctx->absorbing && (NULL == block)))
     {
         return ERR_INV_PARAM;
     }
@@ -383,7 +366,10 @@ static int SHA3_ProcessBlock(SHA3_CTX *ctx, const void *block)
     print_buffer(block, ctx->r, " ");
 #endif
 
-    SHA3_PrepareScheduleWord(ctx, block);
+    if (ctx->absorbing)
+    {
+        SHA3_PrepareScheduleWord(ctx, block);
+    }
 
     for (t=0; t<ctx->nr; t++)
     {
@@ -492,36 +478,115 @@ int SHA3_Update(SHA3_CTX *c, const void *data, size_t len)
 
 int SHA3_Final(unsigned char *md, SHA3_CTX *c)
 {
+    uint32_t ol = 0; /* output length */
+
     if ((NULL == c) || (NULL == md))
     {
         return ERR_INV_PARAM;
     }
 
-    /* more than 2 bytes left, padding 0x06...0x80 (0x */
+    /* more than 2 bytes left */
     if (c->last.used <= (c->r - 2))
     {
         /* one more block */
-        c->last.buf[c->last.used] = SHA3_PADDING_PAT2_BEGIN;
+        if ((c->alg == SHAKE128) || (c->alg == SHAKE256)) /* XOFs */
+        {
+            c->last.buf[c->last.used] = SHA3_PADDING_PAT4_BEGIN;
+        }
+        else
+        {
+            c->last.buf[c->last.used] = SHA3_PADDING_PAT2_BEGIN;
+        }
         c->last.used++;
 
         memset(&c->last.buf[c->last.used], 0, (c->r - 1) - c->last.used);
         c->last.used = c->r - 1;
 
-        c->last.buf[c->last.used] = SHA3_PADDING_PAT2_END;
+        if ((c->alg == SHAKE128) || (c->alg == SHAKE256)) /* XOFs */
+        {
+            c->last.buf[c->last.used] = SHA3_PADDING_PAT4_END;
+        }
+        else
+        {
+            c->last.buf[c->last.used] = SHA3_PADDING_PAT2_END;
+        }
         c->last.used++;
     }
-    else /* if (c->last.used == (c->r - 1)) */ /* only 1 bytes left, padding 0x86(0x61 in reverse) */
+    else /* if (c->last.used == (c->r - 1)) */ /* only 1 bytes left */
     {
-        c->last.buf[c->last.used] = SHA3_PADDING_PAT1;
+        if ((c->alg == SHAKE128) || (c->alg == SHAKE256)) /* XOFs */
+        {
+            c->last.buf[c->last.used] = SHA3_PADDING_PAT3;
+        }
+        else
+        {
+            c->last.buf[c->last.used] = SHA3_PADDING_PAT1;
+        }
         c->last.used++;
     }
 
     SHA3_ProcessBlock(c, &c->last.buf);
     c->last.used = 0;
 
+    /* Absorbing Phase End */
+    c->absorbing = 0;
+
     dump_lane(c->lane);
 
-    memcpy(md, &c->lane[0][0], c->ol);
+#if 0
+    ol = 0;
+    if (c->ol <= c->r)
+    {
+        memcpy(&md[ol], &c->lane[0][0], c->ol);
+        ol += c->ol;
+    }
+    else
+    {
+        memcpy(&md[ol], &c->lane[0][0], c->r);
+        ol += c->r;
+    }
+
+    while (ol < c->ol)
+    {
+        SHA3_ProcessBlock(c, NULL);
+        if (c->ol - ol > c->r)
+        {
+            memcpy(&md[ol], &c->lane[0][0], c->r);
+            ol += c->r;
+        }
+        else
+        {
+            memcpy(&md[ol], &c->lane[0][0], c->ol - ol);
+            ol = c->ol;
+        }
+    }
+#else
+    if (c->ol <= c->r)
+    {
+        memcpy(md, &c->lane[0][0], c->ol);
+    }
+    else
+    {
+        memcpy(md, &c->lane[0][0], c->r);
+        ol = c->r;
+
+        /* squeeze */
+        while (ol < c->ol)
+        {
+            SHA3_ProcessBlock(c, NULL);
+            if (c->ol - ol > c->r)
+            {
+                memcpy(&md[ol], &c->lane[0][0], c->r);
+                ol += c->r;
+            }
+            else
+            {
+                memcpy(&md[ol], &c->lane[0][0], c->ol - ol);
+                ol = c->ol;
+            }
+        }
+    }
+#endif
 
     return ERR_OK;
 }
@@ -537,11 +602,61 @@ unsigned char *SHA3(SHA3_ALG alg, const unsigned char *d, size_t n, unsigned cha
     return md;
 }
 
-unsigned char *SHA3_Ex(SHA3_ALG alg, const unsigned char *d, size_t n, unsigned char *md, uint32_t ext)
+int SHA3_XOF_Init(SHA3_CTX *c, SHA3_ALG alg, uint32_t ext)
+{
+    /* only for SHAKE128/SHAKE256 */
+    if ((alg != SHAKE128) && (alg != SHAKE256))
+    {
+        return ERR_INV_PARAM;
+    }
+
+    if ((NULL == c) || (ext%8 != 0))
+    {
+        return ERR_INV_PARAM;
+    }
+
+    /* using SHA3-512 as default */
+    SHA3_Init(c, SHA3_512);
+
+    c->alg = alg;
+
+    /* update for SHAKE128/SHAKE256 */
+    switch(alg)
+    {
+        case SHAKE128:
+            c->r = 136;
+            c->c = 64;
+            c->ol = ext / 8;
+            c->ext = ext;
+            break;
+        default:
+        case SHAKE256:
+            c->r = 72;
+            c->c = 64;
+            c->ol = ext / 8;
+            c->ext = ext;
+            break;
+    }
+
+    return ERR_OK;
+}
+
+unsigned char *SHA3_XOF(SHA3_ALG alg, const unsigned char *d, size_t n, unsigned char *md, uint32_t ext)
 {
     SHA3_CTX c;
 
-    SHA3_Init_Ex(&c, alg, ext);
+    /* only for SHAKE128/SHAKE256 */
+    if ((alg != SHAKE128) && (alg != SHAKE256))
+    {
+        return NULL;
+    }
+
+    if ((NULL == d) || (ext%8 != 0))
+    {
+        return NULL;
+    }
+
+    SHA3_XOF_Init(&c, alg, ext);
     SHA3_Update(&c, d, n);
     SHA3_Final(md, &c);
 
