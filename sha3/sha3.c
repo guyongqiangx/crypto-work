@@ -10,7 +10,7 @@
 #include "utils.h"
 #include "sha3.h"
 
-//#define DEBUG
+// #define DEBUG
 
 #ifdef DEBUG
 #define DBG(...) printf(__VA_ARGS__)
@@ -268,23 +268,23 @@ int SHA3_Init(SHA3_CTX *c, SHA3_ALG alg)
     c->alg = alg;
     switch (alg)
     {
-        case SHA3_224:
+        case SHA3_224:   /* SHA3-224(M) = KECCAK[448](M||01,224), FIPS-202, sec 6.1 */
             c->r  = 144; /* 1152 bits */
             c->c  =  56; /*  448 bits */
             c->ol =  28; /*  224 bits */
             break;
-        case SHA3_256:
+        case SHA3_256:   /* SHA3-256(M) = KECCAK[512](M||01,256), FIPS-202, sec 6.1 */
             c->r  = 136; /* 1088 bits */
             c->c  =  64; /*  512 bits */
             c->ol =  32; /*  256 bits */
             break;
-        case SHA3_384:
+        case SHA3_384:   /* SHA3-384(M) = KECCAK[768](M||01,384), FIPS-202, sec 6.1 */
             c->r  = 104; /*  832 bits */
             c->c  =  96; /*  768 bits */
             c->ol =  48; /*  384 bits */
             break;
         default: /* default Keccak setting: SHA3_512 */
-        case SHA3_512:
+        case SHA3_512:   /* SHA3-512(M) = KECCAK[1024](M||01,512), FIPS-202, sec 6.1 */
             c->r  =  72; /*  576 bits */
             c->c  = 128; /* 1024 bits */
             c->ol =  64; /*  512 bits */
@@ -623,16 +623,16 @@ int SHA3_XOF_Init(SHA3_CTX *c, SHA3_ALG alg, uint32_t ext)
     /* update for SHAKE128/SHAKE256 */
     switch(alg)
     {
-        case SHAKE128:
-            c->r = 136;
-            c->c = 64;
+        case SHAKE128:  /* SHAKE128(M,d) = KECCAK[256](M||1111,d), FIPS-202, sec 6.2 */
+            c->r = 168; /* 1344 bits */
+            c->c = 32;  /*  256 bits */
             c->ol = ext / 8;
             c->ext = ext;
             break;
         default:
-        case SHAKE256:
-            c->r = 72;
-            c->c = 64;
+        case SHAKE256:  /* SHAKE256(M,d) = KECCAK[512](M||1111,d), FIPS-202, sec 6.2 */
+            c->r = 136; /* 1088 bits */
+            c->c = 64;  /*  512 bits */
             c->ol = ext / 8;
             c->ext = ext;
             break;
