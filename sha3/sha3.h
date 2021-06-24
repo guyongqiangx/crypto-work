@@ -48,7 +48,7 @@ typedef struct sha3_context {
     /* last block */
     struct {
         uint32_t used;      /* used bytes */
-        uint8_t  buf[200];  /* block data buffer */
+        uint8_t  buf[200];  /* block data buffer, 200 x 8 = 1600 bits */
     }last;
 
     SHA3_ALG alg;

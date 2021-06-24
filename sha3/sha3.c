@@ -10,23 +10,24 @@
 #include "utils.h"
 #include "sha3.h"
 
-// #define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #define DBG(...) printf(__VA_ARGS__)
-#define DUMP_SCHED_DATA 1
 #define DUMP_BLOCK_DATA 1
 #define DUMP_BLOCK_HASH 1
 #define DUMP_ROUND_DATA 1
+#define DUMP_SCHED_DATA 1
 #else
 #define DBG(...)
-#define DUMP_SCHED_DATA 0
 #define DUMP_BLOCK_DATA 0
 #define DUMP_BLOCK_HASH 0
 #define DUMP_ROUND_DATA 0
+#define DUMP_SCHED_DATA 0
 #endif
 
 /*
+ * FIPS-202, sec B.2:
  * |---------------|------------------------|
  * | Padding Bytes | Padding Message        |
  * |---------------|------------------------|
@@ -46,23 +47,23 @@
  *             01 + 10*1
  */
 
-/* 01 10 0001 <--reverse-- 1000 01 10, 1 byte, 0x86 */
-#define SHA3_PADDING_PAT1        0x86
+/*  q=1: 01 10 0001 <--reverse-- 1000 01 10, 1 byte, 0x86 */
+#define SHA3_PADDING_STD1        0x86
 
-/* 01 10 0000....0000 0001 <--reverse-- 0000 01 10....1000 0000, 2 bytes, 0x06...0x80 */
-#define SHA3_PADDING_PAT2_BEGIN  0x06
-#define SHA3_PADDING_PAT2_END    0x80
+/* q>=2: 01 10 0000....0000 0001 <--reverse-- 0000 01 10....1000 0000, 2 bytes, 0x06...0x80 */
+#define SHA3_PADDING_STD2_BEGIN  0x06
+#define SHA3_PADDING_STD2_END    0x80
 
 /*
  * SHA3 XOF Delimiter + Padding
  *               1111 + 10*1
  */
-/* 1111 1001 <--reverse-- 1001 1111, 1 byte, 0x9F */
-#define SHA3_PADDING_PAT3        0x9F
+/*  q=1: 1111 1001 <--reverse-- 1001 1111, 1 byte, 0x9F */
+#define SHA3_PADDING_XOF1        0x9F
 
-/* 1111 1000....0000 0001 <--reverse 0001 1111....1000 0000, 2 bytes, 0x1F...0x80 */
-#define SHA3_PADDING_PAT4_BEGIN  0x1F
-#define SHA3_PADDING_PAT4_END    0x80
+/* q>=2: 1111 1000....0000 0001 <--reverse 0001 1111....1000 0000, 2 bytes, 0x1F...0x80 */
+#define SHA3_PADDING_XOF2_BEGIN  0x1F
+#define SHA3_PADDING_XOF2_END    0x80
 
 /* ROTate Left (circular left shift) */
 static uint64_t ROTL(uint64_t x, uint8_t shift)
@@ -107,7 +108,6 @@ static uint32_t theta(uint64_t A[5][5])
 static uint32_t Rp[5][5] =
 {
     {   0,   1,  190,  28,  91},
-
     {  36, 300,    6,  55, 276},
     {   3,  10,  171, 153, 231},
     { 105,  45,   15,  21, 136},
@@ -169,21 +169,6 @@ static uint32_t pi(uint64_t A[5][5])
     return 0;
 }
 
-static void dump_lane(uint64_t lane[5][5])
-{
-    uint32_t x, y;
-
-    for (y=0; y<5; y++) /* row */
-    {
-        for (x=0; x<5; x++) /* col */
-        {
-            DBG("[%d, %d]: %016llx  ", x, y, lane[y][x]);
-        }
-        DBG("\n");
-    } 
-    return;
-}
-
 static uint32_t chi(uint64_t A[5][5])
 {
     uint64_t Ap[5][5];
@@ -235,15 +220,6 @@ static uint32_t iota(uint64_t A[5][5], uint32_t i)
 
     return 0;
 }
-
-
-/*
- * "abc" -->   0x61,     0x62,     0x63
- *   Origin: 0b0110 0001 0110 0010 0110 0011
- *  Padding: 0b0110 0001 0110 0010 0110 0011 1000 0000 .... 0000 0000  0000 0000 .... 0001 1000
- *                                          (|<-------------------->|)(|<------- 0x18 ------->|)
- *   Format: "abc" + 1 + 0 x 423 + 0x18
- */
 
 int SHA3_Init(SHA3_CTX *c, SHA3_ALG alg)
 {
@@ -297,6 +273,39 @@ int SHA3_Init(SHA3_CTX *c, SHA3_ALG alg)
     return ERR_OK;
 }
 
+#if (DUMP_SCHED_DATA == 1)
+#define sched_show_buffer(info,ptr,len) \
+    DBG(info); \
+    print_buffer((ptr),(len),"       ");
+#else
+#define sched_show_buffer(info,ptr,len)
+#endif
+
+#if (DUMP_ROUND_DATA == 1)
+#define round_show_buffer(info) \
+    DBG(info); \
+    print_buffer(&ctx->lane[0][0], ctx->b, "       ");
+
+static void dump_lane_buffer(uint64_t lane[5][5])
+{
+    uint32_t x, y;
+
+    for (y=0; y<5; y++) /* row */
+    {
+        for (x=0; x<5; x++) /* col */
+        {
+            DBG("[%d, %d]: %016llx  ", x, y, lane[y][x]);
+        }
+        DBG("\n");
+    }
+    return;
+}
+#else
+#define round_show_buffer(info)
+
+static void dump_lane_buffer(uint64_t lane[5][5]) {}
+#endif
+
 static int SHA3_PrepareScheduleWord(SHA3_CTX *ctx, const uint64_t *block)
 {
     uint32_t i;
@@ -319,17 +328,9 @@ static int SHA3_PrepareScheduleWord(SHA3_CTX *ctx, const uint64_t *block)
             temp[i] = 0x0;
         }
     }
-#if (DUMP_SCHED_DATA == 1)
-    DBG("Data to absorbed:\n");
-    //dump_lane(ctx->lane);
-    print_buffer(temp, ctx->b, " ");
-#endif
 
-#if (DUMP_SCHED_DATA == 1)
-    DBG("SchedWord: [before]\n");
-    //dump_lane(ctx->lane);
-    print_buffer(&ctx->lane[0][0], ctx->b, " ");
-#endif
+    sched_show_buffer("Data to absorbed:\n", temp, ctx->b);
+    sched_show_buffer("  SchedWord: [before]\n", &ctx->lane[0][0], ctx->b);
 
     /* initial S */
     data = &ctx->lane[0][0];
@@ -339,12 +340,7 @@ static int SHA3_PrepareScheduleWord(SHA3_CTX *ctx, const uint64_t *block)
         data[i] ^= temp[i];
     }
 
-#if (DUMP_SCHED_DATA == 1)
-    DBG("SchedWord: [after]\n");
-    //dump_lane(ctx->lane);
-    print_buffer(&ctx->lane[0][0], ctx->b, " ");
-    dump_lane(ctx->lane);
-#endif
+    sched_show_buffer("  SchedWord: [after]\n", &ctx->lane[0][0], ctx->b);
 
     return ERR_OK;
 }
@@ -360,8 +356,9 @@ static int SHA3_ProcessBlock(SHA3_CTX *ctx, const void *block)
     }
 
 #if (DUMP_BLOCK_DATA == 1)
-    DBG("BLOCK DATA:\n");
-    print_buffer(block, ctx->r, " ");
+    DBG("---------------------------------------------------------\n");
+    DBG(" BLOCK DATA:\n");
+    print_buffer(block, ctx->r, "       ");
 #endif
 
     if (ctx->absorbing)
@@ -372,40 +369,28 @@ static int SHA3_ProcessBlock(SHA3_CTX *ctx, const void *block)
     for (t=0; t<ctx->nr; t++)
     {
 #if (DUMP_ROUND_DATA == 1)
-        DBG("Round #%d:\n", t);
+        DBG("  Round #%02d:\n", t);
 #endif
-
         theta(ctx->lane);
-#if (DUMP_ROUND_DATA == 1)
-        DBG("After Theta:\n");
-        print_buffer(&ctx->lane[0][0], ctx->b, " ");
-#endif
-        //rho_and_pi(ctx->lane);
+        round_show_buffer("After Theta:\n");
+
         rho(ctx->lane);
-#if (DUMP_ROUND_DATA == 1)
-        DBG("After Rho:\n");
-        print_buffer(&ctx->lane[0][0], ctx->b, " ");
-#endif
+        round_show_buffer("  After Rho:\n");
+
         pi(ctx->lane);
-#if (DUMP_ROUND_DATA == 1)
-        DBG("After Pi:\n");
-        print_buffer(&ctx->lane[0][0], ctx->b, " ");
-#endif
+        round_show_buffer("   After Pi:\n");
+
         chi(ctx->lane);
-#if (DUMP_ROUND_DATA == 1)
-        DBG("After Chi:\n");
-        print_buffer(&ctx->lane[0][0], ctx->b, " ");
-#endif
+        round_show_buffer("  After Chi:\n");
+
         iota(ctx->lane, t);
-#if (DUMP_ROUND_DATA == 1)
-        DBG("After Iota:\n");
-        print_buffer(&ctx->lane[0][0], ctx->b, " ");
-#endif
+        round_show_buffer(" After Iota:\n");
     }
 
+    round_show_buffer("After Permutation:\n");
 #if (DUMP_BLOCK_HASH == 1)
-    DBG("After Permutation:\n");
-    print_buffer(&ctx->lane[0][0], ctx->b, " ");
+    DBG(" BLOCK HASH:\n");
+    print_buffer(&ctx->lane[0][0], ctx->b, "       ");
 #endif
 
     return ERR_OK;
@@ -489,11 +474,11 @@ int SHA3_Final(unsigned char *md, SHA3_CTX *c)
         /* one more block */
         if ((c->alg == SHAKE128) || (c->alg == SHAKE256)) /* XOFs */
         {
-            c->last.buf[c->last.used] = SHA3_PADDING_PAT4_BEGIN;
+            c->last.buf[c->last.used] = SHA3_PADDING_XOF2_BEGIN;
         }
         else
         {
-            c->last.buf[c->last.used] = SHA3_PADDING_PAT2_BEGIN;
+            c->last.buf[c->last.used] = SHA3_PADDING_STD2_BEGIN;
         }
         c->last.used++;
 
@@ -502,11 +487,11 @@ int SHA3_Final(unsigned char *md, SHA3_CTX *c)
 
         if ((c->alg == SHAKE128) || (c->alg == SHAKE256)) /* XOFs */
         {
-            c->last.buf[c->last.used] = SHA3_PADDING_PAT4_END;
+            c->last.buf[c->last.used] = SHA3_PADDING_XOF2_END;
         }
         else
         {
-            c->last.buf[c->last.used] = SHA3_PADDING_PAT2_END;
+            c->last.buf[c->last.used] = SHA3_PADDING_STD2_END;
         }
         c->last.used++;
     }
@@ -514,11 +499,11 @@ int SHA3_Final(unsigned char *md, SHA3_CTX *c)
     {
         if ((c->alg == SHAKE128) || (c->alg == SHAKE256)) /* XOFs */
         {
-            c->last.buf[c->last.used] = SHA3_PADDING_PAT3;
+            c->last.buf[c->last.used] = SHA3_PADDING_XOF1;
         }
         else
         {
-            c->last.buf[c->last.used] = SHA3_PADDING_PAT1;
+            c->last.buf[c->last.used] = SHA3_PADDING_STD1;
         }
         c->last.used++;
     }
@@ -529,7 +514,7 @@ int SHA3_Final(unsigned char *md, SHA3_CTX *c)
     /* Absorbing Phase End */
     c->absorbing = 0;
 
-    dump_lane(c->lane);
+    dump_lane_buffer(c->lane);
 
     if (c->md_size <= c->r)
     {

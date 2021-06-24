@@ -504,8 +504,8 @@ static int internal_digest_tests(const char *argv0, HASH_CTX *ctx)
             ctx->hash(ctx->alg, (unsigned char*)item->str, item->len, ctx->md);
         }
 
-        printf("  Expect: %s\n", item->md);
-        printf("  Result: ");
+        printf("     Expect: %s\n", item->md);
+        printf("     Result: ");
         print_digest(ctx->md, ctx->md_size);
         printf("\n\n");
     }
