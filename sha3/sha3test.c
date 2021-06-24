@@ -37,19 +37,18 @@ typedef enum {
 
 typedef struct {
     SHA3_CTX impl;
-    // HASH_ALG alg;
     SHA3_ALG alg;
     unsigned char *md;
     uint32_t md_size;
+
     int (* init)(SHA3_CTX *c, SHA3_ALG alg);
     int (* update)(SHA3_CTX *c, const void *data, size_t len);
     int (* final)(unsigned char *md, SHA3_CTX *c);
     unsigned char * (* hash)(SHA3_ALG alg, const unsigned char *d, size_t n, unsigned char *md);
 
     /* SHAKE128/SHAKE256 */
-    uint32_t ext;
-    int (* init_ex)(SHA3_CTX *c, SHA3_ALG alg, unsigned int ext);
-    unsigned char * (* hash_ex)(SHA3_ALG alg, const unsigned char *d, size_t n, unsigned char *md, unsigned int ext);
+    int (* init_ex)(SHA3_CTX *c, SHA3_ALG alg, unsigned int md_size);
+    unsigned char * (* hash_ex)(SHA3_ALG alg, const unsigned char *d, size_t n, unsigned char *md, unsigned int md_size);
 } HASH_CTX;
 
 /*
@@ -498,7 +497,7 @@ static int internal_digest_tests(const char *argv0, HASH_CTX *ctx)
         printf("%s(\"%s\")\n", argv0, item->str);
         if ((ctx->alg == SHAKE128) || (ctx->alg == SHAKE256))
         {
-            ctx->hash_ex(ctx->alg, (unsigned char *)item->str, item->len, ctx->md, ctx->ext);
+            ctx->hash_ex(ctx->alg, (unsigned char *)item->str, item->len, ctx->md, ctx->md_size);
         }
         else
         {
@@ -523,7 +522,7 @@ static int digest_string(const char *argv0, HASH_CTX *ctx, const unsigned char *
 
     if ((ctx->alg == SHAKE128) || (ctx->alg == SHAKE256))
     {
-        ctx->hash_ex(ctx->alg, string, len, ctx->md, ctx->ext);
+        ctx->hash_ex(ctx->alg, string, len, ctx->md, ctx->md_size);
     }
     else
     {
@@ -559,7 +558,7 @@ static int digest_file(const char *argv0, HASH_CTX *ctx, const char *filename)
         printf("%s(%s) = ", argv0, filename);
         if ((ctx->alg == SHAKE128) || (ctx->alg == SHAKE256))
         {
-            ctx->init_ex(&ctx->impl, ctx->alg, ctx->ext);
+            ctx->init_ex(&ctx->impl, ctx->alg, ctx->md_size);
         }
         else
         {
@@ -590,18 +589,18 @@ static int digest_file(const char *argv0, HASH_CTX *ctx, const char *filename)
 static void digest_stdin(const char *argv0, HASH_CTX *ctx)
 {
     int len;
-    unsigned char buf[HASH_DIGEST_SIZE];
+    unsigned char buf[FILE_BLOCK_SIZE];
 
     if ((ctx->alg == SHAKE128) || (ctx->alg == SHAKE256))
     {
-        ctx->init_ex(&ctx->impl, ctx->alg, ctx->ext);
+        ctx->init_ex(&ctx->impl, ctx->alg, ctx->md_size);
     }
     else
     {
         ctx->init(&ctx->impl, ctx->alg);
     }
 
-    while ((len = fread(buf, 1, HASH_DIGEST_SIZE, stdin)))
+    while ((len = fread(buf, 1, FILE_BLOCK_SIZE, stdin)))
     {
         ctx->update(&ctx->impl, buf, len);
     }
@@ -633,7 +632,7 @@ int main(int argc, char *argv[])
     int hash_file = 0;
     int hash_stdin = 0;
 
-    /* digest size in bits for SHAKE128/SHAKE256 */
+    /* digest size in bytes for SHAKE128/SHAKE256 */
     uint32_t md_size = 0;
 
     char alg[HASH_NAME_SIZE];
@@ -668,6 +667,14 @@ int main(int argc, char *argv[])
                 break;
             case 'd':
                 md_size = atoi(optarg);
+                if (md_size%8)
+                {
+                    usage(argv[0]);
+                }
+                else /* convert to bytes */
+                {
+                    md_size /= 8;
+                }
                 break;
             case 'f':
                 hash_file = 1;
@@ -719,17 +726,16 @@ int main(int argc, char *argv[])
         {
             ctx.alg = SHAKE128;
             if (md_size == 0)  /* 't' is not set, set to 128 bits, same as 'openssl dgst -shake128' */
-                md_size = 128;
+                md_size = 128 / 8;
         }
         else
         {
             ctx.alg = SHAKE256;
             if (md_size == 0)  /* 't' is not set, set to 256 bits, same as 'openssl dgst -shake256' */
-                md_size = 256;
+                md_size = 256 / 8;
         }
 
-        ctx.ext = md_size;
-        ctx.md_size = md_size / 8;
+        ctx.md_size = md_size;
         ctx.init = NULL;
         ctx.update = SHA3_XOF_Update;
         ctx.final = SHA3_XOF_Final;
