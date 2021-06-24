@@ -1,3 +1,9 @@
+/*
+ * @        file: sha3test.c
+ * @ description: test tool for sha3 (sha3-224, sha3-256, sha3-384, sha3-512, shake128, shake256)
+ * @      author: Gu Yongqiang
+ * @        blog: https://blog.csdn.net/guyongqiangx
+ */
 #include <stdio.h>  /* printf, fopen, fread, fclose... */
 #include <stdlib.h> /* exit */
 #include <string.h> /* strlen */

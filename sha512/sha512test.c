@@ -1,3 +1,9 @@
+/*
+ * @        file: sha512test.c
+ * @ description: test tool for sha512 (sha384, sha512, sha512-224, sha512-256, sha512t)
+ * @      author: Gu Yongqiang
+ * @        blog: https://blog.csdn.net/guyongqiangx
+ */
 #include <stdio.h>  /* printf, fopen, fread, fclose... */
 #include <stdlib.h> /* exit */
 #include <string.h> /* strlen */
