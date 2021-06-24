@@ -614,13 +614,13 @@ static void digest_stdin(const char *argv0, HASH_CTX *ctx)
 /*
  * $ sha3 -h
  * Usage:
- * Common options: [-a sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256 [-t num]] [-x|-f file|-s string|-h]
+ * Common options: [-a sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256 [-d num]] [-x|-f file|-s string|-h]
  * Hash a string:
- *         sha3 -a [sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256] [-t num] -s string
+ *         sha3 -a [sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256] [-d num] -s string
  * Hash a file:
- *         sha3 -a [sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256] [-t num] -f file
+ *         sha3 -a [sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256] [-d num] -f file
  * -a      Secure hash algorithm: "sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256"
- * -t      Digest length out for shake128/shake256, required. Default: num=128[shake128], num=256[shake256]
+ * -d      Digest length out for shake128/shake256, required. Default: num=128[shake128], num=256[shake256]
  * -x      Internal string hash test
  * -h      Display this message
  */
