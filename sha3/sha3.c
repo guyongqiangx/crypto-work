@@ -576,15 +576,15 @@ unsigned char *SHA3(SHA3_ALG alg, const unsigned char *data, size_t n, unsigned 
     return md;
 }
 
-int SHA3_XOF_Init(SHA3_CTX *c, SHA3_ALG alg, uint32_t ext)
+int SHA3_XOF_Init(SHA3_CTX *c, SHA3_ALG alg, uint32_t md_size)
 {
-    /* only for SHAKE128/SHAKE256 */
-    if ((alg != SHAKE128) && (alg != SHAKE256))
+    if (NULL == c)
     {
         return ERR_INV_PARAM;
     }
 
-    if ((NULL == c) || (ext%8 != 0))
+    /* only for SHAKE128/SHAKE256 */
+    if ((alg != SHAKE128) && (alg != SHAKE256))
     {
         return ERR_INV_PARAM;
     }
@@ -600,15 +600,13 @@ int SHA3_XOF_Init(SHA3_CTX *c, SHA3_ALG alg, uint32_t ext)
         case SHAKE128:  /* SHAKE128(M,d) = KECCAK[256](M||1111,d), FIPS-202, sec 6.2 */
             c->r = 168; /* 1344 bits */
             c->c = 32;  /*  256 bits */
-            c->md_size = ext / 8;
-            c->ext = ext;
+            c->md_size = md_size;
             break;
         default:
         case SHAKE256:  /* SHAKE256(M,d) = KECCAK[512](M||1111,d), FIPS-202, sec 6.2 */
             c->r = 136; /* 1088 bits */
             c->c = 64;  /*  512 bits */
-            c->md_size = ext / 8;
-            c->ext = ext;
+            c->md_size = md_size;
             break;
     }
 
@@ -625,9 +623,14 @@ int SHA3_XOF_Final(unsigned char *md, SHA3_CTX *c)
     return SHA3_Final(md, c);
 }
 
-unsigned char *SHA3_XOF(SHA3_ALG alg, const unsigned char *data, size_t n, unsigned char *md, uint32_t ext)
+unsigned char *SHA3_XOF(SHA3_ALG alg, const unsigned char *data, size_t n, unsigned char *md, uint32_t md_size)
 {
     SHA3_CTX c;
+
+    if ((NULL == data) || (NULL == md))
+    {
+        return NULL;
+    }
 
     /* only for SHAKE128/SHAKE256 */
     if ((alg != SHAKE128) && (alg != SHAKE256))
@@ -635,12 +638,7 @@ unsigned char *SHA3_XOF(SHA3_ALG alg, const unsigned char *data, size_t n, unsig
         return NULL;
     }
 
-    if ((NULL == data) || (NULL == md) || (ext%8 != 0))
-    {
-        return NULL;
-    }
-
-    SHA3_XOF_Init(&c, alg, ext);
+    SHA3_XOF_Init(&c, alg, md_size);
     SHA3_XOF_Update(&c, data, n);
     SHA3_XOF_Final(md, &c);
 
