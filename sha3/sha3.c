@@ -312,8 +312,6 @@ static int SHA3_PrepareScheduleWord(SHA3_CTX *ctx, const uint64_t *block)
     {
         if (i<ctx->r/8)
         {
-            //temp[i] = be64toh(QWORD(block, i));
-            //temp[i] = QWORD(block, i);
             temp[i] = le64toh(block[i]);
         }
         else
@@ -478,7 +476,7 @@ int SHA3_Update(SHA3_CTX *c, const void *data, size_t len)
 
 int SHA3_Final(unsigned char *md, SHA3_CTX *c)
 {
-    uint32_t md_size = 0; /* output length */
+    uint32_t md_size = 0; /* message digest size used */
 
     if ((NULL == c) || (NULL == md))
     {
@@ -533,34 +531,6 @@ int SHA3_Final(unsigned char *md, SHA3_CTX *c)
 
     dump_lane(c->lane);
 
-#if 0
-    md_size = 0;
-    if (c->md_size <= c->r)
-    {
-        memcpy(&md[md_size], &c->lane[0][0], c->md_size);
-        md_size += c->md_size;
-    }
-    else
-    {
-        memcpy(&md[md_size], &c->lane[0][0], c->r);
-        md_size += c->r;
-    }
-
-    while (md_size < c->md_size)
-    {
-        SHA3_ProcessBlock(c, NULL);
-        if (c->md_size - md_size > c->r)
-        {
-            memcpy(&md[md_size], &c->lane[0][0], c->r);
-            md_size += c->r;
-        }
-        else
-        {
-            memcpy(&md[md_size], &c->lane[0][0], c->md_size - md_size);
-            md_size = c->md_size;
-        }
-    }
-#else
     if (c->md_size <= c->r)
     {
         memcpy(md, &c->lane[0][0], c->md_size);
@@ -586,7 +556,6 @@ int SHA3_Final(unsigned char *md, SHA3_CTX *c)
             }
         }
     }
-#endif
 
     return ERR_OK;
 }
@@ -641,6 +610,16 @@ int SHA3_XOF_Init(SHA3_CTX *c, SHA3_ALG alg, uint32_t ext)
     return ERR_OK;
 }
 
+int SHA3_XOF_Update(SHA3_CTX *c, const void *data, size_t len)
+{
+    return SHA3_Update(c, data, len);
+}
+
+int SHA3_XOF_Final(unsigned char *md, SHA3_CTX *c)
+{
+    return SHA3_Final(md, c);
+}
+
 unsigned char *SHA3_XOF(SHA3_ALG alg, const unsigned char *d, size_t n, unsigned char *md, uint32_t ext)
 {
     SHA3_CTX c;
@@ -657,8 +636,8 @@ unsigned char *SHA3_XOF(SHA3_ALG alg, const unsigned char *d, size_t n, unsigned
     }
 
     SHA3_XOF_Init(&c, alg, ext);
-    SHA3_Update(&c, d, n);
-    SHA3_Final(md, &c);
+    SHA3_XOF_Update(&c, d, n);
+    SHA3_XOF_Final(md, &c);
 
     return md;
 }
