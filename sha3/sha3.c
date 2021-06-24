@@ -260,8 +260,8 @@ int SHA3_Init(SHA3_CTX *c, SHA3_ALG alg)
     memset(c, 0, sizeof(SHA3_CTX));
 
     /* bits */
-    c->l = 6;
-    c->w = 64; /* c->w = 2 ^ l */
+    // c->l = 6;
+    // c->w = 64; /* c->w = 2 ^ l */
 
     /* bytes */
     c->b = 200; /* 1600 bits, c->b = 25 * 2 ^ c->l; */
@@ -269,25 +269,25 @@ int SHA3_Init(SHA3_CTX *c, SHA3_ALG alg)
     switch (alg)
     {
         case SHA3_224:   /* SHA3-224(M) = KECCAK[448](M||01,224), FIPS-202, sec 6.1 */
-            c->r  = 144; /* 1152 bits */
-            c->c  =  56; /*  448 bits */
-            c->ol =  28; /*  224 bits */
+            c->r  = 144;        /* 1152 bits */
+            c->c  =  56;        /*  448 bits */
+            c->md_size =  28;   /*  224 bits */
             break;
         case SHA3_256:   /* SHA3-256(M) = KECCAK[512](M||01,256), FIPS-202, sec 6.1 */
-            c->r  = 136; /* 1088 bits */
-            c->c  =  64; /*  512 bits */
-            c->ol =  32; /*  256 bits */
+            c->r  = 136;        /* 1088 bits */
+            c->c  =  64;        /*  512 bits */
+            c->md_size =  32;   /*  256 bits */
             break;
         case SHA3_384:   /* SHA3-384(M) = KECCAK[768](M||01,384), FIPS-202, sec 6.1 */
-            c->r  = 104; /*  832 bits */
-            c->c  =  96; /*  768 bits */
-            c->ol =  48; /*  384 bits */
+            c->r  = 104;        /*  832 bits */
+            c->c  =  96;        /*  768 bits */
+            c->md_size =  48;   /*  384 bits */
             break;
         default: /* default Keccak setting: SHA3_512 */
         case SHA3_512:   /* SHA3-512(M) = KECCAK[1024](M||01,512), FIPS-202, sec 6.1 */
-            c->r  =  72; /*  576 bits */
-            c->c  = 128; /* 1024 bits */
-            c->ol =  64; /*  512 bits */
+            c->r  =  72;        /*  576 bits */
+            c->c  = 128;        /* 1024 bits */
+            c->md_size =  64;   /*  512 bits */
             break;
     }
 
@@ -478,7 +478,7 @@ int SHA3_Update(SHA3_CTX *c, const void *data, size_t len)
 
 int SHA3_Final(unsigned char *md, SHA3_CTX *c)
 {
-    uint32_t ol = 0; /* output length */
+    uint32_t md_size = 0; /* output length */
 
     if ((NULL == c) || (NULL == md))
     {
@@ -534,55 +534,55 @@ int SHA3_Final(unsigned char *md, SHA3_CTX *c)
     dump_lane(c->lane);
 
 #if 0
-    ol = 0;
-    if (c->ol <= c->r)
+    md_size = 0;
+    if (c->md_size <= c->r)
     {
-        memcpy(&md[ol], &c->lane[0][0], c->ol);
-        ol += c->ol;
+        memcpy(&md[md_size], &c->lane[0][0], c->md_size);
+        md_size += c->md_size;
     }
     else
     {
-        memcpy(&md[ol], &c->lane[0][0], c->r);
-        ol += c->r;
+        memcpy(&md[md_size], &c->lane[0][0], c->r);
+        md_size += c->r;
     }
 
-    while (ol < c->ol)
+    while (md_size < c->md_size)
     {
         SHA3_ProcessBlock(c, NULL);
-        if (c->ol - ol > c->r)
+        if (c->md_size - md_size > c->r)
         {
-            memcpy(&md[ol], &c->lane[0][0], c->r);
-            ol += c->r;
+            memcpy(&md[md_size], &c->lane[0][0], c->r);
+            md_size += c->r;
         }
         else
         {
-            memcpy(&md[ol], &c->lane[0][0], c->ol - ol);
-            ol = c->ol;
+            memcpy(&md[md_size], &c->lane[0][0], c->md_size - md_size);
+            md_size = c->md_size;
         }
     }
 #else
-    if (c->ol <= c->r)
+    if (c->md_size <= c->r)
     {
-        memcpy(md, &c->lane[0][0], c->ol);
+        memcpy(md, &c->lane[0][0], c->md_size);
     }
     else
     {
         memcpy(md, &c->lane[0][0], c->r);
-        ol = c->r;
+        md_size = c->r;
 
         /* squeeze */
-        while (ol < c->ol)
+        while (md_size < c->md_size)
         {
             SHA3_ProcessBlock(c, NULL);
-            if (c->ol - ol > c->r)
+            if (c->md_size - md_size > c->r)
             {
-                memcpy(&md[ol], &c->lane[0][0], c->r);
-                ol += c->r;
+                memcpy(&md[md_size], &c->lane[0][0], c->r);
+                md_size += c->r;
             }
             else
             {
-                memcpy(&md[ol], &c->lane[0][0], c->ol - ol);
-                ol = c->ol;
+                memcpy(&md[md_size], &c->lane[0][0], c->md_size - md_size);
+                md_size = c->md_size;
             }
         }
     }
@@ -626,14 +626,14 @@ int SHA3_XOF_Init(SHA3_CTX *c, SHA3_ALG alg, uint32_t ext)
         case SHAKE128:  /* SHAKE128(M,d) = KECCAK[256](M||1111,d), FIPS-202, sec 6.2 */
             c->r = 168; /* 1344 bits */
             c->c = 32;  /*  256 bits */
-            c->ol = ext / 8;
+            c->md_size = ext / 8;
             c->ext = ext;
             break;
         default:
         case SHAKE256:  /* SHAKE256(M,d) = KECCAK[512](M||1111,d), FIPS-202, sec 6.2 */
             c->r = 136; /* 1088 bits */
             c->c = 64;  /*  512 bits */
-            c->ol = ext / 8;
+            c->md_size = ext / 8;
             c->ext = ext;
             break;
     }
