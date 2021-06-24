@@ -31,8 +31,8 @@ typedef enum {
     HASH_SHA3_256,
     HASH_SHA3_384,
     HASH_SHA3_512,
-	HASH_SHAKE128,
-	HASH_SHAKE256
+    HASH_SHAKE128,
+    HASH_SHAKE256
 } HASH_ALG;
 
 typedef struct {
@@ -59,13 +59,13 @@ void usage(const char *argv0)
 {
     fprintf(stderr,
         "Usage:\n"
-        "Common options: [-a sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256 [-t num]] [-x|-f file|-s string|-h]\n"
+        "Common options: [-a sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256 [-d num]] [-x|-f file|-s string|-h]\n"
         "Hash a string:\n"
-            "\t%s -a [sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256] [-t num] -s string\n"
+            "\t%s -a [sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256] [-d num] -s string\n"
         "Hash a file:\n"
-            "\t%s -a [sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256] [-t num] -f file\n"
+            "\t%s -a [sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256] [-d num] -f file\n"
         "-a\tSecure hash algorithm: \"sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256\"\n"
-        "-t\tDigest length out for shake128/shake256, required. Default: num=128[shake128], num=256[shake256]\n"
+        "-d\tDigest length out for shake128/shake256, required. Default: num=128[shake128], num=256[shake256]\n"
         "-x\tInternal string hash test\n"
         "-h\tDisplay this message\n"
         , argv0, argv0);
@@ -632,10 +632,9 @@ int main(int argc, char *argv[])
     int hash_str = 0;
     int hash_file = 0;
     int hash_stdin = 0;
-    int hash_ext = 0;
 
-    /* digest size for SHAKE128/SHAKE256 */
-    uint32_t ext = 0;
+    /* digest size in bits for SHAKE128/SHAKE256 */
+    uint32_t md_size = 0;
 
     char alg[HASH_NAME_SIZE];
     uint32_t alg_len = 0;
@@ -648,7 +647,7 @@ int main(int argc, char *argv[])
     HASH_CTX ctx;
     memset(&ctx, 0, sizeof(HASH_CTX));
 
-    while ((ch = getopt(argc, argv, "a:s:f:t:xh")) != -1)
+    while ((ch = getopt(argc, argv, "a:s:f:d:xh")) != -1)
     {
         switch(ch)
         {
@@ -667,9 +666,8 @@ int main(int argc, char *argv[])
                 str = optarg;
                 len = strlen(str);
                 break;
-            case 't':
-                hash_ext = 1;
-                ext = atoi(optarg);
+            case 'd':
+                md_size = atoi(optarg);
                 break;
             case 'f':
                 hash_file = 1;
@@ -720,19 +718,21 @@ int main(int argc, char *argv[])
         if (strncmp(alg, "shake128", alg_len) == 0)
         {
             ctx.alg = SHAKE128;
-            if (hash_ext == 0)  /* 't' is not set, set to 128 bits, same as 'openssl dgst -shake128' */
-                ext = 128;
+            if (md_size == 0)  /* 't' is not set, set to 128 bits, same as 'openssl dgst -shake128' */
+                md_size = 128;
         }
         else
         {
             ctx.alg = SHAKE256;
-            if (hash_ext == 0)  /* 't' is not set, set to 256 bits, same as 'openssl dgst -shake256' */
-                ext = 256;
+            if (md_size == 0)  /* 't' is not set, set to 256 bits, same as 'openssl dgst -shake256' */
+                md_size = 256;
         }
 
-        ctx.ext = ext;
-        ctx.md_size = ext / 8;
+        ctx.ext = md_size;
+        ctx.md_size = md_size / 8;
         ctx.init = NULL;
+        ctx.update = SHA3_XOF_Update;
+        ctx.final = SHA3_XOF_Final;
         ctx.hash = NULL;
 
         ctx.init_ex = SHA3_XOF_Init;

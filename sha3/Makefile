@@ -35,17 +35,17 @@ test: $(TARGET)
 	./$(TARGET) -a sha3-256 -x
 	./$(TARGET) -a sha3-384 -x
 	./$(TARGET) -a sha3-512 -x
-	./$(TARGET) -a shake128 -t 128 -x
+	./$(TARGET) -a shake128 -d 128 -x
 	./$(TARGET) -a shake128 -x
-	./$(TARGET) -a shake256 -t 256 -x
+	./$(TARGET) -a shake256 -d 256 -x
 	./$(TARGET) -a shake256 -x
 	./$(TARGET) -a sha3-224 -f $(TARGET)
 	./$(TARGET) -a sha3-256 -f $(TARGET)
 	./$(TARGET) -a sha3-384 -f $(TARGET)
 	./$(TARGET) -a sha3-512 -f $(TARGET)
-	./$(TARGET) -a shake128 -t 128 -f $(TARGET)
+	./$(TARGET) -a shake128 -d 128 -f $(TARGET)
 	./$(TARGET) -a shake128 -f $(TARGET)
-	./$(TARGET) -a shake256 -t 256 -f $(TARGET)
+	./$(TARGET) -a shake256 -d 256 -f $(TARGET)
 	./$(TARGET) -a shake256 -f $(TARGET)
 
 clean:
