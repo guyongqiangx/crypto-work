@@ -560,12 +560,17 @@ int SHA3_Final(unsigned char *md, SHA3_CTX *c)
     return ERR_OK;
 }
 
-unsigned char *SHA3(SHA3_ALG alg, const unsigned char *d, size_t n, unsigned char *md)
+unsigned char *SHA3(SHA3_ALG alg, const unsigned char *data, size_t n, unsigned char *md)
 {
     SHA3_CTX c;
 
+    if ((NULL == data) || (NULL == md))
+    {
+        return NULL;
+    }
+
     SHA3_Init(&c, alg);
-    SHA3_Update(&c, d, n);
+    SHA3_Update(&c, data, n);
     SHA3_Final(md, &c);
 
     return md;
@@ -620,7 +625,7 @@ int SHA3_XOF_Final(unsigned char *md, SHA3_CTX *c)
     return SHA3_Final(md, c);
 }
 
-unsigned char *SHA3_XOF(SHA3_ALG alg, const unsigned char *d, size_t n, unsigned char *md, uint32_t ext)
+unsigned char *SHA3_XOF(SHA3_ALG alg, const unsigned char *data, size_t n, unsigned char *md, uint32_t ext)
 {
     SHA3_CTX c;
 
@@ -630,13 +635,13 @@ unsigned char *SHA3_XOF(SHA3_ALG alg, const unsigned char *d, size_t n, unsigned
         return NULL;
     }
 
-    if ((NULL == d) || (ext%8 != 0))
+    if ((NULL == data) || (NULL == md) || (ext%8 != 0))
     {
         return NULL;
     }
 
     SHA3_XOF_Init(&c, alg, ext);
-    SHA3_XOF_Update(&c, d, n);
+    SHA3_XOF_Update(&c, data, n);
     SHA3_XOF_Final(md, &c);
 
     return md;
