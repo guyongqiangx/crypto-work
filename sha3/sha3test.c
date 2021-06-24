@@ -63,8 +63,8 @@ void usage(const char *argv0)
             "\t%s -a [sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256] [-d num] -s string\n"
         "Hash a file:\n"
             "\t%s -a [sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256] [-d num] -f file\n"
-        "-a\tSecure hash algorithm: \"sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256\"\n"
-        "-d\tDigest length out for shake128/shake256, required. Default: num=128[shake128], num=256[shake256]\n"
+        "-a\tSecure hash algorithm: \"sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256\". Default: sha3-256\n"
+        "-d\tDigest length for shake128/shake256, required. Default: num=128[shake128], num=256[shake256]\n"
         "-x\tInternal string hash test\n"
         "-h\tDisplay this message\n"
         , argv0, argv0);
@@ -619,8 +619,8 @@ static void digest_stdin(const char *argv0, HASH_CTX *ctx)
  *         sha3 -a [sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256] [-d num] -s string
  * Hash a file:
  *         sha3 -a [sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256] [-d num] -f file
- * -a      Secure hash algorithm: "sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256"
- * -d      Digest length out for shake128/shake256, required. Default: num=128[shake128], num=256[shake256]
+ * -a      Secure hash algorithm: "sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256". Default: sha3-256
+ * -d      Digest length for shake128/shake256, required. Default: num=128[shake128], num=256[shake256]
  * -x      Internal string hash test
  * -h      Display this message
  */
@@ -699,12 +699,12 @@ int main(int argc, char *argv[])
     ctx.update = SHA3_Update;
     ctx.final = SHA3_Final;
     ctx.hash = SHA3;
-    if ((NULL == alg) || (strncmp(alg, "sha3-224", alg_len) == 0))
+    if ((strncmp(alg, "sha3-224", alg_len) == 0))
     {
         ctx.alg = SHA3_224;
         ctx.md_size = SHA3_224_DIGEST_SIZE;
     }
-    else if (strncmp(alg, "sha3-256", alg_len) == 0)
+    else if ((NULL == alg) || (strncmp(alg, "sha3-256", alg_len) == 0))
     {
         ctx.alg = SHA3_256;
         ctx.md_size = SHA3_256_DIGEST_SIZE;
