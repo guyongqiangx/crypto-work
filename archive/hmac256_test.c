@@ -8,7 +8,7 @@
 #include <string.h>
 
 #include "sha256.h"
-#include "hmac.h"
+#include "hmac256.h"
 
 // $ echo -n "Sample message for keylen=blocklen" > input.txt
 // $ hexdump -Cv input.txt

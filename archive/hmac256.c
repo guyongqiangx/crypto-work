@@ -2,7 +2,7 @@
 #include <string.h>
 
 #include "utils.h"
-#include "hmac.h"
+#include "hmac256.h"
 #include "sha256.h"
 
 #if 0

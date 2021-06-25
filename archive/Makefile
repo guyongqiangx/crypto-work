@@ -9,13 +9,13 @@ STRIP = $(CROSS_COMPILE)strip
 CFLAGS = -Wall -g -Os
 INCLUDE = -I ./
 
-.PHONY: all SHA1 SHA256 SHA512 SHA3 MD5 SM3 HMAC help common
+.PHONY: all SHA1 SHA256 SHA512 SHA3 MD5 SM3 HMAC256 help common
 
-all: MD2 MD4 MD5 SHA1 SHA256 SHA512 SHA3 SM3 HMAC
+all: MD2 MD4 MD5 SHA1 SHA256 SHA512 SHA3 SM3 HMAC256
 
 help:
-	@echo "Support Targets: MD5 SHA1 SHA512 SHA3 SM3 HMAC"
-	@echo "make MD5 SHA1 SHA512 SHA3 SM3 HMAC"
+	@echo "Support Targets: MD5 SHA1 SHA512 SHA3 SM3 HMAC256"
+	@echo "make MD5 SHA1 SHA512 SHA3 SM3 HMAC256"
 
 COMM_OBJ := utils.o
 COMMON : $(COMM_OBJ)
@@ -181,20 +181,20 @@ sha3_test.o : sha3_test.c
 #
 # rules for HMAC
 #
-HMAC_OBJ := hmac.o sha256.o
-HMAC_OBJ += hmac_test.o
-HMAC_OBJ += $(COMM_OBJ)
+HMAC256_OBJ := hmac256.o sha256.o
+HMAC256_OBJ += hmac256_test.o
+HMAC256_OBJ += $(COMM_OBJ)
 
-HMAC_TARGET = hmac_test
+HMAC256_TARGET = hmac256_test
 
-HMAC: $(HMAC_OBJ)
-	$(CC) $(CFLAGS) $(HMAC_OBJ) -o $(HMAC_TARGET) $(LIBS) $(INCLUDE)
-	$(STRIP) --strip-unneeded $(HMAC_TARGET)
+HMAC256: $(HMAC256_OBJ)
+	$(CC) $(CFLAGS) $(HMAC256_OBJ) -o $(HMAC256_TARGET) $(LIBS) $(INCLUDE)
+	$(STRIP) --strip-unneeded $(HMAC256_TARGET)
 
-HMAC.o : hmac.c
+HMAC256.o : hmac256.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-hmac_test.o : hmac_test.c
+hmac256_test.o : hmac256_test.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 OBJ = $(SHA1_OBJ) $(SHA1_TARGET)
@@ -205,7 +205,7 @@ OBJ += $(MD2_OBJ) $(MD2_TARGET)
 OBJ += $(MD4_OBJ) $(MD4_TARGET)
 OBJ += $(MD5_OBJ) $(MD5_TARGET)
 OBJ += $(SM3_OBJ) $(SM3_TARGET)
-OBJ += $(HMAC_OBJ) $(HMAC_TARGET)
+OBJ += $(HMAC256_OBJ) $(HMAC256_TARGET)
 
 clean:
 	rm -rf $(OBJ) $(TARGET)
