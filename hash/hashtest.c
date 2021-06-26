@@ -15,7 +15,7 @@ typedef struct {
     HASH_CTX impl;
     HASH_ALG alg;
     unsigned char *md;
-    unsigned int md_size;
+    unsigned int md_str_size;       /* 1 byte converts to 2 chars */
 
     int (* init)(HASH_CTX *c, HASH_ALG alg);
     int (* update)(HASH_CTX *c, const void *data, size_t len);
@@ -34,7 +34,7 @@ struct string2hash {
     char name[HASH_NAME_SIZE];
     HASH_ALG alg;
     unsigned int md_size;
-    unsigned int ext;
+    unsigned int flag;
 } hash_lists[HASH_ALG_MAX] =
 {
   /* "name",       alg,                 md_size */
@@ -66,8 +66,11 @@ static int get_algorithm(const char *name, unsigned int len, TEST_CTX *ctx)
         if (strncmp(name, item->name, len) ==  0)
         {
             ctx->alg = item->alg;
-            ctx->md_size = item->md_size;
-            ctx->ext = item->ext;
+            ctx->md_str_size = item->md_size * 2;
+            if (item->flag)
+            {
+                ctx->init = Hash_Init;
+            }
             return ERR_OK;
         }
     }
@@ -120,16 +123,16 @@ static int digest_string(const char *argv0, TEST_CTX *ctx, const unsigned char *
 {
     printf("%s(\"%s\") = ", argv0, string);
 
-    if (ctx->ext)
+    if (ctx->hash_ex)
     {
-        ctx->hash(ctx->alg, string, len, ctx->md);
+        ctx->hash_ex(ctx->alg, string, len, ctx->md, ctx->md_str_size);
     }
     else
     {
-        ctx->hash_ex(ctx->alg, string, len, ctx->md, ctx->md_size);
+        ctx->hash(ctx->alg, string, len, ctx->md);
     }
 
-    print_digest(ctx->md, ctx->md_size);
+    print_digest(ctx->md, ctx->md_str_size);
     printf("\n");
 
     return 0;
@@ -157,13 +160,13 @@ static int digest_file(const char *argv0, TEST_CTX *ctx, const char *filename)
     {
         printf("%s(%s) = ", argv0, filename);
 
-        if (ctx->ext)
+        if (ctx->init_ex)
         {
-            ctx->init(&ctx->impl, ctx->alg);
+            ctx->init_ex(&ctx->impl, ctx->alg, ctx->md_str_size);
         }
         else
         {
-            ctx->init_ex(&ctx->impl, ctx->alg, ctx->md_size);
+            ctx->init(&ctx->impl, ctx->alg);
         }
 
         while ((len = fread(buf, 1, FILE_BLOCK_SIZE, f)))
@@ -175,7 +178,7 @@ static int digest_file(const char *argv0, TEST_CTX *ctx, const char *filename)
 
         fclose(f);
 
-        print_digest(ctx->md, ctx->md_size);
+        print_digest(ctx->md, ctx->md_str_size);
         printf("\n");
 
         rc = 0;
@@ -192,13 +195,13 @@ static void digest_stdin(const char *argv0, TEST_CTX *ctx)
     int len;
     unsigned char buf[FILE_BLOCK_SIZE];
 
-    if (ctx->init)
+    if (ctx->init_ex)
     {
-        ctx->init(&ctx->impl, ctx->alg);
+        ctx->init_ex(&ctx->impl, ctx->alg, ctx->md_str_size);
     }
     else
     {
-        ctx->init_ex(&ctx->impl, ctx->alg, ctx->md_size);
+        ctx->init(&ctx->impl, ctx->alg);
     }
 
     while ((len = fread(buf, 1, FILE_BLOCK_SIZE, stdin)))
@@ -208,7 +211,7 @@ static void digest_stdin(const char *argv0, TEST_CTX *ctx)
     ctx->final(ctx->md, &ctx->impl);
 
     printf("%s(stdin) = ", argv0);
-    print_digest(ctx->md, ctx->md_size);
+    print_digest(ctx->md, ctx->md_str_size);
     printf("\n");
 }
 
@@ -326,8 +329,8 @@ int main(int argc, char *argv[])
      */
     if (!ctx.ext)
     {
-        ctx.init = HASH_Init;
-        ctx.hash = HASH;
+        ctx.init = Hash_Init;
+        ctx.hash = Hash;
         ctx.init_ex = NULL;
         ctx.hash_ex = NULL;
     }
@@ -335,27 +338,29 @@ int main(int argc, char *argv[])
     {
         ctx.init = NULL;
         ctx.hash = NULL;
-        ctx.init_ex = HASH_Init_Ex;
-        ctx.hash_ex = HASH_Ex;
+        ctx.init_ex = Hash_Init_Ex;
+        ctx.hash_ex = Hash_Ex;
     }
-    ctx.update = HASH_Update;
-    ctx.final = HASH_Final;
-    ctx.uninit = HASH_UnInit;
+    ctx.update = Hash_Update;
+    ctx.final = Hash_Final;
+    ctx.uninit = Hash_UnInit;
 
     if (ctx.alg == HASH_ALG_SHAKE128)
     {
         if (md_size == 0)  /* 't' is not set, set to 128 bits, same as 'openssl dgst -shake128' */
             md_size = 128 / 8;
+        ctx.md_str_size = md_size * 2;
     }
     else if (ctx.alg == HASH_ALG_SHAKE256)
     {
         if (md_size == 0)  /* 't' is not set, set to 256 bits, same as 'openssl dgst -shake256' */
             md_size = 256 / 8;
+        ctx.md_str_size = md_size * 2;
     }
 
     /* allocate buffer for message digest */
-    ctx.md = (unsigned char *)malloc(ctx.md_size * 2);
-    memset(ctx.md, 0, ctx.md_size);
+    ctx.md = (unsigned char *)malloc(ctx.md_str_size);
+    memset(ctx.md, 0, ctx.md_str_size);
 
     if (hash_internal)
     {
