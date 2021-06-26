@@ -13,7 +13,7 @@
 
 typedef struct {
     HASH_ALG alg;
-    HASH_CTX *impl;
+    HASH_CTX impl;
 
     unsigned char *md;
     unsigned int md_str_size;       /* 1 byte converts to 2 chars */
