@@ -36,7 +36,7 @@ typedef struct hash_struct {
 
 static HASH_ST hash_sts[HASH_ALG_MAX] =
 {
- /* { alg,                 st_size,            init,            update,            final,            hash,       init_ex,       hash_ex } */
+ /* { alg,                 st_size,            init,            update,            final,            hash,       init_ex,       Hash_Ex } */
     { HASH_ALG_MD2,        sizeof(MD2_CTX),    MD2_Init,        MD2_Update,        MD2_Final,        MD2,        NULL,          NULL },
     { HASH_ALG_MD4,        sizeof(MD4_CTX),    MD4_Init,        MD4_Update,        MD4_Final,        MD4,        NULL,          NULL },
     { HASH_ALG_MD5,        sizeof(MD5_CTX),    MD5_Init,        MD5_Update,        MD5_Final,        MD5,        NULL,          NULL },
@@ -57,7 +57,7 @@ static HASH_ST hash_sts[HASH_ALG_MAX] =
     { HASH_ALG_SM3,        sizeof(SM3_CTX),    SM3_Init,        SM3_Update,        SM3_Final,        SM3,        NULL,          NULL }
 };
 
-int HASH_Init(HASH_CTX *ctx, HASH_ALG alg)
+int Hash_Init(HASH_CTX *ctx, HASH_ALG alg)
 {
     int rc = ERR_OK;
     HASH_ST *st = NULL;
@@ -94,13 +94,13 @@ int HASH_Init(HASH_CTX *ctx, HASH_ALG alg)
     }
 
     /*
-     * ctx->init_ex should be called in HASH_Init_Ex
+     * ctx->init_ex should be called in Hash_Init_Ex
      */
 
     return rc;
 }
 
-int HASH_Update(HASH_CTX *ctx, const void *data, size_t len)
+int Hash_Update(HASH_CTX *ctx, const void *data, size_t len)
 {
     if ((NULL == ctx) || (NULL == data))
     {
@@ -110,7 +110,7 @@ int HASH_Update(HASH_CTX *ctx, const void *data, size_t len)
     return ctx->update(ctx->impl, data, len);
 }
 
-int HASH_Final(unsigned char *md, HASH_CTX *ctx)
+int Hash_Final(unsigned char *md, HASH_CTX *ctx)
 {
     if ((NULL == ctx) || (NULL == md))
     {
@@ -120,7 +120,7 @@ int HASH_Final(unsigned char *md, HASH_CTX *ctx)
     return ctx->final(md, ctx);
 }
 
-unsigned char *HASH(HASH_ALG alg, const unsigned char *d, size_t n, unsigned char *md)
+unsigned char *Hash(HASH_ALG alg, const unsigned char *d, size_t n, unsigned char *md)
 {
     int rc = ERR_OK;
     HASH_CTX ctx;
@@ -130,25 +130,25 @@ unsigned char *HASH(HASH_ALG alg, const unsigned char *d, size_t n, unsigned cha
         return NULL;
     }
 
-    rc = HASH_Init(&ctx, alg);
+    rc = Hash_Init(&ctx, alg);
     if (rc != ERR_OK)
     {
         return NULL;
     }
 
-    rc = HASH_Update(&ctx, d, n);
+    rc = Hash_Update(&ctx, d, n);
     if (rc != ERR_OK)
     {
         return NULL;
     }
 
-    HASH_Final(md, &ctx);
-    HASH_UnInit(&ctx);
+    Hash_Final(md, &ctx);
+    Hash_UnInit(&ctx);
 
     return md;
 }
 
-int HASH_UnInit(HASH_CTX *ctx)
+int Hash_UnInit(HASH_CTX *ctx)
 {
     if (NULL == ctx)
     {
@@ -162,11 +162,11 @@ int HASH_UnInit(HASH_CTX *ctx)
     return ERR_OK;
 }
 
-int HASH_Init_Ex(HASH_CTX *ctx, HASH_ALG alg, uint32_t ext)
+int Hash_Init_Ex(HASH_CTX *ctx, HASH_ALG alg, uint32_t ext)
 {
     int rc = ERR_OK;
 
-    rc = HASH_Init(ctx, alg);
+    rc = Hash_Init(ctx, alg);
 
     if (rc == ERR_OK)
     {
@@ -175,9 +175,9 @@ int HASH_Init_Ex(HASH_CTX *ctx, HASH_ALG alg, uint32_t ext)
 
     return rc;
 }
-// int HASH_Update_Ex(HASH_CTX *ctx, const void *data, size_t len);
-// int HASH_Final_Ex(unsigned char *md, HASH_CTX *ctx);
-unsigned char *HASH_Ex(HASH_ALG alg, const unsigned char *data, size_t n, unsigned char *md, uint32_t ext)
+// int Hash_Update_Ex(HASH_CTX *ctx, const void *data, size_t len);
+// int Hash_Final_Ex(unsigned char *md, HASH_CTX *ctx);
+unsigned char *Hash_Ex(HASH_ALG alg, const unsigned char *data, size_t n, unsigned char *md, uint32_t ext)
 {
     int rc = ERR_OK;
     HASH_CTX ctx;
@@ -187,20 +187,20 @@ unsigned char *HASH_Ex(HASH_ALG alg, const unsigned char *data, size_t n, unsign
         return NULL;
     }
 
-    rc = HASH_Init_Ex(&ctx, alg, ext);
+    rc = Hash_Init_Ex(&ctx, alg, ext);
     if (rc != ERR_OK)
     {
         return NULL;
     }
 
-    rc = HASH_Update(&ctx, data, n);
+    rc = Hash_Update(&ctx, data, n);
     if (rc != ERR_OK)
     {
         return NULL;
     }
 
-    HASH_Final(md, &ctx);
-    HASH_UnInit(&ctx);
+    Hash_Final(md, &ctx);
+    Hash_UnInit(&ctx);
 
     return md;
 }
