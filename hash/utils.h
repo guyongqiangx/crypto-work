@@ -7,6 +7,7 @@
 #ifndef __UTILS__H
 #define __UTILS__H
 
+#ifndef le32toh
 #define ENDIAN_LITTLE  1234
 #define ENDIAN_BIG     4321
 
@@ -61,6 +62,7 @@
 #define be16toh(x)      htobe16(x)
 #define be32toh(x)      htobe32(x)
 #define be64toh(x)      htobe64(x)
+#endif
 
 int print_buffer(const void *buf, unsigned long len, const char *indent);
 
