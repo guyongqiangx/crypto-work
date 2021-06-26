@@ -57,7 +57,7 @@ struct string2hash {
     {"shake256",   HASH_ALG_SHAKE256,   0,  1},
 };
 
-static int get_algorithm(const char *name, unsigned int len, TEST_CTX *ctx)
+static int setup_ctx(const char *name, unsigned int len, TEST_CTX *ctx)
 {
     struct string2hash *item = NULL;
 
@@ -69,8 +69,25 @@ static int get_algorithm(const char *name, unsigned int len, TEST_CTX *ctx)
             ctx->md_str_size = item->md_size * 2;
             if (item->flag)
             {
-                ctx->init = Hash_Init;
+                ctx->init_ex = Hash_Init_Ex;
+                ctx->hash_ex = Hash_Ex;
+
+                ctx->init = NULL;
+                ctx->hash = NULL;
             }
+            else
+            {
+                ctx->init = Hash_Init;
+                ctx->hash = Hash;
+
+                ctx->init_ex = NULL;
+                ctx->hash_ex = NULL;
+            }
+
+            ctx->update = Hash_Update;
+            ctx->final = Hash_Final;
+            ctx->uninit = Hash_UnInit;
+
             return ERR_OK;
         }
     }
@@ -125,7 +142,7 @@ static int digest_string(const char *argv0, TEST_CTX *ctx, const unsigned char *
 
     if (ctx->hash_ex)
     {
-        ctx->hash_ex(ctx->alg, string, len, ctx->md, ctx->md_str_size);
+        ctx->hash_ex(ctx->alg, string, len, ctx->md, ctx->ext);
     }
     else
     {
@@ -162,7 +179,7 @@ static int digest_file(const char *argv0, TEST_CTX *ctx, const char *filename)
 
         if (ctx->init_ex)
         {
-            ctx->init_ex(&ctx->impl, ctx->alg, ctx->md_str_size);
+            ctx->init_ex(&ctx->impl, ctx->alg, ctx->ext);
         }
         else
         {
@@ -197,7 +214,7 @@ static void digest_stdin(const char *argv0, TEST_CTX *ctx)
 
     if (ctx->init_ex)
     {
-        ctx->init_ex(&ctx->impl, ctx->alg, ctx->md_str_size);
+        ctx->init_ex(&ctx->impl, ctx->alg, ctx->ext);
     }
     else
     {
@@ -304,14 +321,15 @@ int main(int argc, char *argv[])
     }
 
     /*
-     * Setup ctx.alg and ctx.md_size;
+     * Setup ctx.alg and ctx.md_str_size;
      */
-    rc = get_algorithm(alg, sizeof(alg), &ctx);
+    rc = setup_ctx(alg, sizeof(alg), &ctx);
     if (rc != ERR_OK)
     {
         usage(argv[0]);
     }
 
+    /* setup ext for SHA-512/t */
     if (ctx.alg == HASH_ALG_SHA512_T)
     {
         if ((ext==0) || (ext%8!=0) || (ext>=512))
@@ -321,41 +339,25 @@ int main(int argc, char *argv[])
         else
         {
             md_size = ext / 8;
+            ctx.md_str_size = md_size * 2;
+            ctx.ext = ext;
         }
     }
 
-    /*
-     * Setup ctx according to algorithm
-     */
-    if (!ctx.ext)
-    {
-        ctx.init = Hash_Init;
-        ctx.hash = Hash;
-        ctx.init_ex = NULL;
-        ctx.hash_ex = NULL;
-    }
-    else
-    {
-        ctx.init = NULL;
-        ctx.hash = NULL;
-        ctx.init_ex = Hash_Init_Ex;
-        ctx.hash_ex = Hash_Ex;
-    }
-    ctx.update = Hash_Update;
-    ctx.final = Hash_Final;
-    ctx.uninit = Hash_UnInit;
-
+    /* setup ext for SHAKE128/SHAKE256 */
     if (ctx.alg == HASH_ALG_SHAKE128)
     {
         if (md_size == 0)  /* 't' is not set, set to 128 bits, same as 'openssl dgst -shake128' */
             md_size = 128 / 8;
         ctx.md_str_size = md_size * 2;
+        ctx.ext = md_size * 8;
     }
     else if (ctx.alg == HASH_ALG_SHAKE256)
     {
         if (md_size == 0)  /* 't' is not set, set to 256 bits, same as 'openssl dgst -shake256' */
             md_size = 256 / 8;
         ctx.md_str_size = md_size * 2;
+        ctx.ext = md_size * 8;
     }
 
     /* allocate buffer for message digest */
