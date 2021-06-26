@@ -12,20 +12,11 @@
 #include "sha3.h"
 
 typedef struct {
-    HASH_CTX impl;
     HASH_ALG alg;
+    HASH_CTX *impl;
+
     unsigned char *md;
     unsigned int md_str_size;       /* 1 byte converts to 2 chars */
-
-    int (* init)(HASH_CTX *c, HASH_ALG alg);
-    int (* update)(HASH_CTX *c, const void *data, size_t len);
-    int (* final)(unsigned char *md, HASH_CTX *c);
-    unsigned char * (* hash)(HASH_ALG alg, const unsigned char *d, size_t n, unsigned char *md);
-
-    int (* init_ex)(HASH_CTX *c, HASH_ALG alg, unsigned int md_size);
-    unsigned char * (* hash_ex)(HASH_ALG alg, const unsigned char *d, size_t n, unsigned char *md, unsigned int md_size);
-
-    int (* uninit)(HASH_CTX *ctx);
 
     unsigned int ext;
 } TEST_CTX;
@@ -67,26 +58,6 @@ static int setup_ctx(const char *name, unsigned int len, TEST_CTX *ctx)
         {
             ctx->alg = item->alg;
             ctx->md_str_size = item->md_size * 2;
-            if (item->flag)
-            {
-                ctx->init_ex = Hash_Init_Ex;
-                ctx->hash_ex = Hash_Ex;
-
-                ctx->init = NULL;
-                ctx->hash = NULL;
-            }
-            else
-            {
-                ctx->init = Hash_Init;
-                ctx->hash = Hash;
-
-                ctx->init_ex = NULL;
-                ctx->hash_ex = NULL;
-            }
-
-            ctx->update = Hash_Update;
-            ctx->final = Hash_Final;
-            ctx->uninit = Hash_UnInit;
 
             return ERR_OK;
         }
@@ -140,13 +111,13 @@ static int digest_string(const char *argv0, TEST_CTX *ctx, const unsigned char *
 {
     printf("%s(\"%s\") = ", argv0, string);
 
-    if (ctx->hash_ex)
+    if (ctx->ext)
     {
-        ctx->hash_ex(ctx->alg, string, len, ctx->md, ctx->ext);
+        Hash_Ex(ctx->alg, string, len, ctx->md, ctx->ext);
     }
     else
     {
-        ctx->hash(ctx->alg, string, len, ctx->md);
+        Hash(ctx->alg, string, len, ctx->md);
     }
 
     print_digest(ctx->md, ctx->md_str_size);
@@ -177,21 +148,22 @@ static int digest_file(const char *argv0, TEST_CTX *ctx, const char *filename)
     {
         printf("%s(%s) = ", argv0, filename);
 
-        if (ctx->init_ex)
+        if (ctx->ext)
         {
-            ctx->init_ex(&ctx->impl, ctx->alg, ctx->ext);
+            Hash_Init_Ex(&ctx->impl, ctx->alg, ctx->ext);
         }
         else
         {
-            ctx->init(&ctx->impl, ctx->alg);
+            Hash_Init(&ctx->impl, ctx->alg);
         }
 
         while ((len = fread(buf, 1, FILE_BLOCK_SIZE, f)))
         {
-            ctx->update(&ctx->impl, buf, len);
+            Hash_Update(&ctx->impl, buf, len);
         }
 
-        ctx->final(ctx->md, &ctx->impl);
+        Hash_Final(ctx->md, &ctx->impl);
+        Hash_UnInit(&ctx->impl);
 
         fclose(f);
 
@@ -212,20 +184,21 @@ static void digest_stdin(const char *argv0, TEST_CTX *ctx)
     int len;
     unsigned char buf[FILE_BLOCK_SIZE];
 
-    if (ctx->init_ex)
+    if (ctx->ext)
     {
-        ctx->init_ex(&ctx->impl, ctx->alg, ctx->ext);
+        Hash_Init_Ex(&ctx->impl, ctx->alg, ctx->ext);
     }
     else
     {
-        ctx->init(&ctx->impl, ctx->alg);
+        Hash_Init(&ctx->impl, ctx->alg);
     }
 
     while ((len = fread(buf, 1, FILE_BLOCK_SIZE, stdin)))
     {
-        ctx->update(&ctx->impl, buf, len);
+        Hash_Update(&ctx->impl, buf, len);
     }
-    ctx->final(ctx->md, &ctx->impl);
+    Hash_Final(ctx->md, &ctx->impl);
+    Hash_UnInit(&ctx->impl);
 
     printf("%s(stdin) = ", argv0);
     print_digest(ctx->md, ctx->md_str_size);
@@ -254,11 +227,11 @@ int main(int argc, char *argv[])
     int hash_file = 0;
     int hash_stdin = 0;
 
-    /* digest size in bytes for SHAKE128/SHAKE256 */
-    uint32_t md_size = 0;
+    /* d value for SHAKE128/SHAKE256 */
+    uint32_t d = 0;
 
     /* t value for SHA512/t */
-    uint32_t ext = 0;
+    uint32_t t = 0;
 
     char alg[HASH_NAME_SIZE];
     uint32_t alg_len = 0;
@@ -291,18 +264,18 @@ int main(int argc, char *argv[])
                 len = strlen(str);
                 break;
             case 'd':
-                md_size = atoi(optarg);
-                if (md_size%8)
+                d = atoi(optarg);
+                if ((d == 0) || (d%8))
                 {
                     usage(argv[0]);
                 }
-                else /* convert to bytes */
-                {
-                    md_size /= 8;
-                }
                 break;
             case 't':
-                ext = atoi(optarg);
+                t = atoi(optarg);
+                if ((t>=512) || (t==384) || (t%8!=0))
+                {
+                    usage(argv[0]);
+                }
                 break;
             case 'f':
                 hash_file = 1;
@@ -332,32 +305,31 @@ int main(int argc, char *argv[])
     /* setup ext for SHA-512/t */
     if (ctx.alg == HASH_ALG_SHA512_T)
     {
-        if ((ext==0) || (ext%8!=0) || (ext>=512))
+        if ((t==0) || (t%8!=0) || (t>=512))
         {
             usage(argv[0]);
         }
         else
         {
-            md_size = ext / 8;
-            ctx.md_str_size = md_size * 2;
-            ctx.ext = ext;
+            ctx.ext = t;
+            ctx.md_str_size = t / 8 * 2;
         }
     }
 
     /* setup ext for SHAKE128/SHAKE256 */
     if (ctx.alg == HASH_ALG_SHAKE128)
     {
-        if (md_size == 0)  /* 't' is not set, set to 128 bits, same as 'openssl dgst -shake128' */
-            md_size = 128 / 8;
-        ctx.md_str_size = md_size * 2;
-        ctx.ext = md_size * 8;
+        if (d == 0)  /* 't' is not set, set to 128 bits, same as 'openssl dgst -shake128' */
+            d = 128;
+        ctx.ext = d;
+        ctx.md_str_size = d / 8 * 2;
     }
     else if (ctx.alg == HASH_ALG_SHAKE256)
     {
-        if (md_size == 0)  /* 't' is not set, set to 256 bits, same as 'openssl dgst -shake256' */
-            md_size = 256 / 8;
-        ctx.md_str_size = md_size * 2;
-        ctx.ext = md_size * 8;
+        if (d == 0)  /* 't' is not set, set to 256 bits, same as 'openssl dgst -shake256' */
+            d = 256;
+        ctx.ext = d;
+        ctx.md_str_size = d / 8 * 2;
     }
 
     /* allocate buffer for message digest */
