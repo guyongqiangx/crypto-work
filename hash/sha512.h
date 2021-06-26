@@ -8,11 +8,6 @@
 #define __ROCKY_SHA512__H
 #include "type.h"
 
-typedef struct {
-    uint64_t high; /* high 64 bits */
-    uint64_t low;  /*  low 64 bits */
-} uint128_t;
-
 typedef struct sha512_context {
     /* message total length in bytes */
     uint128_t total;

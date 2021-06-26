@@ -8,11 +8,6 @@
 #define __ROCKY_SHA3__H
 #include "type.h"
 
-typedef struct {
-    uint64_t high; /* high 64 bits */
-    uint64_t low;  /*  low 64 bits */
-} uint128_t;
-
 /*
  * Standard:
  *   SHA-3 Standard: Permutation-Based Hash and Extendable-Output Functions
