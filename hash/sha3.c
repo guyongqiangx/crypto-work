@@ -228,7 +228,7 @@ int SHA3_Init(SHA3_CTX *c, SHA3_ALG alg)
         return ERR_INV_PARAM;
     }
 
-    if ((alg == SHAKE128) || (alg == SHAKE256))
+    if ((alg == SHA3_ALG_SHAKE128) || (alg == SHA3_ALG_SHAKE256))
     {
         return ERR_INV_PARAM;
     }
@@ -244,23 +244,23 @@ int SHA3_Init(SHA3_CTX *c, SHA3_ALG alg)
     c->alg = alg;
     switch (alg)
     {
-        case SHA3_224:   /* SHA3-224(M) = KECCAK[448](M||01,224), FIPS-202, sec 6.1 */
+        case SHA3_ALG_224:   /* SHA3-224(M) = KECCAK[448](M||01,224), FIPS-202, sec 6.1 */
             c->r  = 144;        /* 1152 bits */
             c->c  =  56;        /*  448 bits */
             c->md_size =  28;   /*  224 bits */
             break;
-        case SHA3_256:   /* SHA3-256(M) = KECCAK[512](M||01,256), FIPS-202, sec 6.1 */
+        case SHA3_ALG_256:   /* SHA3-256(M) = KECCAK[512](M||01,256), FIPS-202, sec 6.1 */
             c->r  = 136;        /* 1088 bits */
             c->c  =  64;        /*  512 bits */
             c->md_size =  32;   /*  256 bits */
             break;
-        case SHA3_384:   /* SHA3-384(M) = KECCAK[768](M||01,384), FIPS-202, sec 6.1 */
+        case SHA3_ALG_384:   /* SHA3-384(M) = KECCAK[768](M||01,384), FIPS-202, sec 6.1 */
             c->r  = 104;        /*  832 bits */
             c->c  =  96;        /*  768 bits */
             c->md_size =  48;   /*  384 bits */
             break;
         default: /* default Keccak setting: SHA3_512 */
-        case SHA3_512:   /* SHA3-512(M) = KECCAK[1024](M||01,512), FIPS-202, sec 6.1 */
+        case SHA3_ALG_512:   /* SHA3-512(M) = KECCAK[1024](M||01,512), FIPS-202, sec 6.1 */
             c->r  =  72;        /*  576 bits */
             c->c  = 128;        /* 1024 bits */
             c->md_size =  64;   /*  512 bits */
@@ -472,7 +472,7 @@ int SHA3_Final(unsigned char *md, SHA3_CTX *c)
     if (c->last.used <= (c->r - 2))
     {
         /* one more block */
-        if ((c->alg == SHAKE128) || (c->alg == SHAKE256)) /* XOFs */
+        if ((c->alg == SHA3_ALG_SHAKE128) || (c->alg == SHA3_ALG_SHAKE256)) /* XOFs */
         {
             c->last.buf[c->last.used] = SHA3_PADDING_XOF2_BEGIN;
         }
@@ -485,7 +485,7 @@ int SHA3_Final(unsigned char *md, SHA3_CTX *c)
         memset(&c->last.buf[c->last.used], 0, (c->r - 1) - c->last.used);
         c->last.used = c->r - 1;
 
-        if ((c->alg == SHAKE128) || (c->alg == SHAKE256)) /* XOFs */
+        if ((c->alg == SHA3_ALG_SHAKE128) || (c->alg == SHA3_ALG_SHAKE256)) /* XOFs */
         {
             c->last.buf[c->last.used] = SHA3_PADDING_XOF2_END;
         }
@@ -497,7 +497,7 @@ int SHA3_Final(unsigned char *md, SHA3_CTX *c)
     }
     else /* if (c->last.used == (c->r - 1)) */ /* only 1 bytes left */
     {
-        if ((c->alg == SHAKE128) || (c->alg == SHAKE256)) /* XOFs */
+        if ((c->alg == SHA3_ALG_SHAKE128) || (c->alg == SHA3_ALG_SHAKE256)) /* XOFs */
         {
             c->last.buf[c->last.used] = SHA3_PADDING_XOF1;
         }
@@ -569,26 +569,26 @@ int SHA3_XOF_Init(SHA3_CTX *c, SHA3_ALG alg, uint32_t md_size)
     }
 
     /* only for SHAKE128/SHAKE256 */
-    if ((alg != SHAKE128) && (alg != SHAKE256))
+    if ((alg != SHA3_ALG_SHAKE128) && (alg != SHA3_ALG_SHAKE256))
     {
         return ERR_INV_PARAM;
     }
 
     /* using SHA3-512 as default */
-    SHA3_Init(c, SHA3_512);
+    SHA3_Init(c, SHA3_ALG_512);
 
     c->alg = alg;
 
     /* update for SHAKE128/SHAKE256 */
     switch(alg)
     {
-        case SHAKE128:  /* SHAKE128(M,d) = KECCAK[256](M||1111,d), FIPS-202, sec 6.2 */
+        case SHA3_ALG_SHAKE128:  /* SHAKE128(M,d) = KECCAK[256](M||1111,d), FIPS-202, sec 6.2 */
             c->r = 168; /* 1344 bits */
             c->c = 32;  /*  256 bits */
             c->md_size = md_size;
             break;
         default:
-        case SHAKE256:  /* SHAKE256(M,d) = KECCAK[512](M||1111,d), FIPS-202, sec 6.2 */
+        case SHA3_ALG_SHAKE256:  /* SHAKE256(M,d) = KECCAK[512](M||1111,d), FIPS-202, sec 6.2 */
             c->r = 136; /* 1088 bits */
             c->c = 64;  /*  512 bits */
             c->md_size = md_size;
@@ -618,7 +618,7 @@ unsigned char *SHA3_XOF(SHA3_ALG alg, const unsigned char *data, size_t n, unsig
     }
 
     /* only for SHAKE128/SHAKE256 */
-    if ((alg != SHAKE128) && (alg != SHAKE256))
+    if ((alg != SHA3_ALG_SHAKE128) && (alg != SHA3_ALG_SHAKE256))
     {
         return NULL;
     }

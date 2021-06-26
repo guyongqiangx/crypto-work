@@ -19,12 +19,12 @@
  */
 
 typedef enum sha3_algorithm {
-    SHA3_224,
-    SHA3_256,
-    SHA3_384,
-    SHA3_512,
-    SHAKE128,
-    SHAKE256
+    SHA3_ALG_224,
+    SHA3_ALG_256,
+    SHA3_ALG_384,
+    SHA3_ALG_512,
+    SHA3_ALG_SHAKE128,
+    SHA3_ALG_SHAKE256
 }SHA3_ALG;
 
 typedef struct sha3_context {
