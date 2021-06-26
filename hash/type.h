@@ -36,7 +36,8 @@ typedef enum {
     HASH_ALG_SHAKE128,
     HASH_ALG_SHAKE256,
     HASH_ALG_SM3,
-    HASH_ALG_MAX
+    HASH_ALG_MAX,
+    HASH_ALG_INVALID
 } HASH_ALG;
 
 #endif

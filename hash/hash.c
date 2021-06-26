@@ -62,7 +62,7 @@ int HASH_Init(HASH_CTX *ctx, HASH_ALG alg)
     int rc = ERR_OK;
     HASH_ST *st = NULL;
 
-    if ((NULL == ctx) || (alg > HASH_ALG_MAX))
+    if ((NULL == ctx) || (alg >= HASH_ALG_MAX))
     {
         return ERR_INV_PARAM;
     }
@@ -125,7 +125,7 @@ unsigned char *HASH(HASH_ALG alg, const unsigned char *d, size_t n, unsigned cha
     int rc = ERR_OK;
     HASH_CTX ctx;
 
-    if ((alg > HASH_ALG_MAX) || (NULL == d) || (NULL == md))
+    if ((alg >= HASH_ALG_MAX) || (NULL == d) || (NULL == md))
     {
         return NULL;
     }
@@ -182,7 +182,7 @@ unsigned char *HASH_Ex(HASH_ALG alg, const unsigned char *data, size_t n, unsign
     int rc = ERR_OK;
     HASH_CTX ctx;
 
-    if ((alg > HASH_ALG_MAX) || (NULL == data) || (NULL == md))
+    if ((alg >= HASH_ALG_MAX) || (NULL == data) || (NULL == md))
     {
         return NULL;
     }
