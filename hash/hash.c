@@ -133,13 +133,13 @@ unsigned char *HASH(HASH_ALG alg, const unsigned char *d, size_t n, unsigned cha
     rc = HASH_Init(&ctx, alg);
     if (rc != ERR_OK)
     {
-        return rc;
+        return NULL;
     }
 
     rc = HASH_Update(&ctx, d, n);
     if (rc != ERR_OK)
     {
-        return rc;
+        return NULL;
     }
 
     HASH_Final(md, &ctx);
@@ -190,13 +190,13 @@ unsigned char *HASH_Ex(HASH_ALG alg, const unsigned char *data, size_t n, unsign
     rc = HASH_Init_Ex(&ctx, alg, ext);
     if (rc != ERR_OK)
     {
-        return rc;
+        return NULL;
     }
 
     rc = HASH_Update(&ctx, data, n);
     if (rc != ERR_OK)
     {
-        return rc;
+        return NULL;
     }
 
     HASH_Final(md, &ctx);
