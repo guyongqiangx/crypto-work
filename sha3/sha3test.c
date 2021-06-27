@@ -44,17 +44,20 @@ typedef enum {
 typedef struct {
     SHA3_CTX impl;
     SHA3_ALG alg;
+
     unsigned char *md;
     uint32_t md_size;
 
     int (* init)(SHA3_CTX *c, SHA3_ALG alg);
     int (* update)(SHA3_CTX *c, const void *data, size_t len);
     int (* final)(unsigned char *md, SHA3_CTX *c);
-    unsigned char * (* hash)(SHA3_ALG alg, const unsigned char *d, size_t n, unsigned char *md);
+    unsigned char * (* hash)(SHA3_ALG alg, const unsigned char *data, size_t n, unsigned char *md);
 
     /* SHAKE128/SHAKE256 */
-    int (* init_ex)(SHA3_CTX *c, SHA3_ALG alg, unsigned int md_size);
-    unsigned char * (* hash_ex)(SHA3_ALG alg, const unsigned char *d, size_t n, unsigned char *md, unsigned int md_size);
+    int (* init_ex)(SHA3_CTX *c, SHA3_ALG alg, unsigned int d);
+    unsigned char * (* hash_ex)(SHA3_ALG alg, const unsigned char *data, size_t n, unsigned char *md, unsigned int d);
+
+    unsigned int ext; /* d value for SHAKE128/SHAKE256 */
 } HASH_CTX;
 
 /*
@@ -70,7 +73,7 @@ void usage(const char *argv0)
         "Hash a file:\n"
             "\t%s -a [sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256] [-d num] -f file\n"
         "-a\tSecure hash algorithm: \"sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256\". Default: sha3-256\n"
-        "-d\tDigest length for shake128/shake256, required. Default: num=128[shake128], num=256[shake256]\n"
+        "-d\td value for shake128/shake256, default: shake128(num2=128), shake256(num=256)\n"
         "-x\tInternal string hash test\n"
         "-h\tDisplay this message\n"
         , argv0, argv0);
@@ -503,7 +506,7 @@ static int internal_digest_tests(const char *argv0, HASH_CTX *ctx)
         printf("%s(\"%s\")\n", argv0, item->str);
         if ((ctx->alg == SHAKE128) || (ctx->alg == SHAKE256))
         {
-            ctx->hash_ex(ctx->alg, (unsigned char *)item->str, item->len, ctx->md, ctx->md_size);
+            ctx->hash_ex(ctx->alg, (unsigned char *)item->str, item->len, ctx->md, ctx->ext);
         }
         else
         {
@@ -528,7 +531,7 @@ static int digest_string(const char *argv0, HASH_CTX *ctx, const unsigned char *
 
     if ((ctx->alg == SHAKE128) || (ctx->alg == SHAKE256))
     {
-        ctx->hash_ex(ctx->alg, string, len, ctx->md, ctx->md_size);
+        ctx->hash_ex(ctx->alg, string, len, ctx->md, ctx->ext);
     }
     else
     {
@@ -564,7 +567,7 @@ static int digest_file(const char *argv0, HASH_CTX *ctx, const char *filename)
         printf("%s(%s) = ", argv0, filename);
         if ((ctx->alg == SHAKE128) || (ctx->alg == SHAKE256))
         {
-            ctx->init_ex(&ctx->impl, ctx->alg, ctx->md_size);
+            ctx->init_ex(&ctx->impl, ctx->alg, ctx->ext);
         }
         else
         {
@@ -599,7 +602,7 @@ static void digest_stdin(const char *argv0, HASH_CTX *ctx)
 
     if ((ctx->alg == SHAKE128) || (ctx->alg == SHAKE256))
     {
-        ctx->init_ex(&ctx->impl, ctx->alg, ctx->md_size);
+        ctx->init_ex(&ctx->impl, ctx->alg, ctx->ext);
     }
     else
     {
@@ -638,8 +641,8 @@ int main(int argc, char *argv[])
     int hash_file = 0;
     int hash_stdin = 0;
 
-    /* digest size in bytes for SHAKE128/SHAKE256 */
-    uint32_t md_size = 0;
+    /* d value for SHAKE128/SHAKE256 */
+    uint32_t d = 0;
 
     char alg[HASH_NAME_SIZE];
     uint32_t alg_len = 0;
@@ -672,14 +675,10 @@ int main(int argc, char *argv[])
                 len = strlen(str);
                 break;
             case 'd':
-                md_size = atoi(optarg);
-                if (md_size%8)
+                d = atoi(optarg);
+                if (d%8)
                 {
                     usage(argv[0]);
-                }
-                else /* convert to bytes */
-                {
-                    md_size /= 8;
                 }
                 break;
             case 'f':
@@ -705,6 +704,7 @@ int main(int argc, char *argv[])
     ctx.update = SHA3_Update;
     ctx.final = SHA3_Final;
     ctx.hash = SHA3;
+    ctx.ext = 0;
     if ((strncmp(alg, "sha3-224", alg_len) == 0))
     {
         ctx.alg = SHA3_224;
@@ -731,17 +731,18 @@ int main(int argc, char *argv[])
         if (strncmp(alg, "shake128", alg_len) == 0)
         {
             ctx.alg = SHAKE128;
-            if (md_size == 0)  /* 't' is not set, set to 128 bits, same as 'openssl dgst -shake128' */
-                md_size = 128 / 8;
+            if (d == 0)  /* 't' is not set, set to 128 bits, same as 'openssl dgst -shake128' */
+                d = 128;
         }
         else
         {
             ctx.alg = SHAKE256;
-            if (md_size == 0)  /* 't' is not set, set to 256 bits, same as 'openssl dgst -shake256' */
-                md_size = 256 / 8;
+            if (d == 0)  /* 't' is not set, set to 256 bits, same as 'openssl dgst -shake256' */
+                d = 256;
         }
 
-        ctx.md_size = md_size;
+        ctx.ext = d;
+        ctx.md_size = d / 8;
         ctx.init = NULL;
         ctx.update = SHA3_XOF_Update;
         ctx.final = SHA3_XOF_Final;
@@ -756,7 +757,7 @@ int main(int argc, char *argv[])
     }
 
     /* allocate buffer for message digest */
-    ctx.md = (unsigned char *)malloc(ctx.md_size * 2);
+    ctx.md = (unsigned char *)malloc(ctx.md_size);
     memset(ctx.md, 0, ctx.md_size);
 
     if (hash_internal)
