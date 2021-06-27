@@ -6,7 +6,7 @@
 #include "hash.h"
 #include "utils.h"
 
-#define HASH_NAME_SIZE              10                  /* hash name size, like "sha512-224" is 10 bytes */
+#define HASH_NAME_SIZE              10      /* hash name size, like "sha512-224" is 10 bytes */
 #define FILE_BLOCK_SIZE             1024
 
 #include "sha3.h"
@@ -75,14 +75,14 @@ void usage(const char *argv0)
 {
     fprintf(stderr,
         "Usage:\n"
-        "Common options: [-a sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256 [-t ext] [-d num]] [-x|-f file|-s string|-h]\n"
+        "Common options: [-a alg] [-t num1] [-d num2] [-x|-f file|-s string|-h]\n"
         "Hash a string:\n"
-            "\t%s -a [sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256] [-t ext] [-d num] -s string\n"
+            "\t%s -a alg [-t ext] [-t num1] [-d num2] -s string\n"
         "Hash a file:\n"
-            "\t%s -a [sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256] [-t ext] [-d num] -f file\n"
-        "-a\tSecure hash algorithm: \"sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256\". Default: sha3-256\n"
-        "-d\tDigest length for shake128/shake256, required. Default: num=128[shake128], num=256[shake256]\n"
-        "-t\tT value for SHA-512/t algorithm\n"
+            "\t%s -a alg [-t ext] [-t num1] [-d num2] -f file\n"
+        "-a\tHash algorithm: \"md2|md4|md5|sha1|sha224|sha256|sha484|sha512|sha512-224|sha512-256|sha512t|sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256\", default: sha512\n"
+        "-d\td value for shake128/shake256, default: shake128(num2=128), shake256(num=256)\n"
+        "-t\tt value for sha512t algorithm\n"
         "-x\tInternal string hash test\n"
         "-h\tDisplay this message\n"
         , argv0, argv0);
@@ -206,15 +206,16 @@ static void digest_stdin(const char *argv0, TEST_CTX *ctx)
 }
 
 /*
- * $ sha3 -h
+ * $ ./hash -h
  * Usage:
- * Common options: [-a sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256 [-d num]] [-x|-f file|-s string|-h]
+ * Common options: [-a alg] [-t num1] [-d num2] [-x|-f file|-s string|-h]
  * Hash a string:
- *         sha3 -a [sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256] [-d num] -s string
+ *         ./hash -a alg [-t ext] [-t num1] [-d num2] -s string
  * Hash a file:
- *         sha3 -a [sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256] [-d num] -f file
- * -a      Secure hash algorithm: "sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256". Default: sha3-256
- * -d      Digest length for shake128/shake256, required. Default: num=128[shake128], num=256[shake256]
+ *         ./hash -a alg [-t ext] [-t num1] [-d num2] -f file
+ * -a      Hash algorithm: "md2|md4|md5|sha1|sha224|sha256|sha484|sha512|sha512-224|sha512-256|sha512t|sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256", default: sha512
+ * -d      d value for shake128/shake256, default: shake128(num2=128), shake256(num=256)
+ * -t      t value for sha512t algorithm
  * -x      Internal string hash test
  * -h      Display this message
  */
