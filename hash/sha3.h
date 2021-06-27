@@ -1,5 +1,5 @@
 /*
- * @        file: sha512.h
+ * @        file: sha3.h
  * @ description: header file for sha3.c
  * @      author: Gu Yongqiang
  * @        blog: https://blog.csdn.net/guyongqiangx
@@ -70,8 +70,8 @@ int SHA3_Final(unsigned char *md, SHA3_CTX *c);
 unsigned char *SHA3(SHA3_ALG alg, const unsigned char *data, size_t n, unsigned char *md);
 
 /* Extendable-Output Functions: SHAKE128, SHAKE256 */
-int SHA3_XOF_Init(SHA3_CTX *c, SHA3_ALG alg, uint32_t md_size);
+int SHA3_XOF_Init(SHA3_CTX *c, SHA3_ALG alg, uint32_t d);
 int SHA3_XOF_Update(SHA3_CTX *c, const void *data, size_t len);
 int SHA3_XOF_Final(unsigned char *md, SHA3_CTX *c);
-unsigned char *SHA3_XOF(SHA3_ALG alg, const unsigned char *data, size_t n, unsigned char *md, uint32_t md_size);
+unsigned char *SHA3_XOF(SHA3_ALG alg, const unsigned char *data, size_t n, unsigned char *md, uint32_t d);
 #endif

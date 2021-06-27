@@ -561,7 +561,8 @@ unsigned char *SHA3(SHA3_ALG alg, const unsigned char *data, size_t n, unsigned 
     return md;
 }
 
-int SHA3_XOF_Init(SHA3_CTX *c, SHA3_ALG alg, uint32_t md_size)
+/* d is d value for SHAKE128/SHAKE256, md_size = d / 8 */
+int SHA3_XOF_Init(SHA3_CTX *c, SHA3_ALG alg, uint32_t d)
 {
     if (NULL == c)
     {
@@ -585,13 +586,13 @@ int SHA3_XOF_Init(SHA3_CTX *c, SHA3_ALG alg, uint32_t md_size)
         case SHA3_ALG_SHAKE128:  /* SHAKE128(M,d) = KECCAK[256](M||1111,d), FIPS-202, sec 6.2 */
             c->r = 168; /* 1344 bits */
             c->c = 32;  /*  256 bits */
-            c->md_size = md_size;
+            c->md_size = d / 8;
             break;
         default:
         case SHA3_ALG_SHAKE256:  /* SHAKE256(M,d) = KECCAK[512](M||1111,d), FIPS-202, sec 6.2 */
             c->r = 136; /* 1088 bits */
             c->c = 64;  /*  512 bits */
-            c->md_size = md_size;
+            c->md_size = d / 8;
             break;
     }
 
@@ -608,7 +609,7 @@ int SHA3_XOF_Final(unsigned char *md, SHA3_CTX *c)
     return SHA3_Final(md, c);
 }
 
-unsigned char *SHA3_XOF(SHA3_ALG alg, const unsigned char *data, size_t n, unsigned char *md, uint32_t md_size)
+unsigned char *SHA3_XOF(SHA3_ALG alg, const unsigned char *data, size_t n, unsigned char *md, uint32_t d)
 {
     SHA3_CTX c;
 
@@ -623,7 +624,7 @@ unsigned char *SHA3_XOF(SHA3_ALG alg, const unsigned char *data, size_t n, unsig
         return NULL;
     }
 
-    SHA3_XOF_Init(&c, alg, md_size);
+    SHA3_XOF_Init(&c, alg, d);
     SHA3_XOF_Update(&c, data, n);
     SHA3_XOF_Final(md, &c);
 
