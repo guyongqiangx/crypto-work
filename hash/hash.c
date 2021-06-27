@@ -20,41 +20,48 @@
 #include "hash.h"
 #include "utils.h"
 
+typedef int (* OP_INIT)(void *ctx);
+typedef int (* OP_UPDATE)(void *ctx, const void *data, size_t len);
+typedef int (* OP_FINAL)(unsigned char *md, void *ctx);
+typedef unsigned char * (* OP_HASH)(const unsigned char *data, size_t n, unsigned char *md);
+typedef int (* OP_INIT_EX)(void *ctx, unsigned int ext);
+typedef unsigned char * (* OP_HASH_EX)(const unsigned char *data, size_t n, unsigned char *md, unsigned int ext);
+
 typedef struct hash_struct {
-    HASH_ALG alg;
+    HASH_ALG   alg;
 
-    uint32_t st_size;
+    uint32_t   st_size;
 
-    int (* init)(void *ctx, HASH_ALG alg);
-    int (* update)(void *ctx, const void *data, size_t len);
-    int (* final)(unsigned char *md, void *ctx);
-    unsigned char * (* hash)(HASH_ALG alg, const unsigned char *data, size_t n, unsigned char *md);
+    OP_INIT    init;
+    OP_UPDATE  update;
+    OP_FINAL   final;
+    OP_HASH    hash;
 
-    int (* init_ex)(void *ctx, HASH_ALG alg, unsigned int md_size);
-    unsigned char * (* hash_ex)(HASH_ALG alg, const unsigned char *data, size_t n, unsigned char *md, unsigned int md_size);
+    OP_INIT_EX init_ex;
+    OP_HASH_EX hash_ex;
 }HASH_ST;
 
 static HASH_ST hash_sts[HASH_ALG_MAX] =
 {
- /* { alg,                 st_size,            init,            update,            final,            hash,       init_ex,       Hash_Ex } */
-    { HASH_ALG_MD2,        sizeof(MD2_CTX),    MD2_Init,        MD2_Update,        MD2_Final,        MD2,        NULL,          NULL },
-    { HASH_ALG_MD4,        sizeof(MD4_CTX),    MD4_Init,        MD4_Update,        MD4_Final,        MD4,        NULL,          NULL },
-    { HASH_ALG_MD5,        sizeof(MD5_CTX),    MD5_Init,        MD5_Update,        MD5_Final,        MD5,        NULL,          NULL },
-    { HASH_ALG_SHA1,       sizeof(SHA_CTX),    SHA1_Init,       SHA1_Update,       SHA1_Final,       SHA1,       NULL,          NULL },
-    { HASH_ALG_SHA224,     sizeof(SHA256_CTX), SHA224_Init,     SHA224_Update,     SHA224_Final,     SHA224,     NULL,          NULL },
-    { HASH_ALG_SHA256,     sizeof(SHA256_CTX), SHA256_Init,     SHA256_Update,     SHA256_Final,     SHA256,     NULL,          NULL },
-    { HASH_ALG_SHA384,     sizeof(SHA512_CTX), SHA384_Init,     SHA384_Update,     SHA384_Final,     SHA384,     NULL,          NULL },
-    { HASH_ALG_SHA512,     sizeof(SHA512_CTX), SHA512_Init,     SHA512_Update,     SHA512_Final,     SHA512,     NULL,          NULL },
-    { HASH_ALG_SHA512_224, sizeof(SHA512_CTX), SHA512_224_Init, SHA512_224_Update, SHA512_224_Final, SHA512_224, NULL,          NULL },
-    { HASH_ALG_SHA512_256, sizeof(SHA512_CTX), SHA512_256_Init, SHA512_256_Update, SHA512_256_Final, SHA512_256, NULL,          NULL },
-    { HASH_ALG_SHA512_T,   sizeof(SHA512_CTX), NULL,            SHA512t_Update,    SHA512t_Final,    NULL,       SHA512t_Init,  SHA512t},
-    { HASH_ALG_SHA3_224,   sizeof(SHA3_CTX),   SHA3_224_Init,   SHA3_Update,       SHA3_Final,       SHA3_224,   NULL,          NULL },
-    { HASH_ALG_SHA3_256,   sizeof(SHA3_CTX),   SHA3_256_Init,   SHA3_Update,       SHA3_Final,       SHA3_256,   NULL,          NULL },
-    { HASH_ALG_SHA3_384,   sizeof(SHA3_CTX),   SHA3_384_Init,   SHA3_Update,       SHA3_Final,       SHA3_384,   NULL,          NULL },
-    { HASH_ALG_SHA3_512,   sizeof(SHA3_CTX),   SHA3_512_Init,   SHA3_Update,       SHA3_Final,       SHA3_512,   NULL,          NULL },
-    { HASH_ALG_SHAKE128,   sizeof(SHA3_CTX),   NULL,            SHA3_XOF_Update,   SHA3_XOF_Final,   NULL,       SHA3_SHAKE128_Init, SHA3_SHAKE128 },
-    { HASH_ALG_SHAKE256,   sizeof(SHA3_CTX),   NULL,            SHA3_XOF_Update,   SHA3_XOF_Final,   NULL,       SHA3_SHAKE256_Init, SHA3_SHAKE256 },
-    { HASH_ALG_SM3,        sizeof(SM3_CTX),    SM3_Init,        SM3_Update,        SM3_Final,        SM3,        NULL,          NULL }
+ /* { alg,                 st_size,            init,                     pdate,                        final,                      hash,                init_ex,                        hash_ex } */
+    { HASH_ALG_MD2,        sizeof(MD2_CTX),    (OP_INIT)MD2_Init,        (OP_UPDATE)MD2_Update,        (OP_FINAL)MD2_Final,        (OP_HASH)MD2,        (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
+    { HASH_ALG_MD4,        sizeof(MD4_CTX),    (OP_INIT)MD4_Init,        (OP_UPDATE)MD4_Update,        (OP_FINAL)MD4_Final,        (OP_HASH)MD4,        (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
+    { HASH_ALG_MD5,        sizeof(MD5_CTX),    (OP_INIT)MD5_Init,        (OP_UPDATE)MD5_Update,        (OP_FINAL)MD5_Final,        (OP_HASH)MD5,        (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
+    { HASH_ALG_SHA1,       sizeof(SHA_CTX),    (OP_INIT)SHA1_Init,       (OP_UPDATE)SHA1_Update,       (OP_FINAL)SHA1_Final,       (OP_HASH)SHA1,       (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
+    { HASH_ALG_SHA224,     sizeof(SHA256_CTX), (OP_INIT)SHA224_Init,     (OP_UPDATE)SHA224_Update,     (OP_FINAL)SHA224_Final,     (OP_HASH)SHA224,     (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
+    { HASH_ALG_SHA256,     sizeof(SHA256_CTX), (OP_INIT)SHA256_Init,     (OP_UPDATE)SHA256_Update,     (OP_FINAL)SHA256_Final,     (OP_HASH)SHA256,     (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
+    { HASH_ALG_SHA384,     sizeof(SHA512_CTX), (OP_INIT)SHA384_Init,     (OP_UPDATE)SHA384_Update,     (OP_FINAL)SHA384_Final,     (OP_HASH)SHA384,     (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
+    { HASH_ALG_SHA512,     sizeof(SHA512_CTX), (OP_INIT)SHA512_Init,     (OP_UPDATE)SHA512_Update,     (OP_FINAL)SHA512_Final,     (OP_HASH)SHA512,     (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
+    { HASH_ALG_SHA512_224, sizeof(SHA512_CTX), (OP_INIT)SHA512_224_Init, (OP_UPDATE)SHA512_224_Update, (OP_FINAL)SHA512_224_Final, (OP_HASH)SHA512_224, (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
+    { HASH_ALG_SHA512_256, sizeof(SHA512_CTX), (OP_INIT)SHA512_256_Init, (OP_UPDATE)SHA512_256_Update, (OP_FINAL)SHA512_256_Final, (OP_HASH)SHA512_256, (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
+    { HASH_ALG_SHA512_T,   sizeof(SHA512_CTX), (OP_INIT)NULL,            (OP_UPDATE)SHA512t_Update,    (OP_FINAL)SHA512t_Final,    (OP_HASH)NULL,       (OP_INIT_EX)SHA512t_Init,       (OP_HASH_EX)SHA512t},
+    { HASH_ALG_SHA3_224,   sizeof(SHA3_CTX),   (OP_INIT)SHA3_224_Init,   (OP_UPDATE)SHA3_Update,       (OP_FINAL)SHA3_Final,       (OP_HASH)SHA3_224,   (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
+    { HASH_ALG_SHA3_256,   sizeof(SHA3_CTX),   (OP_INIT)SHA3_256_Init,   (OP_UPDATE)SHA3_Update,       (OP_FINAL)SHA3_Final,       (OP_HASH)SHA3_256,   (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
+    { HASH_ALG_SHA3_384,   sizeof(SHA3_CTX),   (OP_INIT)SHA3_384_Init,   (OP_UPDATE)SHA3_Update,       (OP_FINAL)SHA3_Final,       (OP_HASH)SHA3_384,   (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
+    { HASH_ALG_SHA3_512,   sizeof(SHA3_CTX),   (OP_INIT)SHA3_512_Init,   (OP_UPDATE)SHA3_Update,       (OP_FINAL)SHA3_Final,       (OP_HASH)SHA3_512,   (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
+    { HASH_ALG_SHAKE128,   sizeof(SHA3_CTX),   (OP_INIT)NULL,            (OP_UPDATE)SHA3_XOF_Update,   (OP_FINAL)SHA3_XOF_Final,   (OP_HASH)NULL,       (OP_INIT_EX)SHA3_SHAKE128_Init, (OP_HASH_EX)SHA3_SHAKE128 },
+    { HASH_ALG_SHAKE256,   sizeof(SHA3_CTX),   (OP_INIT)NULL,            (OP_UPDATE)SHA3_XOF_Update,   (OP_FINAL)SHA3_XOF_Final,   (OP_HASH)NULL,       (OP_INIT_EX)SHA3_SHAKE256_Init, (OP_HASH_EX)SHA3_SHAKE256 },
+    { HASH_ALG_SM3,        sizeof(SM3_CTX),    (OP_INIT)SM3_Init,        (OP_UPDATE)SM3_Update,        (OP_FINAL)SM3_Final,        (OP_HASH)SM3,        (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL }
 };
 
 int Hash_Init(HASH_CTX *ctx, HASH_ALG alg)
