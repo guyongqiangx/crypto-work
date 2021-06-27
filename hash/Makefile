@@ -14,7 +14,8 @@ LIBS    =
 INCLUDE =
 CFLAGS  = -Wall -g -O2
 
-SRCS    = utils.c md2.c md4.c md5.c sha1.c sha256.c sha512.c sha3.c sha3ex.c sm3.c hash.c hashtest.c
+# SRCS    = utils.c md2.c md4.c md5.c sha1.c sha256.c sha512.c sha3.c sha3ex.c sm3.c hash.c hashtest.c
+SRCS    = utils.c md2.c md4.c md5.c sha1.c sha256.c sha512.c sha3.c sha3ex.c sm3.c hash.c sha1test.c
 TARGET  = hash
 
 OBJS 	= $(SRCS:.c=.o)
