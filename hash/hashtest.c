@@ -1,3 +1,14 @@
+/*
+ * @        file: hashtest.c
+ * @ description: hash test tool for:
+ *                1. MD(md2/md4/md5)
+ *                2. SHA1(sha1)
+ *                3. SHA2(sha224/sha256/sha384/sha512/sha512-224/sha512-256/sha512t)
+ *                4. SHA3(sha3-224/sha3-256/sha3-384/sha3-512/shake128/shake256)
+ *                5. SM3(sm3)
+ * @      author: Gu Yongqiang
+ * @        blog: https://blog.csdn.net/guyongqiangx
+ */
 #include <stdio.h>  /* printf, fopen, fread, fclose... */
 #include <stdlib.h> /* exit */
 #include <string.h> /* strlen */
@@ -8,8 +19,6 @@
 
 #define HASH_NAME_SIZE              10      /* hash name size, like "sha512-224" is 10 bytes */
 #define FILE_BLOCK_SIZE             1024
-
-#include "sha3.h"
 
 typedef struct {
     HASH_ALG alg;
