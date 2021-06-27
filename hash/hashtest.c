@@ -244,7 +244,7 @@ int main(int argc, char *argv[])
     TEST_CTX ctx;
     memset(&ctx, 0, sizeof(TEST_CTX));
 
-    while ((ch = getopt(argc, argv, "a:s:f:d:xh")) != -1)
+    while ((ch = getopt(argc, argv, "a:s:f:t:d:xh")) != -1)
     {
         switch(ch)
         {
@@ -263,6 +263,10 @@ int main(int argc, char *argv[])
                 str = optarg;
                 len = strlen(str);
                 break;
+            case 'f':
+                hash_file = 1;
+                filename = optarg;
+                break;
             case 'd':
                 d = atoi(optarg);
                 if ((d == 0) || (d%8))
@@ -276,10 +280,6 @@ int main(int argc, char *argv[])
                 {
                     usage(argv[0]);
                 }
-                break;
-            case 'f':
-                hash_file = 1;
-                filename = optarg;
                 break;
             case 'h':
             default: /* '?' */
