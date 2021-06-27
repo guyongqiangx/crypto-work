@@ -294,9 +294,9 @@ int main(int argc, char *argv[])
     }
 
     /*
-     * Setup ctx.alg and ctx.md_str_size;
+     * Setup ctx
      */
-    rc = setup_ctx(alg, sizeof(alg), &ctx);
+    rc = setup_ctx(alg, alg_len, &ctx);
     if (rc != ERR_OK)
     {
         usage(argv[0]);
@@ -334,6 +334,11 @@ int main(int argc, char *argv[])
 
     /* allocate buffer for message digest */
     ctx.md = (unsigned char *)malloc(ctx.md_str_size);
+    if (NULL == ctx.md)
+    {
+        printf("Out Of Memory in %s\n", __FUNCTION__);
+        return 0;
+    }
     memset(ctx.md, 0, ctx.md_str_size);
 
     if (hash_internal)
