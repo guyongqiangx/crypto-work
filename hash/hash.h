@@ -21,8 +21,8 @@ typedef struct hash_context {
     int (* final)(unsigned char *md, void *ctx);
     unsigned char * (* hash)(const unsigned char *data, size_t n, unsigned char *md);
 
-    int (* init_ex)(void *ctx, unsigned int md_size);
-    unsigned char * (* hash_ex)(const unsigned char *data, size_t n, unsigned char *md, unsigned int md_size);
+    int (* init_ex)(void *ctx, unsigned int ext);
+    unsigned char * (* hash_ex)(const unsigned char *data, size_t n, unsigned char *md, unsigned int ext);
 }HASH_CTX;
 
 int Hash_Init(HASH_CTX *ctx, HASH_ALG alg);
