@@ -16,7 +16,7 @@ typedef struct {
     HASH_CTX impl;
 
     unsigned char *md;
-    unsigned int md_str_size;       /* 1 byte converts to 2 chars */
+    unsigned int md_size;       /* 1 byte converts to 2 chars */
 
     unsigned int ext;
 } TEST_CTX;
@@ -57,7 +57,7 @@ static int setup_ctx(const char *name, unsigned int len, TEST_CTX *ctx)
         if (strncmp(name, item->name, len) ==  0)
         {
             ctx->alg = item->alg;
-            ctx->md_str_size = item->md_size * 2;
+            ctx->md_size = item->md_size;
 
             return ERR_OK;
         }
@@ -120,7 +120,7 @@ static int digest_string(const char *argv0, TEST_CTX *ctx, const unsigned char *
         Hash(ctx->alg, string, len, ctx->md);
     }
 
-    print_digest(ctx->md, ctx->md_str_size);
+    print_digest(ctx->md, ctx->md_size);
     printf("\n");
 
     return 0;
@@ -167,7 +167,7 @@ static int digest_file(const char *argv0, TEST_CTX *ctx, const char *filename)
 
         fclose(f);
 
-        print_digest(ctx->md, ctx->md_str_size);
+        print_digest(ctx->md, ctx->md_size);
         printf("\n");
 
         rc = 0;
@@ -201,7 +201,7 @@ static void digest_stdin(const char *argv0, TEST_CTX *ctx)
     Hash_UnInit(&ctx->impl);
 
     printf("%s(stdin) = ", argv0);
-    print_digest(ctx->md, ctx->md_str_size);
+    print_digest(ctx->md, ctx->md_size);
     printf("\n");
 }
 
@@ -312,7 +312,7 @@ int main(int argc, char *argv[])
         else
         {
             ctx.ext = t;
-            ctx.md_str_size = t / 8 * 2;
+            ctx.md_size = t / 8;
         }
     }
 
@@ -322,24 +322,24 @@ int main(int argc, char *argv[])
         if (d == 0)  /* 't' is not set, set to 128 bits, same as 'openssl dgst -shake128' */
             d = 128;
         ctx.ext = d;
-        ctx.md_str_size = d / 8 * 2;
+        ctx.md_size = d / 8;
     }
     else if (ctx.alg == HASH_ALG_SHAKE256)
     {
         if (d == 0)  /* 't' is not set, set to 256 bits, same as 'openssl dgst -shake256' */
             d = 256;
         ctx.ext = d;
-        ctx.md_str_size = d / 8 * 2;
+        ctx.md_size = d / 8;
     }
 
     /* allocate buffer for message digest */
-    ctx.md = (unsigned char *)malloc(ctx.md_str_size);
+    ctx.md = (unsigned char *)malloc(ctx.md_size);
     if (NULL == ctx.md)
     {
         printf("Out Of Memory in %s\n", __FUNCTION__);
         return 0;
     }
-    memset(ctx.md, 0, ctx.md_str_size);
+    memset(ctx.md, 0, ctx.md_size);
 
     if (hash_internal)
     {
