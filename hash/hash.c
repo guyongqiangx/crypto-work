@@ -117,7 +117,7 @@ int Hash_Final(unsigned char *md, HASH_CTX *ctx)
         return ERR_INV_PARAM;
     }
 
-    return ctx->final(md, ctx);
+    return ctx->final(md, ctx->impl);
 }
 
 unsigned char *Hash(HASH_ALG alg, const unsigned char *data, size_t n, unsigned char *md)
