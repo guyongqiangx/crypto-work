@@ -16,9 +16,9 @@ typedef struct {
     HASH_CTX impl;
 
     unsigned char *md;
-    unsigned int md_size;       /* 1 byte converts to 2 chars */
+    unsigned int md_size;
 
-    unsigned int ext;
+    unsigned int ext;       /* t value for SHA-512/t or d value for SHAKE128/SHAKE256 */
 } TEST_CTX;
 
 struct string2hash {
