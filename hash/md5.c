@@ -347,17 +347,17 @@ int MD5_Final(unsigned char *md, MD5_CTX *c)
     return ERR_OK;
 }
 
-unsigned char *MD5(const unsigned char *d, unsigned long n, unsigned char *md)
+unsigned char *MD5(const unsigned char *data, unsigned long n, unsigned char *md)
 {
     MD5_CTX c;
 
-    if ((NULL == d) || (NULL == md))
+    if ((NULL == data) || (NULL == md))
     {
         return NULL;
     }
 
     MD5_Init(&c);
-    MD5_Update(&c, d, n);
+    MD5_Update(&c, data, n);
     MD5_Final(md, &c);
 
     return md;

@@ -32,5 +32,5 @@ typedef struct sha1_context {
 int SHA1_Init(SHA_CTX *c);
 int SHA1_Update(SHA_CTX *c, const void *data, size_t len);
 int SHA1_Final(unsigned char *md, SHA_CTX *c);
-unsigned char *SHA1(const unsigned char *d, size_t n, unsigned char *md);
+unsigned char *SHA1(const unsigned char *data, size_t n, unsigned char *md);
 #endif

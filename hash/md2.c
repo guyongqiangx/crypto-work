@@ -283,17 +283,17 @@ int MD2_Final(unsigned char *md, MD2_CTX *c)
     return ERR_OK;
 }
 
-unsigned char *MD2(const unsigned char *d, unsigned long n, unsigned char *md)
+unsigned char *MD2(const unsigned char *data, unsigned long n, unsigned char *md)
 {
     MD2_CTX c;
 
-    if ((NULL == d) || (NULL == md))
+    if ((NULL == data) || (NULL == md))
     {
         return NULL;
     }
 
     MD2_Init(&c);
-    MD2_Update(&c, d, n);
+    MD2_Update(&c, data, n);
     MD2_Final(md, &c);
 
     return md;

@@ -37,28 +37,28 @@ typedef struct sha512_context {
 int SHA384_Init(SHA512_CTX *c);
 int SHA384_Update(SHA512_CTX *c, const void *data, size_t len);
 int SHA384_Final(unsigned char *md, SHA512_CTX *c);
-unsigned char *SHA384(const unsigned char *d, size_t n, unsigned char *md);
+unsigned char *SHA384(const unsigned char *data, size_t n, unsigned char *md);
 
 int SHA512_Init(SHA512_CTX *c);
 int SHA512_Update(SHA512_CTX *c, const void *data, size_t len);
 int SHA512_Final(unsigned char *md, SHA512_CTX *c);
-unsigned char *SHA512(const unsigned char *d, size_t n, unsigned char *md);
+unsigned char *SHA512(const unsigned char *data, size_t n, unsigned char *md);
 
 /* SHA512/224 */
 int SHA512_224_Init(SHA512_CTX *c);
 int SHA512_224_Update(SHA512_CTX *c, const void *data, size_t len);
 int SHA512_224_Final(unsigned char *md, SHA512_CTX *c);
-unsigned char *SHA512_224(const unsigned char *d, size_t n, unsigned char *md);
+unsigned char *SHA512_224(const unsigned char *data, size_t n, unsigned char *md);
 
 /* SHA512/256 */
 int SHA512_256_Init(SHA512_CTX *c);
 int SHA512_256_Update(SHA512_CTX *c, const void *data, size_t len);
 int SHA512_256_Final(unsigned char *md, SHA512_CTX *c);
-unsigned char *SHA512_256(const unsigned char *d, size_t n, unsigned char *md);
+unsigned char *SHA512_256(const unsigned char *data, size_t n, unsigned char *md);
 
 int SHA512t_Init(SHA512_CTX *c, unsigned int t);
 int SHA512t_Update(SHA512_CTX *c, const void *data, size_t len);
 int SHA512t_Final(unsigned char *md, SHA512_CTX *c);
-unsigned char *SHA512t(const unsigned char *d, size_t n, unsigned char *md, unsigned int t);
+unsigned char *SHA512t(const unsigned char *data, size_t n, unsigned char *md, unsigned int t);
 
 #endif

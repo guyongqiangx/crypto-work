@@ -314,17 +314,17 @@ int SHA1_Final(unsigned char *md, SHA_CTX *c)
     return ERR_OK;
 }
 
-unsigned char *SHA1(const unsigned char *d, size_t n, unsigned char *md)
+unsigned char *SHA1(const unsigned char *data, size_t n, unsigned char *md)
 {
     SHA_CTX c;
 
-    if ((NULL == d) || (NULL == md))
+    if ((NULL == data) || (NULL == md))
     {
         return NULL;
     }
 
     SHA1_Init(&c);
-    SHA1_Update(&c, d, n);
+    SHA1_Update(&c, data, n);
     SHA1_Final(md, &c);
 
     return md;

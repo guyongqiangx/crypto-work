@@ -35,10 +35,10 @@ typedef struct sha256_context {
 int SHA224_Init(SHA256_CTX *c);
 int SHA224_Update(SHA256_CTX *c, const void *data, size_t len);
 int SHA224_Final(unsigned char *md, SHA256_CTX *c);
-unsigned char *SHA224(const unsigned char *d, size_t n, unsigned char *md);
+unsigned char *SHA224(const unsigned char *data, size_t n, unsigned char *md);
 
 int SHA256_Init(SHA256_CTX *c);
 int SHA256_Update(SHA256_CTX *c, const void *data, size_t len);
 int SHA256_Final(unsigned char *md, SHA256_CTX *c);
-unsigned char *SHA256(const unsigned char *d, size_t n, unsigned char *md);
+unsigned char *SHA256(const unsigned char *data, size_t n, unsigned char *md);
 #endif

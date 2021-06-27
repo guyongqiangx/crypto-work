@@ -390,17 +390,17 @@ int SM3_Final(unsigned char *md, SM3_CTX *c)
     return ERR_OK;
 }
 
-unsigned char *SM3(const unsigned char *d, size_t n, unsigned char *md)
+unsigned char *SM3(const unsigned char *data, size_t n, unsigned char *md)
 {
     SM3_CTX c;
 
-    if ((NULL == d) || (NULL == md))
+    if ((NULL == data) || (NULL == md))
     {
         return NULL;
     }
 
     SM3_Init(&c);
-    SM3_Update(&c, d, n);
+    SM3_Update(&c, data, n);
     SM3_Final(md, &c);
 
     return md;

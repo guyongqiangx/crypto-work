@@ -360,17 +360,17 @@ int SHA256_Final(unsigned char *md, SHA256_CTX *c)
     return ERR_OK;
 }
 
-unsigned char *SHA256(const unsigned char *d, size_t n, unsigned char *md)
+unsigned char *SHA256(const unsigned char *data, size_t n, unsigned char *md)
 {
     SHA256_CTX c;
 
-    if ((NULL == d) || (NULL == md))
+    if ((NULL == data) || (NULL == md))
     {
         return NULL;
     }
 
     SHA256_Init(&c);
-    SHA256_Update(&c, d, n);
+    SHA256_Update(&c, data, n);
     SHA256_Final(md, &c);
 
     return md;
@@ -416,17 +416,17 @@ int SHA224_Final(unsigned char *md, SHA256_CTX *c)
     return rc;
 }
 
-unsigned char *SHA224(const unsigned char *d, size_t n, unsigned char *md)
+unsigned char *SHA224(const unsigned char *data, size_t n, unsigned char *md)
 {
     SHA256_CTX c;
 
-    if ((NULL == d) || (NULL == md))
+    if ((NULL == data) || (NULL == md))
     {
         return NULL;
     }
 
     SHA224_Init(&c);
-    SHA224_Update(&c, d, n);
+    SHA224_Update(&c, data, n);
     SHA224_Final(md, &c);
 
     return md;

@@ -32,5 +32,5 @@ typedef struct md4_context {
 int MD4_Init(MD4_CTX *c);
 int MD4_Update(MD4_CTX *c, const void *data, unsigned long len);
 int MD4_Final(unsigned char *md, MD4_CTX *c);
-unsigned char *MD4(const unsigned char *d, unsigned long n, unsigned char *md);
+unsigned char *MD4(const unsigned char *data, unsigned long n, unsigned char *md);
 #endif

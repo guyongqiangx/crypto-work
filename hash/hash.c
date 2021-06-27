@@ -28,10 +28,10 @@ typedef struct hash_struct {
     int (* init)(void *ctx, HASH_ALG alg);
     int (* update)(void *ctx, const void *data, size_t len);
     int (* final)(unsigned char *md, void *ctx);
-    unsigned char * (* hash)(HASH_ALG alg, const unsigned char *d, size_t n, unsigned char *md);
+    unsigned char * (* hash)(HASH_ALG alg, const unsigned char *data, size_t n, unsigned char *md);
 
     int (* init_ex)(void *ctx, HASH_ALG alg, unsigned int md_size);
-    unsigned char * (* hash_ex)(HASH_ALG alg, const unsigned char *d, size_t n, unsigned char *md, unsigned int md_size);
+    unsigned char * (* hash_ex)(HASH_ALG alg, const unsigned char *data, size_t n, unsigned char *md, unsigned int md_size);
 }HASH_ST;
 
 static HASH_ST hash_sts[HASH_ALG_MAX] =
@@ -120,12 +120,12 @@ int Hash_Final(unsigned char *md, HASH_CTX *ctx)
     return ctx->final(md, ctx);
 }
 
-unsigned char *Hash(HASH_ALG alg, const unsigned char *d, size_t n, unsigned char *md)
+unsigned char *Hash(HASH_ALG alg, const unsigned char *data, size_t n, unsigned char *md)
 {
     int rc = ERR_OK;
     HASH_CTX ctx;
 
-    if ((alg >= HASH_ALG_MAX) || (NULL == d) || (NULL == md))
+    if ((alg >= HASH_ALG_MAX) || (NULL == data) || (NULL == md))
     {
         return NULL;
     }
@@ -136,7 +136,7 @@ unsigned char *Hash(HASH_ALG alg, const unsigned char *d, size_t n, unsigned cha
         return NULL;
     }
 
-    rc = Hash_Update(&ctx, d, n);
+    rc = Hash_Update(&ctx, data, n);
     if (rc != ERR_OK)
     {
         return NULL;
