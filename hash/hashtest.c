@@ -123,11 +123,11 @@ static int digest_string(const char *argv0, TEST_CTX *ctx, const unsigned char *
 
     if (ctx->ext)
     {
-        Hash_Ex(ctx->alg, string, len, ctx->md, ctx->ext);
+        HASH_Ex(ctx->alg, string, len, ctx->md, ctx->ext);
     }
     else
     {
-        Hash(ctx->alg, string, len, ctx->md);
+        HASH(ctx->alg, string, len, ctx->md);
     }
 
     print_digest(ctx->md, ctx->md_size);
@@ -160,20 +160,20 @@ static int digest_file(const char *argv0, TEST_CTX *ctx, const char *filename)
 
         if (ctx->ext)
         {
-            Hash_Init_Ex(&ctx->impl, ctx->alg, ctx->ext);
+            HASH_Init_Ex(&ctx->impl, ctx->alg, ctx->ext);
         }
         else
         {
-            Hash_Init(&ctx->impl, ctx->alg);
+            HASH_Init(&ctx->impl, ctx->alg);
         }
 
         while ((len = fread(buf, 1, FILE_BLOCK_SIZE, f)))
         {
-            Hash_Update(&ctx->impl, buf, len);
+            HASH_Update(&ctx->impl, buf, len);
         }
 
-        Hash_Final(ctx->md, &ctx->impl);
-        Hash_UnInit(&ctx->impl);
+        HASH_Final(ctx->md, &ctx->impl);
+        HASH_UnInit(&ctx->impl);
 
         fclose(f);
 
@@ -196,19 +196,19 @@ static void digest_stdin(const char *argv0, TEST_CTX *ctx)
 
     if (ctx->ext)
     {
-        Hash_Init_Ex(&ctx->impl, ctx->alg, ctx->ext);
+        HASH_Init_Ex(&ctx->impl, ctx->alg, ctx->ext);
     }
     else
     {
-        Hash_Init(&ctx->impl, ctx->alg);
+        HASH_Init(&ctx->impl, ctx->alg);
     }
 
     while ((len = fread(buf, 1, FILE_BLOCK_SIZE, stdin)))
     {
-        Hash_Update(&ctx->impl, buf, len);
+        HASH_Update(&ctx->impl, buf, len);
     }
-    Hash_Final(ctx->md, &ctx->impl);
-    Hash_UnInit(&ctx->impl);
+    HASH_Final(ctx->md, &ctx->impl);
+    HASH_UnInit(&ctx->impl);
 
     printf("%s(stdin) = ", argv0);
     print_digest(ctx->md, ctx->md_size);

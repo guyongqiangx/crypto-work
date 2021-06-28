@@ -104,7 +104,7 @@ static int internal_digest_tests(const char *argv0)
     for (item=&hashes[0]; item<(&hashes[0]+sizeof(hashes)/sizeof(hashes[0])); item++)
     {
         printf("%s(\"%s\")\n", argv0, item->str);
-        Hash(HASH_ALG_SHA1, (unsigned char*)item->str, item->len, digest);
+        HASH(HASH_ALG_SHA1, (unsigned char*)item->str, item->len, digest);
         printf("  Expect: %s\n", item->md);
         printf("  Result: ");
         print_digest(digest, HASH_DIGEST_SIZE*2);
@@ -123,7 +123,7 @@ static int digest_string(const char *argv0, const unsigned char *string, uint32_
 
     printf("%s(\"%s\") = ", argv0, string);
 
-    Hash(HASH_ALG_SHA1, string, len, digest);
+    HASH(HASH_ALG_SHA1, string, len, digest);
 
     print_digest(digest, HASH_DIGEST_SIZE*2);
     printf("\n");
@@ -155,13 +155,13 @@ static int digest_file(const char *argv0, const char *filename)
     {
         printf("%s(%s) = ", argv0, filename);
 
-        Hash_Init(&c, HASH_ALG_SHA1);
+        HASH_Init(&c, HASH_ALG_SHA1);
         while ((len = fread(buf, 1, FILE_BLOCK_SIZE, f)))
         {
-            Hash_Update(&c, buf, len);
+            HASH_Update(&c, buf, len);
         }
-        Hash_Final(digest, &c);
-        Hash_UnInit(&c);
+        HASH_Final(digest, &c);
+        HASH_UnInit(&c);
 
         fclose(f);
 
@@ -185,13 +185,13 @@ static void digest_stdin(const char *argv0)
     unsigned char digest[HASH_DIGEST_SIZE];
     unsigned char buf[HASH_DIGEST_SIZE];
 
-    Hash_Init(&c, HASH_ALG_SHA1);
+    HASH_Init(&c, HASH_ALG_SHA1);
     while ((len = fread(buf, 1, HASH_DIGEST_SIZE, stdin)))
     {
-        Hash_Update(&c, buf, len);
+        HASH_Update(&c, buf, len);
     }
-    Hash_Final(digest, &c);
-    Hash_UnInit(&c);
+    HASH_Final(digest, &c);
+    HASH_UnInit(&c);
 
     printf("%s(stdin) = ", argv0);
     print_digest(digest, HASH_DIGEST_SIZE*2);
