@@ -55,6 +55,7 @@ struct string2hash {
     {"sha3-512",   HASH_ALG_SHA3_512,   64, 0},
     {"shake128",   HASH_ALG_SHAKE128,   0,  1},
     {"shake256",   HASH_ALG_SHAKE256,   0,  1},
+    {"sm3",        HASH_ALG_SM3,        32, 0},
 };
 
 static int setup_ctx(const char *name, unsigned int len, TEST_CTX *ctx)
@@ -89,7 +90,7 @@ void usage(const char *argv0)
             "\t%s -a alg [-t ext] [-t num1] [-d num2] -s string\n"
         "Hash a file:\n"
             "\t%s -a alg [-t ext] [-t num1] [-d num2] -f file\n"
-        "-a\tHash algorithm: \"md2|md4|md5|sha1|sha224|sha256|sha484|sha512|sha512-224|sha512-256|sha512t|sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256\", default: sha512\n"
+        "-a\tHash algorithm: \"md2|md4|md5|sha1|sha224|sha256|sha484|sha512|sha512-224|sha512-256|sha512t|sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256|sm3\", default: sha512\n"
         "-d\td value for shake128/shake256, default: shake128(num2=128), shake256(num=256)\n"
         "-t\tt value for sha512t algorithm\n"
         "-x\tInternal string hash test\n"
