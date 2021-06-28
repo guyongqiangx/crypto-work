@@ -37,6 +37,7 @@ test: $(TARGET)
 	./$(TARGET) -a sha512t -t 320 -s "abc"
 	./$(TARGET) -a shake128 -d 128 -s "abc"
 	./$(TARGET) -a shake128 -d 256 -s "abc"
+	./hashtest.sh
 
 clean:
 	$(RM) $(RMFLAGS) $(TARGET) $(OBJS)
