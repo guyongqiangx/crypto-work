@@ -8,6 +8,39 @@
 #define __ROCKY_HASH__H
 #include "type.h"
 
+/*
+ * According to NIST SP 800-107 Rev 1, Recommendation for Applications Using Approved Hash Algorithms, 08/2012
+ * Section 4. Approved Hash Algorithms
+ *   Currently, there are seven approved hash algorithms specified in FIPS 180-4:
+ *   SHA-1, SHA-224, SHA-256, SHA-384 SHA-512, SHA-512/224 and SHA-512/256.
+ *   These hash algorithms produce outputs of 160, 224, 256, 384, 512, 224 and 256 bits, respectively.
+ *   The output of a hash algorithm is commonly known as a message digest, a hash value or a hash output.
+ */
+
+/* Hash Algorithm List */
+typedef enum {
+    HASH_ALG_MD2,
+    HASH_ALG_MD4,
+    HASH_ALG_MD5,
+    HASH_ALG_SHA1,
+    HASH_ALG_SHA224,
+    HASH_ALG_SHA256,
+    HASH_ALG_SHA384,
+    HASH_ALG_SHA512,
+    HASH_ALG_SHA512_224,
+    HASH_ALG_SHA512_256,
+    HASH_ALG_SHA512_T,
+    HASH_ALG_SHA3_224,
+    HASH_ALG_SHA3_256,
+    HASH_ALG_SHA3_384,
+    HASH_ALG_SHA3_512,
+    HASH_ALG_SHAKE128,
+    HASH_ALG_SHAKE256,
+    HASH_ALG_SM3,
+    HASH_ALG_MAX,
+    HASH_ALG_INVALID
+} HASH_ALG;
+
 typedef struct hash_context {
     void *impl;
 }HASH_CTX;
