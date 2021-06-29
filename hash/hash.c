@@ -9,123 +9,54 @@
 #include <string.h>
 #include "type.h"
 
-#include "md2.h"
-#include "md4.h"
-#include "md5.h"
-#include "sha1.h"
-#include "sha256.h"
-#include "sha512.h"
-#include "sha3ex.h"
-#include "sm3.h"
+#include "hash_tables.h"
 #include "hash.h"
 #include "utils.h"
-
-typedef int (* OP_INIT)(void *ctx);
-typedef int (* OP_UPDATE)(void *ctx, const void *data, size_t len);
-typedef int (* OP_FINAL)(unsigned char *md, void *ctx);
-typedef unsigned char * (* OP_HASH)(const unsigned char *data, size_t n, unsigned char *md);
-typedef int (* OP_INIT_EX)(void *ctx, unsigned int ext);
-typedef unsigned char * (* OP_HASH_EX)(const unsigned char *data, size_t n, unsigned char *md, unsigned int ext);
-
-typedef struct hash_struct {
-    HASH_ALG   alg;
-
-    uint32_t   st_size;
-
-    OP_INIT    init;
-    OP_UPDATE  update;
-    OP_FINAL   final;
-    OP_HASH    hash;
-
-    OP_INIT_EX init_ex;
-    OP_HASH_EX hash_ex;
-}HASH_ST;
-
-static HASH_ST hash_lists[HASH_ALG_MAX] =
-{
- /* { alg,                 st_size,            init,                     pdate,                        final,                      hash,                init_ex,                        hash_ex } */
-    { HASH_ALG_MD2,        sizeof(MD2_CTX),    (OP_INIT)MD2_Init,        (OP_UPDATE)MD2_Update,        (OP_FINAL)MD2_Final,        (OP_HASH)MD2,        (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
-    { HASH_ALG_MD4,        sizeof(MD4_CTX),    (OP_INIT)MD4_Init,        (OP_UPDATE)MD4_Update,        (OP_FINAL)MD4_Final,        (OP_HASH)MD4,        (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
-    { HASH_ALG_MD5,        sizeof(MD5_CTX),    (OP_INIT)MD5_Init,        (OP_UPDATE)MD5_Update,        (OP_FINAL)MD5_Final,        (OP_HASH)MD5,        (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
-    { HASH_ALG_SHA1,       sizeof(SHA_CTX),    (OP_INIT)SHA1_Init,       (OP_UPDATE)SHA1_Update,       (OP_FINAL)SHA1_Final,       (OP_HASH)SHA1,       (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
-    { HASH_ALG_SHA224,     sizeof(SHA256_CTX), (OP_INIT)SHA224_Init,     (OP_UPDATE)SHA224_Update,     (OP_FINAL)SHA224_Final,     (OP_HASH)SHA224,     (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
-    { HASH_ALG_SHA256,     sizeof(SHA256_CTX), (OP_INIT)SHA256_Init,     (OP_UPDATE)SHA256_Update,     (OP_FINAL)SHA256_Final,     (OP_HASH)SHA256,     (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
-    { HASH_ALG_SHA384,     sizeof(SHA512_CTX), (OP_INIT)SHA384_Init,     (OP_UPDATE)SHA384_Update,     (OP_FINAL)SHA384_Final,     (OP_HASH)SHA384,     (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
-    { HASH_ALG_SHA512,     sizeof(SHA512_CTX), (OP_INIT)SHA512_Init,     (OP_UPDATE)SHA512_Update,     (OP_FINAL)SHA512_Final,     (OP_HASH)SHA512,     (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
-    { HASH_ALG_SHA512_224, sizeof(SHA512_CTX), (OP_INIT)SHA512_224_Init, (OP_UPDATE)SHA512_224_Update, (OP_FINAL)SHA512_224_Final, (OP_HASH)SHA512_224, (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
-    { HASH_ALG_SHA512_256, sizeof(SHA512_CTX), (OP_INIT)SHA512_256_Init, (OP_UPDATE)SHA512_256_Update, (OP_FINAL)SHA512_256_Final, (OP_HASH)SHA512_256, (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
-    { HASH_ALG_SHA512_T,   sizeof(SHA512_CTX), (OP_INIT)NULL,            (OP_UPDATE)SHA512t_Update,    (OP_FINAL)SHA512t_Final,    (OP_HASH)NULL,       (OP_INIT_EX)SHA512t_Init,       (OP_HASH_EX)SHA512t},
-    { HASH_ALG_SHA3_224,   sizeof(SHA3_CTX),   (OP_INIT)SHA3_224_Init,   (OP_UPDATE)SHA3_Update,       (OP_FINAL)SHA3_Final,       (OP_HASH)SHA3_224,   (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
-    { HASH_ALG_SHA3_256,   sizeof(SHA3_CTX),   (OP_INIT)SHA3_256_Init,   (OP_UPDATE)SHA3_Update,       (OP_FINAL)SHA3_Final,       (OP_HASH)SHA3_256,   (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
-    { HASH_ALG_SHA3_384,   sizeof(SHA3_CTX),   (OP_INIT)SHA3_384_Init,   (OP_UPDATE)SHA3_Update,       (OP_FINAL)SHA3_Final,       (OP_HASH)SHA3_384,   (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
-    { HASH_ALG_SHA3_512,   sizeof(SHA3_CTX),   (OP_INIT)SHA3_512_Init,   (OP_UPDATE)SHA3_Update,       (OP_FINAL)SHA3_Final,       (OP_HASH)SHA3_512,   (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
-    { HASH_ALG_SHAKE128,   sizeof(SHA3_CTX),   (OP_INIT)NULL,            (OP_UPDATE)SHA3_XOF_Update,   (OP_FINAL)SHA3_XOF_Final,   (OP_HASH)NULL,       (OP_INIT_EX)SHA3_SHAKE128_Init, (OP_HASH_EX)SHA3_SHAKE128 },
-    { HASH_ALG_SHAKE256,   sizeof(SHA3_CTX),   (OP_INIT)NULL,            (OP_UPDATE)SHA3_XOF_Update,   (OP_FINAL)SHA3_XOF_Final,   (OP_HASH)NULL,       (OP_INIT_EX)SHA3_SHAKE256_Init, (OP_HASH_EX)SHA3_SHAKE256 },
-    { HASH_ALG_SM3,        sizeof(SM3_CTX),    (OP_INIT)SM3_Init,        (OP_UPDATE)SM3_Update,        (OP_FINAL)SM3_Final,        (OP_HASH)SM3,        (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL }
-};
 
 int HASH_Init(HASH_CTX *ctx, HASH_ALG alg)
 {
     int rc = ERR_OK;
-    HASH_ST *st = NULL;
+    HASH_STRUCT *impl = NULL;
 
-    /* make sure alg == hash_lists[alg] */
-    if ((NULL == ctx) || (alg >= HASH_ALG_MAX) || (alg != hash_lists[alg].alg))
+    if ((NULL == ctx)
+      || (alg >= HASH_ALG_MAX) || (HASH_ALG_SHA512_T == alg) || (HASH_ALG_SHAKE128 == alg) || (HASH_ALG_SHAKE256 == alg))
     {
         return ERR_INV_PARAM;
     }
 
-    st = &hash_lists[alg];
+    impl = create_hash_struct(alg, 0);
 
-    memset(ctx, 0, sizeof(HASH_CTX));
-
-    ctx->alg = alg;
-
-    ctx->init = st->init;
-    ctx->update = st->update;
-    ctx->final = st->final;
-    ctx->hash = st->hash;
-
-    ctx->init_ex = st->init_ex;
-    ctx->hash_ex = st->hash_ex;
-
-    ctx->impl = malloc(st->st_size);
-    if (NULL == ctx->impl)
+    ctx->impl = impl;
+    if (impl->init != NULL)
     {
-        printf("Out Of Memory in %s\n", __FUNCTION__);
-        return ERR_ERR;
+        rc = impl->init(impl->context);
     }
-
-    if (ctx->init != NULL)
-    {
-        rc = ctx->init(ctx->impl);
-    }
-
-    /*
-     * ctx->init_ex should be called in HASH_Init_Ex
-     */
 
     return rc;
 }
 
 int HASH_Update(HASH_CTX *ctx, const void *data, size_t len)
 {
-    if ((NULL == ctx) || (NULL == data))
+    HASH_STRUCT *impl;
+    if ((NULL == ctx) || (NULL == ctx->impl) || (NULL == data))
     {
         return ERR_INV_PARAM;
     }
 
-    return ctx->update(ctx->impl, data, len);
+    impl = (HASH_STRUCT *)ctx->impl;
+    return impl->update(impl->context, data, len);
 }
 
 int HASH_Final(unsigned char *md, HASH_CTX *ctx)
 {
-    if ((NULL == ctx) || (NULL == md))
+    HASH_STRUCT *impl;
+    if ((NULL == ctx) || (NULL == ctx->impl) || (NULL == md))
     {
         return ERR_INV_PARAM;
     }
 
-    return ctx->final(md, ctx->impl);
+    impl = (HASH_STRUCT *)ctx->impl;
+    return impl->final(md, impl->context);
 }
 
 unsigned char *HASH(HASH_ALG alg, const unsigned char *data, size_t n, unsigned char *md)
@@ -158,14 +89,13 @@ unsigned char *HASH(HASH_ALG alg, const unsigned char *data, size_t n, unsigned 
 
 int HASH_UnInit(HASH_CTX *ctx)
 {
-    if (NULL == ctx)
+    if ((NULL == ctx) || (NULL == ctx->impl))
     {
         return ERR_INV_PARAM;
     }
 
-    free(ctx->impl);
+    destroy_hash_struct(ctx->impl);
     ctx->impl = NULL;
-    memset(ctx, 0, sizeof(HASH_CTX));
 
     return ERR_OK;
 }
@@ -173,18 +103,25 @@ int HASH_UnInit(HASH_CTX *ctx)
 int HASH_Init_Ex(HASH_CTX *ctx, HASH_ALG alg, uint32_t ext)
 {
     int rc = ERR_OK;
+    HASH_STRUCT *impl = NULL;
 
-    rc = HASH_Init(ctx, alg);
-
-    if (rc == ERR_OK)
+    if ((NULL == ctx)
+      || ((HASH_ALG_SHA512_T != alg) && (HASH_ALG_SHAKE128 != alg) && (HASH_ALG_SHAKE256 != alg)))
     {
-        rc = ctx->init_ex(ctx->impl, ext);
+        return ERR_INV_PARAM;
+    }
+
+    impl = create_hash_struct(alg, ext);
+
+    ctx->impl = impl;
+    if (impl->init_ex != NULL)
+    {
+        rc = impl->init_ex(impl->context, impl->ext);
     }
 
     return rc;
 }
-// int HASH_Update_Ex(HASH_CTX *ctx, const void *data, size_t len);
-// int HASH_Final_Ex(unsigned char *md, HASH_CTX *ctx);
+
 unsigned char *HASH_Ex(HASH_ALG alg, const unsigned char *data, size_t n, unsigned char *md, uint32_t ext)
 {
     int rc = ERR_OK;
