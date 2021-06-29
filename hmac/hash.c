@@ -41,7 +41,7 @@ typedef struct hash_struct {
     OP_HASH_EX hash_ex;
 }HASH_ST;
 
-static HASH_ST hash_sts[HASH_ALG_MAX] =
+static HASH_ST hash_lists[HASH_ALG_MAX] =
 {
  /* { alg,                 st_size,            init,                     pdate,                        final,                      hash,                init_ex,                        hash_ex } */
     { HASH_ALG_MD2,        sizeof(MD2_CTX),    (OP_INIT)MD2_Init,        (OP_UPDATE)MD2_Update,        (OP_FINAL)MD2_Final,        (OP_HASH)MD2,        (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
@@ -69,12 +69,13 @@ int HASH_Init(HASH_CTX *ctx, HASH_ALG alg)
     int rc = ERR_OK;
     HASH_ST *st = NULL;
 
-    if ((NULL == ctx) || (alg >= HASH_ALG_MAX))
+    /* make sure alg == hash_lists[alg] */
+    if ((NULL == ctx) || (alg >= HASH_ALG_MAX) || (alg != hash_lists[alg].alg))
     {
         return ERR_INV_PARAM;
     }
 
-    st = &hash_sts[alg];
+    st = &hash_lists[alg];
 
     memset(ctx, 0, sizeof(HASH_CTX));
 
