@@ -30,7 +30,7 @@ typedef struct {
     unsigned int ext;       /* t value for SHA-512/t or d value for SHAKE128/SHAKE256 */
 } TEST_CTX;
 
-struct string2hash {
+static struct string2hash {
     char name[HASH_NAME_SIZE];
     HASH_ALG alg;
     unsigned int md_size;
