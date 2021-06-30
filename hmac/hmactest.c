@@ -83,14 +83,15 @@ void usage(const char *argv0)
     fprintf(stderr,
         "Usage:\n"
         "Common options: [-a alg] [-t num1] [-d num2] [-k key] [-x|-f file|-s string|-h]\n"
-        "Hash a string:\n"
+        "Hmac a string:\n"
             "\t%s -a alg [-t ext] [-t num1] [-d num2] -s string\n"
-        "Hash a file:\n"
+        "Hmac a file:\n"
             "\t%s -a alg [-t ext] [-t num1] [-d num2] -f file\n"
         "-a\tHash algorithm: \"md2|md4|md5|sha1|sha224|sha256|sha484|sha512|sha512-224|sha512-256|sha512t|sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256|sm3\", default: sha512\n"
         "-d\td value for shake128/shake256, default: shake128(num2=128), shake256(num=256)\n"
         "-t\tt value for sha512t algorithm\n"
-        "-x\tInternal string hash test\n"
+        "-k\tSecuret key for hmac test\n"
+        "-x\tInternal string hmac test\n"
         "-h\tDisplay this message\n"
         , argv0, argv0);
     exit(1);
@@ -211,17 +212,18 @@ static void hmac_stdin(const char *argv0, TEST_CTX *ctx,  const char *key, uint3
 }
 
 /*
- * $ ./hash -h
+ * $ ./hmac -h
  * Usage:
- * Common options: [-a alg] [-t num1] [-d num2] [-x|-f file|-s string|-h]
- * Hash a string:
- *         ./hash -a alg [-t ext] [-t num1] [-d num2] -s string
- * Hash a file:
- *         ./hash -a alg [-t ext] [-t num1] [-d num2] -f file
- * -a      Hash algorithm: "md2|md4|md5|sha1|sha224|sha256|sha484|sha512|sha512-224|sha512-256|sha512t|sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256", default: sha512
+ * Common options: [-a alg] [-t num1] [-d num2] [-k key] [-x|-f file|-s string|-h]
+ * Hmac a string:
+ *         ./hmac -a alg [-t ext] [-t num1] [-d num2] -s string
+ * Hmac a file:
+ *         ./hmac -a alg [-t ext] [-t num1] [-d num2] -f file
+ * -a      Hash algorithm: "md2|md4|md5|sha1|sha224|sha256|sha484|sha512|sha512-224|sha512-256|sha512t|sha3-224|sha3-256|sha3-384|sha3-512|shake128|shake256|sm3", default: sha512
  * -d      d value for shake128/shake256, default: shake128(num2=128), shake256(num=256)
  * -t      t value for sha512t algorithm
- * -x      Internal string hash test
+ * -k      Securet key for hmac test
+ * -x      Internal string hmac test
  * -h      Display this message
  */
 int main(int argc, char *argv[])
