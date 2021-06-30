@@ -21,7 +21,7 @@ HMAC_SRCS = utils.c md2.c md4.c md5.c sha1.c sha256.c sha512.c sha3.c sha3ex.c s
 
 HASH  = hash
 HMAC  = hmac
-TARGET       = $(HASH_TARGET) $(HMAC_TARGET)
+TARGET       = $(HASH) $(HMAC)
 
 HASH_OBJS    = $(HASH_SRCS:.c=.o)
 HMAC_OBJS    = $(HMAC_SRCS:.c=.o)
