@@ -33,29 +33,27 @@ typedef struct {
 static struct string2hash {
     char name[HASH_NAME_SIZE];
     HASH_ALG alg;
-    unsigned int md_size;
-    unsigned int flag;
 } hash_lists[HASH_ALG_MAX] =
 {
-  /* "name",       alg,                 md_size */
-    {"md2",        HASH_ALG_MD2,        16, 0},
-    {"md4",        HASH_ALG_MD4,        16, 0},
-    {"md5",        HASH_ALG_MD5,        16, 0},
-    {"sha1",       HASH_ALG_SHA1,       20, 0},
-    {"sha224",     HASH_ALG_SHA224,     28, 0},
-    {"sha256",     HASH_ALG_SHA256,     32, 0},
-    {"sha384",     HASH_ALG_SHA384,     48, 0},
-    {"sha512",     HASH_ALG_SHA512,     64, 0},
-    {"sha512-224", HASH_ALG_SHA512_224, 28, 0},
-    {"sha512-256", HASH_ALG_SHA512_256, 32, 0},
-    {"sha512t",    HASH_ALG_SHA512_T,   0,  1},
-    {"sha3-224",   HASH_ALG_SHA3_224,   28, 0},
-    {"sha3-256",   HASH_ALG_SHA3_256,   32, 0},
-    {"sha3-384",   HASH_ALG_SHA3_384,   48, 0},
-    {"sha3-512",   HASH_ALG_SHA3_512,   64, 0},
-    {"shake128",   HASH_ALG_SHAKE128,   0,  1},
-    {"shake256",   HASH_ALG_SHAKE256,   0,  1},
-    {"sm3",        HASH_ALG_SM3,        32, 0},
+  /* "name",       alg */
+    {"md2",        HASH_ALG_MD2       },
+    {"md4",        HASH_ALG_MD4       },
+    {"md5",        HASH_ALG_MD5       },
+    {"sha1",       HASH_ALG_SHA1      },
+    {"sha224",     HASH_ALG_SHA224    },
+    {"sha256",     HASH_ALG_SHA256    },
+    {"sha384",     HASH_ALG_SHA384    },
+    {"sha512",     HASH_ALG_SHA512    },
+    {"sha512-224", HASH_ALG_SHA512_224},
+    {"sha512-256", HASH_ALG_SHA512_256},
+    {"sha512t",    HASH_ALG_SHA512_T  },
+    {"sha3-224",   HASH_ALG_SHA3_224  },
+    {"sha3-256",   HASH_ALG_SHA3_256  },
+    {"sha3-384",   HASH_ALG_SHA3_384  },
+    {"sha3-512",   HASH_ALG_SHA3_512  },
+    {"shake128",   HASH_ALG_SHAKE128  },
+    {"shake256",   HASH_ALG_SHAKE256  },
+    {"sm3",        HASH_ALG_SM3       },
 };
 
 static int setup_ctx(const char *name, unsigned int len, TEST_CTX *ctx)
@@ -67,8 +65,6 @@ static int setup_ctx(const char *name, unsigned int len, TEST_CTX *ctx)
         if (strncmp(name, item->name, len) ==  0)
         {
             ctx->alg = item->alg;
-            ctx->md_size = item->md_size;
-
             return ERR_OK;
         }
     }
@@ -231,10 +227,10 @@ int main(int argc, char *argv[])
 {
     int rc = ERR_OK;
     int ch;
-    int hash_internal = 0;
-    int hash_str = 0;
-    int hash_file = 0;
-    int hash_stdin = 0;
+    int test_internal = 0;
+    int test_str = 0;
+    int test_file = 0;
+    int test_stdin = 0;
 
     /* d value for SHAKE128/SHAKE256 */
     uint32_t d = 0;
@@ -265,15 +261,15 @@ int main(int argc, char *argv[])
                 alg[alg_len] = '\0';
                 break;
             case 'x':
-                hash_internal = 1;
+                test_internal = 1;
                 break;
             case 's':
-                hash_str = 1;
+                test_str = 1;
                 str = optarg;
                 len = strlen(str);
                 break;
             case 'f':
-                hash_file = 1;
+                test_file = 1;
                 filename = optarg;
                 break;
             case 'd':
@@ -299,7 +295,7 @@ int main(int argc, char *argv[])
 
     if (argc == 1)
     {
-        hash_stdin = 1;
+        test_stdin = 1;
     }
 
     /*
@@ -311,7 +307,7 @@ int main(int argc, char *argv[])
         usage(argv[0]);
     }
 
-    /* setup ext for SHA-512/t */
+    /* check ext for SHA-512/t */
     if (ctx.alg == HASH_ALG_SHA512_T)
     {
         if ((t==0) || (t%8!=0) || (t>=512))
@@ -321,25 +317,24 @@ int main(int argc, char *argv[])
         else
         {
             ctx.ext = t;
-            ctx.md_size = t / 8;
         }
     }
 
-    /* setup ext for SHAKE128/SHAKE256 */
+    /* check ext for SHAKE128/SHAKE256 */
     if (ctx.alg == HASH_ALG_SHAKE128)
     {
         if (d == 0)  /* 't' is not set, set to 128 bits, same as 'openssl dgst -shake128' */
             d = 128;
         ctx.ext = d;
-        ctx.md_size = d / 8;
     }
     else if (ctx.alg == HASH_ALG_SHAKE256)
     {
         if (d == 0)  /* 't' is not set, set to 256 bits, same as 'openssl dgst -shake256' */
             d = 256;
         ctx.ext = d;
-        ctx.md_size = d / 8;
     }
+
+    ctx.md_size = HASH_GetDigestSize(ctx.alg, ctx.ext);
 
     /* allocate buffer for message digest */
     ctx.md = (unsigned char *)malloc(ctx.md_size);
@@ -350,23 +345,23 @@ int main(int argc, char *argv[])
     }
     memset(ctx.md, 0, ctx.md_size);
 
-    if (hash_internal)
+    if (test_internal)
     {
         //internal_digest_tests(alg, &ctx);
         printf("No internal tests availble!\n");
     }
 
-    if (hash_str)
+    if (test_str)
     {
         digest_string(alg, &ctx, (unsigned char *)str, len);
     }
 
-    if (hash_file)
+    if (test_file)
     {
         digest_file(alg, &ctx, filename);
     }
 
-    if (hash_stdin)
+    if (test_stdin)
     {
         digest_stdin(alg, &ctx);
     }

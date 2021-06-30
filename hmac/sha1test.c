@@ -212,10 +212,10 @@ static void digest_stdin(const char *argv0)
 int main(int argc, char *argv[])
 {
     int ch;
-    int hash_internal = 0;
-    int hash_str = 0;
-    int hash_file = 0;
-    int hash_stdin = 0;
+    int test_internal = 0;
+    int test_str = 0;
+    int test_file = 0;
+    int test_stdin = 0;
 
     char *str = NULL;
     uint32_t len = 0;
@@ -227,15 +227,15 @@ int main(int argc, char *argv[])
         switch(ch)
         {
             case 'x':
-                hash_internal = 1;
+                test_internal = 1;
                 break;
             case 's':
-                hash_str = 1;
+                test_str = 1;
                 str = optarg;
                 len = strlen(str);
                 break;
             case 'f':
-                hash_file = 1;
+                test_file = 1;
                 filename = optarg;
                 break;
             case 'h':
@@ -247,25 +247,25 @@ int main(int argc, char *argv[])
 
     if (argc == 1)
     {
-        hash_stdin = 1;
+        test_stdin = 1;
     }
 
-    if (hash_internal)
+    if (test_internal)
     {
         internal_digest_tests(argv[0]);
     }
 
-    if (hash_str)
+    if (test_str)
     {
         digest_string(argv[0], (unsigned char *)str, len);
     }
 
-    if (hash_file)
+    if (test_file)
     {
         digest_file(argv[0], filename);
     }
 
-    if (hash_stdin)
+    if (test_stdin)
     {
         digest_stdin(argv[0]);
     }
