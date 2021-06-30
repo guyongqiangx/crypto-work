@@ -1,6 +1,6 @@
 /*
  * @        file: hashtest.c
- * @ description: hash test tool for:
+ * @ description: hash test tool for below hash algorithms:
  *                1. MD(md2/md4/md5)
  *                2. SHA1(sha1)
  *                3. SHA2(sha224/sha256/sha384/sha512/sha512-224/sha512-256/sha512t)
@@ -173,7 +173,6 @@ static int digest_file(const char *argv0, TEST_CTX *ctx, const char *filename)
         }
 
         HASH_Final(ctx->md, &ctx->impl);
-        HASH_UnInit(&ctx->impl);
 
         fclose(f);
 
@@ -208,7 +207,6 @@ static void digest_stdin(const char *argv0, TEST_CTX *ctx)
         HASH_Update(&ctx->impl, buf, len);
     }
     HASH_Final(ctx->md, &ctx->impl);
-    HASH_UnInit(&ctx->impl);
 
     printf("%s(stdin) = ", argv0);
     print_digest(ctx->md, ctx->md_size);

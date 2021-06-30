@@ -49,6 +49,7 @@ int HASH_Update(HASH_CTX *ctx, const void *data, size_t len)
 
 int HASH_Final(unsigned char *md, HASH_CTX *ctx)
 {
+    int rc = ERR_OK;
     HASH_STRUCT *impl;
     if ((NULL == ctx) || (NULL == ctx->impl) || (NULL == md))
     {
@@ -56,7 +57,12 @@ int HASH_Final(unsigned char *md, HASH_CTX *ctx)
     }
 
     impl = (HASH_STRUCT *)ctx->impl;
-    return impl->final(md, impl->context);
+    rc = impl->final(md, impl->context);
+
+    destroy_hash_struct(ctx->impl);
+    ctx->impl = NULL;
+
+    return rc;
 }
 
 unsigned char *HASH(HASH_ALG alg, const unsigned char *data, size_t n, unsigned char *md)
@@ -82,22 +88,8 @@ unsigned char *HASH(HASH_ALG alg, const unsigned char *data, size_t n, unsigned 
     }
 
     HASH_Final(md, &ctx);
-    HASH_UnInit(&ctx);
 
     return md;
-}
-
-int HASH_UnInit(HASH_CTX *ctx)
-{
-    if ((NULL == ctx) || (NULL == ctx->impl))
-    {
-        return ERR_INV_PARAM;
-    }
-
-    destroy_hash_struct(ctx->impl);
-    ctx->impl = NULL;
-
-    return ERR_OK;
 }
 
 int HASH_Init_Ex(HASH_CTX *ctx, HASH_ALG alg, uint32_t ext)
@@ -145,7 +137,6 @@ unsigned char *HASH_Ex(HASH_ALG alg, const unsigned char *data, size_t n, unsign
     }
 
     HASH_Final(md, &ctx);
-    HASH_UnInit(&ctx);
 
     return md;
 }
