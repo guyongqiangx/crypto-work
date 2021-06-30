@@ -158,3 +158,13 @@ unsigned char *HASH_Ex(HASH_ALG alg, const unsigned char *data, size_t n, unsign
 
     return md;
 }
+
+uint32_t HASH_GetBlockSize(HASH_ALG alg)
+{
+    return get_hash_block_size(alg);
+}
+
+uint32_t HASH_GetDigestSize(HASH_ALG alg, uint32_t ext)
+{
+    return get_hash_digest_size(alg, ext);
+}

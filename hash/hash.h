@@ -64,4 +64,7 @@ unsigned char *HASH(HASH_ALG alg, const unsigned char *data, size_t n, unsigned 
 int HASH_Init_Ex(HASH_CTX *ctx, HASH_ALG alg, uint32_t ext);
 unsigned char *HASH_Ex(HASH_ALG alg, const unsigned char *data, size_t n, unsigned char *md, uint32_t ext);
 
+uint32_t HASH_GetBlockSize(HASH_ALG alg);
+uint32_t HASH_GetDigestSize(HASH_ALG alg, uint32_t ext);
+
 #endif
