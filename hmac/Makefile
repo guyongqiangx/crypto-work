@@ -1,4 +1,4 @@
-.PHONY: all clean hmac test
+.PHONY: all clean hash hmac test
 
 CROSS_COMPILE=
 
@@ -14,29 +14,40 @@ LIBS    =
 INCLUDE =
 CFLAGS  = -Wall -g -O2
 
-SRCS    = utils.c md2.c md4.c md5.c sha1.c sha256.c sha512.c sha3.c sha3ex.c sm3.c hash_tables.c hash.c hmac.c hmactest.c
-# use sha1test.c for test
-# SRCS    = utils.c md2.c md4.c md5.c sha1.c sha256.c sha512.c sha3.c sha3ex.c sm3.c hash_tables.c hash.c sha1test.c
-TARGET  = hmac
+HASH_SRCS = utils.c md2.c md4.c md5.c sha1.c sha256.c sha512.c sha3.c sha3ex.c sm3.c hash_tables.c hash.c hashtest.c
+# HASH_SRCS    = utils.c md2.c md4.c md5.c sha1.c sha256.c sha512.c sha3.c sha3ex.c sm3.c hash_tables.c hash.c sha1test.c
 
-OBJS 	= $(SRCS:.c=.o)
+HMAC_SRCS = utils.c md2.c md4.c md5.c sha1.c sha256.c sha512.c sha3.c sha3ex.c sm3.c hash_tables.c hash.c hmac.c hmactest.c
 
-all: hmac test
+HASH  = hash
+HMAC  = hmac
+TARGET       = $(HASH_TARGET) $(HMAC_TARGET)
+
+HASH_OBJS    = $(HASH_SRCS:.c=.o)
+HMAC_OBJS    = $(HMAC_SRCS:.c=.o)
+
+OBJS = $(HASH_OBJS) $(HMAC_OBJS)
+
+all: hash hmac test
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -o $@ $(LIBS) $(INCLUDE)
-#	$(STRIP) --strip-all $(TARGET)
+$(HASH): $(HASH_OBJS)
+	$(CC) $(CFLAGS) $(HASH_OBJS) -o $@ $(LIBS) $(INCLUDE)
+#	$(STRIP) --strip-all $@
+
+$(HMAC): $(HMAC_OBJS)
+	$(CC) $(CFLAGS) $(HMAC_OBJS) -o $@ $(LIBS) $(INCLUDE)
+#	$(STRIP) --strip-all $@
 
 test: $(TARGET)
 	@echo
 	@echo "Run Test..."
-#	./$(TARGET) -a sha1 -s "abc"
-#	./$(TARGET) -a sha512t -t 320 -s "abc"
-#	./$(TARGET) -a shake128 -d 128 -s "abc"
-#	./$(TARGET) -a shake128 -d 256 -s "abc"
+#	./$(HASH) -a sha1 -s "abc"
+#	./$(HASH) -a sha512t -t 320 -s "abc"
+#	./$(HASH) -a shake128 -d 128 -s "abc"
+#	./$(HASH) -a shake128 -d 256 -s "abc"
 #	./hashtest.sh
 
 clean:
