@@ -34,7 +34,7 @@ static HASH_STRUCT hash_lists[HASH_ALG_MAX] =
     { HASH_ALG_SHA512,     NULL, sizeof(SHA512_CTX),  128,     64,    0,   0,  (OP_INIT)SHA512_Init,     (OP_UPDATE)SHA512_Update,     (OP_FINAL)SHA512_Final,     (OP_HASH)SHA512,     (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
     { HASH_ALG_SHA512_224, NULL, sizeof(SHA512_CTX),  128,     28,    0,   0,  (OP_INIT)SHA512_224_Init, (OP_UPDATE)SHA512_224_Update, (OP_FINAL)SHA512_224_Final, (OP_HASH)SHA512_224, (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
     { HASH_ALG_SHA512_256, NULL, sizeof(SHA512_CTX),  128,     32,    0,   0,  (OP_INIT)SHA512_256_Init, (OP_UPDATE)SHA512_256_Update, (OP_FINAL)SHA512_256_Final, (OP_HASH)SHA512_256, (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
-    { HASH_ALG_SHA512_T,   NULL, sizeof(SHA512_CTX),  128,      0,    1,   0,  (OP_INIT)NULL,            (OP_UPDATE)SHA512t_Update,    (OP_FINAL)SHA512t_Final,    (OP_HASH)NULL,       (OP_INIT_EX)SHA512t_Init,       (OP_HASH_EX)SHA512t},
+    { HASH_ALG_SHA512_T,   NULL, sizeof(SHA512_CTX),  128,     32,    1,   0,  (OP_INIT)NULL,            (OP_UPDATE)SHA512t_Update,    (OP_FINAL)SHA512t_Final,    (OP_HASH)NULL,       (OP_INIT_EX)SHA512t_Init,       (OP_HASH_EX)SHA512t},
     { HASH_ALG_SHA3_224,   NULL, sizeof(SHA3_CTX),    144,     28,    0,   0,  (OP_INIT)SHA3_224_Init,   (OP_UPDATE)SHA3_Update,       (OP_FINAL)SHA3_Final,       (OP_HASH)SHA3_224,   (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
     { HASH_ALG_SHA3_256,   NULL, sizeof(SHA3_CTX),    136,     32,    0,   0,  (OP_INIT)SHA3_256_Init,   (OP_UPDATE)SHA3_Update,       (OP_FINAL)SHA3_Final,       (OP_HASH)SHA3_256,   (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
     { HASH_ALG_SHA3_384,   NULL, sizeof(SHA3_CTX),    104,     48,    0,   0,  (OP_INIT)SHA3_384_Init,   (OP_UPDATE)SHA3_Update,       (OP_FINAL)SHA3_Final,       (OP_HASH)SHA3_384,   (OP_INIT_EX)NULL,               (OP_HASH_EX)NULL },
@@ -128,7 +128,14 @@ uint32_t get_hash_digest_size(HASH_ALG alg, uint32_t ext)
 
     if ((HASH_ALG_SHA512_T == alg) || (HASH_ALG_SHAKE128 == alg) || (HASH_ALG_SHAKE256 == alg))
     {
-        digest_size = ext / 8;
+        if (ext == 0) /* default: t=256 for SHA-512/t, d=128 for SHAKE128, d=256 for SHAKE256 */
+        {
+            digest_size = hash_lists[alg].digest_size;
+        }
+        else
+        {
+            digest_size = ext / 8;
+        }
     }
     else
     {
