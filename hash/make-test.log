@@ -1,0 +1,712 @@
+$ make 2>&1 | tee make-test.log
+gcc -Wall -g -O2 -c utils.c -o utils.o
+gcc -Wall -g -O2 -c md2.c -o md2.o
+gcc -Wall -g -O2 -c md4.c -o md4.o
+gcc -Wall -g -O2 -c md5.c -o md5.o
+gcc -Wall -g -O2 -c sha1.c -o sha1.o
+gcc -Wall -g -O2 -c sha256.c -o sha256.o
+gcc -Wall -g -O2 -c sha512.c -o sha512.o
+gcc -Wall -g -O2 -c sha3.c -o sha3.o
+gcc -Wall -g -O2 -c sha3ex.c -o sha3ex.o
+gcc -Wall -g -O2 -c sm3.c -o sm3.o
+gcc -Wall -g -O2 -c hash_tables.c -o hash_tables.o
+gcc -Wall -g -O2 -c hash.c -o hash.o
+gcc -Wall -g -O2 -c hashtest.c -o hashtest.o
+gcc -Wall -g -O2 utils.o md2.o md4.o md5.o sha1.o sha256.o sha512.o sha3.o sha3ex.o sm3.o hash_tables.o hash.o hashtest.o -o hash  
+
+Run Test...
+./hash -a sha1 -s "abc"
+sha1("abc") = a9993e364706816aba3e25717850c26c9cd0d89d
+./hash -a sha512t -t 320 -s "abc"
+sha512t("abc") = 0f7567ed5b9c77c089be0d0f74ebd5dda19fcc52db4018d03036e6ae7fbfceda2567e1fee10e37dc
+./hash -a shake128 -d 128 -s "abc"
+shake128("abc") = 5881092dd818bf5cf8a3ddb793fbcba7
+./hash -a shake128 -d 256 -s "abc"
+shake128("abc") = 5881092dd818bf5cf8a3ddb793fbcba74097d5c526a6d35f97b83351940f2cc8
+./hashtest.sh
+     vector: s=''
+openssl cmd: echo -n '$s' | openssl dgst -md4 | awk '{print $NF}'
+   hash cmd: ./hash -a md4 -s '$s' | awk '{print $NF}'
+openssl out: f9daee213f699933c52684a7c346680c
+   hash out: f9daee213f699933c52684a7c346680c
+     result: [32mPASS[0m
+
+     vector: s=''
+openssl cmd: echo -n '$s' | openssl dgst -md5 | awk '{print $NF}'
+   hash cmd: ./hash -a md5 -s '$s' | awk '{print $NF}'
+openssl out: 3cb9cdaed257453cfa56b9ef81b44c57
+   hash out: 3cb9cdaed257453cfa56b9ef81b44c57
+     result: [32mPASS[0m
+
+     vector: s=''
+openssl cmd: echo -n '$s' | openssl dgst -sha1 | awk '{print $NF}'
+   hash cmd: ./hash -a sha1 -s '$s' | awk '{print $NF}'
+openssl out: 03741358754cf9d715f4053434324bcc508d2107
+   hash out: 03741358754cf9d715f4053434324bcc508d2107
+     result: [32mPASS[0m
+
+     vector: s=''
+openssl cmd: echo -n '$s' | openssl dgst -sha224 | awk '{print $NF}'
+   hash cmd: ./hash -a sha224 -s '$s' | awk '{print $NF}'
+openssl out: ee5323da1bab26f7e749df674da127b5057be99c10d3e360e82a82ad
+   hash out: ee5323da1bab26f7e749df674da127b5057be99c10d3e360e82a82ad
+     result: [32mPASS[0m
+
+     vector: s=''
+openssl cmd: echo -n '$s' | openssl dgst -sha256 | awk '{print $NF}'
+   hash cmd: ./hash -a sha256 -s '$s' | awk '{print $NF}'
+openssl out: 7d0b83cdc7ad32b7d031a9a466e9073f80c46996422c010d1a0fbc55d4109b41
+   hash out: 7d0b83cdc7ad32b7d031a9a466e9073f80c46996422c010d1a0fbc55d4109b41
+     result: [32mPASS[0m
+
+     vector: s=''
+openssl cmd: echo -n '$s' | openssl dgst -sha384 | awk '{print $NF}'
+   hash cmd: ./hash -a sha384 -s '$s' | awk '{print $NF}'
+openssl out: 6c8f94a2999b9cc39717c033b1d5f39ea2c28a95563bfff4ea0e4e4da8cd629c991d6021139b84ef9d19891b6109c18f
+   hash out: 6c8f94a2999b9cc39717c033b1d5f39ea2c28a95563bfff4ea0e4e4da8cd629c991d6021139b84ef9d19891b6109c18f
+     result: [32mPASS[0m
+
+     vector: s=''
+openssl cmd: echo -n '$s' | openssl dgst -sha512 | awk '{print $NF}'
+   hash cmd: ./hash -a sha512 -s '$s' | awk '{print $NF}'
+openssl out: 267f7a92dd84bb5b1120d748c34479f26213ea31294c8d7560b1cc390683ba0463c516bc4e46aabea78fa16fcae64203a4fd9740f17396d6cc5cc5664655c1b0
+   hash out: 267f7a92dd84bb5b1120d748c34479f26213ea31294c8d7560b1cc390683ba0463c516bc4e46aabea78fa16fcae64203a4fd9740f17396d6cc5cc5664655c1b0
+     result: [32mPASS[0m
+
+     vector: s=''
+openssl cmd: echo -n '$s' | openssl dgst -sha512-224 | awk '{print $NF}'
+   hash cmd: ./hash -a sha512-224 -s '$s' | awk '{print $NF}'
+openssl out: eb4982bb04cc9d4094c0d33781b38a08380d7f06999a38c1dc43e7a2
+   hash out: eb4982bb04cc9d4094c0d33781b38a08380d7f06999a38c1dc43e7a2
+     result: [32mPASS[0m
+
+     vector: s=''
+openssl cmd: echo -n '$s' | openssl dgst -sha512-256 | awk '{print $NF}'
+   hash cmd: ./hash -a sha512-256 -s '$s' | awk '{print $NF}'
+openssl out: c89acc3b66186ce1c0306064c74b85a6f97c566a289996f48a1fdf0635f3c3ba
+   hash out: c89acc3b66186ce1c0306064c74b85a6f97c566a289996f48a1fdf0635f3c3ba
+     result: [32mPASS[0m
+
+     vector: s=''
+openssl cmd: echo -n '$s' | openssl dgst -sha3-224 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-224 -s '$s' | awk '{print $NF}'
+openssl out: c6fa5c976e95b40eafb6e03afb251e3c79f175981a4031d4c762dd57
+   hash out: c6fa5c976e95b40eafb6e03afb251e3c79f175981a4031d4c762dd57
+     result: [32mPASS[0m
+
+     vector: s=''
+openssl cmd: echo -n '$s' | openssl dgst -sha3-256 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-256 -s '$s' | awk '{print $NF}'
+openssl out: adce3d5cd132f88a48e0c18340ff99a10393caf16019be9bf42f7d9f549a941f
+   hash out: adce3d5cd132f88a48e0c18340ff99a10393caf16019be9bf42f7d9f549a941f
+     result: [32mPASS[0m
+
+     vector: s=''
+openssl cmd: echo -n '$s' | openssl dgst -sha3-384 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-384 -s '$s' | awk '{print $NF}'
+openssl out: 91d4c1e4b9e9d2bfcf464909529edb5c3226d1ebaa11a53e24eec4afb17c7ffbc3151d0bef1ccb3e64f805b1b7febef0
+   hash out: 91d4c1e4b9e9d2bfcf464909529edb5c3226d1ebaa11a53e24eec4afb17c7ffbc3151d0bef1ccb3e64f805b1b7febef0
+     result: [32mPASS[0m
+
+     vector: s=''
+openssl cmd: echo -n '$s' | openssl dgst -sha3-512 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-512 -s '$s' | awk '{print $NF}'
+openssl out: 3cc6ba30e83a39b8a0f309467f623bd9663f93a7ff50087f2fde851730ffbcfdfbfcdec63b84f108c2e8972e9b60429d20029b9815356a9daa29c746c24d5b6b
+   hash out: 3cc6ba30e83a39b8a0f309467f623bd9663f93a7ff50087f2fde851730ffbcfdfbfcdec63b84f108c2e8972e9b60429d20029b9815356a9daa29c746c24d5b6b
+     result: [32mPASS[0m
+
+     vector: s=''
+openssl cmd: echo -n '$s' | openssl dgst -sm3 | awk '{print $NF}'
+   hash cmd: ./hash -a sm3 -s '$s' | awk '{print $NF}'
+openssl out: 1c35f39965f12101017b63af789620fa839e9e9ddb52801b4ea100f656c96c72
+   hash out: 1c35f39965f12101017b63af789620fa839e9e9ddb52801b4ea100f656c96c72
+     result: [32mPASS[0m
+
+     vector: s='a'
+openssl cmd: echo -n '$s' | openssl dgst -md4 | awk '{print $NF}'
+   hash cmd: ./hash -a md4 -s '$s' | awk '{print $NF}'
+openssl out: f9daee213f699933c52684a7c346680c
+   hash out: f9daee213f699933c52684a7c346680c
+     result: [32mPASS[0m
+
+     vector: s='a'
+openssl cmd: echo -n '$s' | openssl dgst -md5 | awk '{print $NF}'
+   hash cmd: ./hash -a md5 -s '$s' | awk '{print $NF}'
+openssl out: 3cb9cdaed257453cfa56b9ef81b44c57
+   hash out: 3cb9cdaed257453cfa56b9ef81b44c57
+     result: [32mPASS[0m
+
+     vector: s='a'
+openssl cmd: echo -n '$s' | openssl dgst -sha1 | awk '{print $NF}'
+   hash cmd: ./hash -a sha1 -s '$s' | awk '{print $NF}'
+openssl out: 03741358754cf9d715f4053434324bcc508d2107
+   hash out: 03741358754cf9d715f4053434324bcc508d2107
+     result: [32mPASS[0m
+
+     vector: s='a'
+openssl cmd: echo -n '$s' | openssl dgst -sha224 | awk '{print $NF}'
+   hash cmd: ./hash -a sha224 -s '$s' | awk '{print $NF}'
+openssl out: ee5323da1bab26f7e749df674da127b5057be99c10d3e360e82a82ad
+   hash out: ee5323da1bab26f7e749df674da127b5057be99c10d3e360e82a82ad
+     result: [32mPASS[0m
+
+     vector: s='a'
+openssl cmd: echo -n '$s' | openssl dgst -sha256 | awk '{print $NF}'
+   hash cmd: ./hash -a sha256 -s '$s' | awk '{print $NF}'
+openssl out: 7d0b83cdc7ad32b7d031a9a466e9073f80c46996422c010d1a0fbc55d4109b41
+   hash out: 7d0b83cdc7ad32b7d031a9a466e9073f80c46996422c010d1a0fbc55d4109b41
+     result: [32mPASS[0m
+
+     vector: s='a'
+openssl cmd: echo -n '$s' | openssl dgst -sha384 | awk '{print $NF}'
+   hash cmd: ./hash -a sha384 -s '$s' | awk '{print $NF}'
+openssl out: 6c8f94a2999b9cc39717c033b1d5f39ea2c28a95563bfff4ea0e4e4da8cd629c991d6021139b84ef9d19891b6109c18f
+   hash out: 6c8f94a2999b9cc39717c033b1d5f39ea2c28a95563bfff4ea0e4e4da8cd629c991d6021139b84ef9d19891b6109c18f
+     result: [32mPASS[0m
+
+     vector: s='a'
+openssl cmd: echo -n '$s' | openssl dgst -sha512 | awk '{print $NF}'
+   hash cmd: ./hash -a sha512 -s '$s' | awk '{print $NF}'
+openssl out: 267f7a92dd84bb5b1120d748c34479f26213ea31294c8d7560b1cc390683ba0463c516bc4e46aabea78fa16fcae64203a4fd9740f17396d6cc5cc5664655c1b0
+   hash out: 267f7a92dd84bb5b1120d748c34479f26213ea31294c8d7560b1cc390683ba0463c516bc4e46aabea78fa16fcae64203a4fd9740f17396d6cc5cc5664655c1b0
+     result: [32mPASS[0m
+
+     vector: s='a'
+openssl cmd: echo -n '$s' | openssl dgst -sha512-224 | awk '{print $NF}'
+   hash cmd: ./hash -a sha512-224 -s '$s' | awk '{print $NF}'
+openssl out: eb4982bb04cc9d4094c0d33781b38a08380d7f06999a38c1dc43e7a2
+   hash out: eb4982bb04cc9d4094c0d33781b38a08380d7f06999a38c1dc43e7a2
+     result: [32mPASS[0m
+
+     vector: s='a'
+openssl cmd: echo -n '$s' | openssl dgst -sha512-256 | awk '{print $NF}'
+   hash cmd: ./hash -a sha512-256 -s '$s' | awk '{print $NF}'
+openssl out: c89acc3b66186ce1c0306064c74b85a6f97c566a289996f48a1fdf0635f3c3ba
+   hash out: c89acc3b66186ce1c0306064c74b85a6f97c566a289996f48a1fdf0635f3c3ba
+     result: [32mPASS[0m
+
+     vector: s='a'
+openssl cmd: echo -n '$s' | openssl dgst -sha3-224 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-224 -s '$s' | awk '{print $NF}'
+openssl out: c6fa5c976e95b40eafb6e03afb251e3c79f175981a4031d4c762dd57
+   hash out: c6fa5c976e95b40eafb6e03afb251e3c79f175981a4031d4c762dd57
+     result: [32mPASS[0m
+
+     vector: s='a'
+openssl cmd: echo -n '$s' | openssl dgst -sha3-256 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-256 -s '$s' | awk '{print $NF}'
+openssl out: adce3d5cd132f88a48e0c18340ff99a10393caf16019be9bf42f7d9f549a941f
+   hash out: adce3d5cd132f88a48e0c18340ff99a10393caf16019be9bf42f7d9f549a941f
+     result: [32mPASS[0m
+
+     vector: s='a'
+openssl cmd: echo -n '$s' | openssl dgst -sha3-384 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-384 -s '$s' | awk '{print $NF}'
+openssl out: 91d4c1e4b9e9d2bfcf464909529edb5c3226d1ebaa11a53e24eec4afb17c7ffbc3151d0bef1ccb3e64f805b1b7febef0
+   hash out: 91d4c1e4b9e9d2bfcf464909529edb5c3226d1ebaa11a53e24eec4afb17c7ffbc3151d0bef1ccb3e64f805b1b7febef0
+     result: [32mPASS[0m
+
+     vector: s='a'
+openssl cmd: echo -n '$s' | openssl dgst -sha3-512 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-512 -s '$s' | awk '{print $NF}'
+openssl out: 3cc6ba30e83a39b8a0f309467f623bd9663f93a7ff50087f2fde851730ffbcfdfbfcdec63b84f108c2e8972e9b60429d20029b9815356a9daa29c746c24d5b6b
+   hash out: 3cc6ba30e83a39b8a0f309467f623bd9663f93a7ff50087f2fde851730ffbcfdfbfcdec63b84f108c2e8972e9b60429d20029b9815356a9daa29c746c24d5b6b
+     result: [32mPASS[0m
+
+     vector: s='a'
+openssl cmd: echo -n '$s' | openssl dgst -sm3 | awk '{print $NF}'
+   hash cmd: ./hash -a sm3 -s '$s' | awk '{print $NF}'
+openssl out: 1c35f39965f12101017b63af789620fa839e9e9ddb52801b4ea100f656c96c72
+   hash out: 1c35f39965f12101017b63af789620fa839e9e9ddb52801b4ea100f656c96c72
+     result: [32mPASS[0m
+
+     vector: s='abc'
+openssl cmd: echo -n '$s' | openssl dgst -md4 | awk '{print $NF}'
+   hash cmd: ./hash -a md4 -s '$s' | awk '{print $NF}'
+openssl out: f9daee213f699933c52684a7c346680c
+   hash out: f9daee213f699933c52684a7c346680c
+     result: [32mPASS[0m
+
+     vector: s='abc'
+openssl cmd: echo -n '$s' | openssl dgst -md5 | awk '{print $NF}'
+   hash cmd: ./hash -a md5 -s '$s' | awk '{print $NF}'
+openssl out: 3cb9cdaed257453cfa56b9ef81b44c57
+   hash out: 3cb9cdaed257453cfa56b9ef81b44c57
+     result: [32mPASS[0m
+
+     vector: s='abc'
+openssl cmd: echo -n '$s' | openssl dgst -sha1 | awk '{print $NF}'
+   hash cmd: ./hash -a sha1 -s '$s' | awk '{print $NF}'
+openssl out: 03741358754cf9d715f4053434324bcc508d2107
+   hash out: 03741358754cf9d715f4053434324bcc508d2107
+     result: [32mPASS[0m
+
+     vector: s='abc'
+openssl cmd: echo -n '$s' | openssl dgst -sha224 | awk '{print $NF}'
+   hash cmd: ./hash -a sha224 -s '$s' | awk '{print $NF}'
+openssl out: ee5323da1bab26f7e749df674da127b5057be99c10d3e360e82a82ad
+   hash out: ee5323da1bab26f7e749df674da127b5057be99c10d3e360e82a82ad
+     result: [32mPASS[0m
+
+     vector: s='abc'
+openssl cmd: echo -n '$s' | openssl dgst -sha256 | awk '{print $NF}'
+   hash cmd: ./hash -a sha256 -s '$s' | awk '{print $NF}'
+openssl out: 7d0b83cdc7ad32b7d031a9a466e9073f80c46996422c010d1a0fbc55d4109b41
+   hash out: 7d0b83cdc7ad32b7d031a9a466e9073f80c46996422c010d1a0fbc55d4109b41
+     result: [32mPASS[0m
+
+     vector: s='abc'
+openssl cmd: echo -n '$s' | openssl dgst -sha384 | awk '{print $NF}'
+   hash cmd: ./hash -a sha384 -s '$s' | awk '{print $NF}'
+openssl out: 6c8f94a2999b9cc39717c033b1d5f39ea2c28a95563bfff4ea0e4e4da8cd629c991d6021139b84ef9d19891b6109c18f
+   hash out: 6c8f94a2999b9cc39717c033b1d5f39ea2c28a95563bfff4ea0e4e4da8cd629c991d6021139b84ef9d19891b6109c18f
+     result: [32mPASS[0m
+
+     vector: s='abc'
+openssl cmd: echo -n '$s' | openssl dgst -sha512 | awk '{print $NF}'
+   hash cmd: ./hash -a sha512 -s '$s' | awk '{print $NF}'
+openssl out: 267f7a92dd84bb5b1120d748c34479f26213ea31294c8d7560b1cc390683ba0463c516bc4e46aabea78fa16fcae64203a4fd9740f17396d6cc5cc5664655c1b0
+   hash out: 267f7a92dd84bb5b1120d748c34479f26213ea31294c8d7560b1cc390683ba0463c516bc4e46aabea78fa16fcae64203a4fd9740f17396d6cc5cc5664655c1b0
+     result: [32mPASS[0m
+
+     vector: s='abc'
+openssl cmd: echo -n '$s' | openssl dgst -sha512-224 | awk '{print $NF}'
+   hash cmd: ./hash -a sha512-224 -s '$s' | awk '{print $NF}'
+openssl out: eb4982bb04cc9d4094c0d33781b38a08380d7f06999a38c1dc43e7a2
+   hash out: eb4982bb04cc9d4094c0d33781b38a08380d7f06999a38c1dc43e7a2
+     result: [32mPASS[0m
+
+     vector: s='abc'
+openssl cmd: echo -n '$s' | openssl dgst -sha512-256 | awk '{print $NF}'
+   hash cmd: ./hash -a sha512-256 -s '$s' | awk '{print $NF}'
+openssl out: c89acc3b66186ce1c0306064c74b85a6f97c566a289996f48a1fdf0635f3c3ba
+   hash out: c89acc3b66186ce1c0306064c74b85a6f97c566a289996f48a1fdf0635f3c3ba
+     result: [32mPASS[0m
+
+     vector: s='abc'
+openssl cmd: echo -n '$s' | openssl dgst -sha3-224 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-224 -s '$s' | awk '{print $NF}'
+openssl out: c6fa5c976e95b40eafb6e03afb251e3c79f175981a4031d4c762dd57
+   hash out: c6fa5c976e95b40eafb6e03afb251e3c79f175981a4031d4c762dd57
+     result: [32mPASS[0m
+
+     vector: s='abc'
+openssl cmd: echo -n '$s' | openssl dgst -sha3-256 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-256 -s '$s' | awk '{print $NF}'
+openssl out: adce3d5cd132f88a48e0c18340ff99a10393caf16019be9bf42f7d9f549a941f
+   hash out: adce3d5cd132f88a48e0c18340ff99a10393caf16019be9bf42f7d9f549a941f
+     result: [32mPASS[0m
+
+     vector: s='abc'
+openssl cmd: echo -n '$s' | openssl dgst -sha3-384 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-384 -s '$s' | awk '{print $NF}'
+openssl out: 91d4c1e4b9e9d2bfcf464909529edb5c3226d1ebaa11a53e24eec4afb17c7ffbc3151d0bef1ccb3e64f805b1b7febef0
+   hash out: 91d4c1e4b9e9d2bfcf464909529edb5c3226d1ebaa11a53e24eec4afb17c7ffbc3151d0bef1ccb3e64f805b1b7febef0
+     result: [32mPASS[0m
+
+     vector: s='abc'
+openssl cmd: echo -n '$s' | openssl dgst -sha3-512 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-512 -s '$s' | awk '{print $NF}'
+openssl out: 3cc6ba30e83a39b8a0f309467f623bd9663f93a7ff50087f2fde851730ffbcfdfbfcdec63b84f108c2e8972e9b60429d20029b9815356a9daa29c746c24d5b6b
+   hash out: 3cc6ba30e83a39b8a0f309467f623bd9663f93a7ff50087f2fde851730ffbcfdfbfcdec63b84f108c2e8972e9b60429d20029b9815356a9daa29c746c24d5b6b
+     result: [32mPASS[0m
+
+     vector: s='abc'
+openssl cmd: echo -n '$s' | openssl dgst -sm3 | awk '{print $NF}'
+   hash cmd: ./hash -a sm3 -s '$s' | awk '{print $NF}'
+openssl out: 1c35f39965f12101017b63af789620fa839e9e9ddb52801b4ea100f656c96c72
+   hash out: 1c35f39965f12101017b63af789620fa839e9e9ddb52801b4ea100f656c96c72
+     result: [32mPASS[0m
+
+     vector: s='message digest'
+openssl cmd: echo -n '$s' | openssl dgst -md4 | awk '{print $NF}'
+   hash cmd: ./hash -a md4 -s '$s' | awk '{print $NF}'
+openssl out: f9daee213f699933c52684a7c346680c
+   hash out: f9daee213f699933c52684a7c346680c
+     result: [32mPASS[0m
+
+     vector: s='message digest'
+openssl cmd: echo -n '$s' | openssl dgst -md5 | awk '{print $NF}'
+   hash cmd: ./hash -a md5 -s '$s' | awk '{print $NF}'
+openssl out: 3cb9cdaed257453cfa56b9ef81b44c57
+   hash out: 3cb9cdaed257453cfa56b9ef81b44c57
+     result: [32mPASS[0m
+
+     vector: s='message digest'
+openssl cmd: echo -n '$s' | openssl dgst -sha1 | awk '{print $NF}'
+   hash cmd: ./hash -a sha1 -s '$s' | awk '{print $NF}'
+openssl out: 03741358754cf9d715f4053434324bcc508d2107
+   hash out: 03741358754cf9d715f4053434324bcc508d2107
+     result: [32mPASS[0m
+
+     vector: s='message digest'
+openssl cmd: echo -n '$s' | openssl dgst -sha224 | awk '{print $NF}'
+   hash cmd: ./hash -a sha224 -s '$s' | awk '{print $NF}'
+openssl out: ee5323da1bab26f7e749df674da127b5057be99c10d3e360e82a82ad
+   hash out: ee5323da1bab26f7e749df674da127b5057be99c10d3e360e82a82ad
+     result: [32mPASS[0m
+
+     vector: s='message digest'
+openssl cmd: echo -n '$s' | openssl dgst -sha256 | awk '{print $NF}'
+   hash cmd: ./hash -a sha256 -s '$s' | awk '{print $NF}'
+openssl out: 7d0b83cdc7ad32b7d031a9a466e9073f80c46996422c010d1a0fbc55d4109b41
+   hash out: 7d0b83cdc7ad32b7d031a9a466e9073f80c46996422c010d1a0fbc55d4109b41
+     result: [32mPASS[0m
+
+     vector: s='message digest'
+openssl cmd: echo -n '$s' | openssl dgst -sha384 | awk '{print $NF}'
+   hash cmd: ./hash -a sha384 -s '$s' | awk '{print $NF}'
+openssl out: 6c8f94a2999b9cc39717c033b1d5f39ea2c28a95563bfff4ea0e4e4da8cd629c991d6021139b84ef9d19891b6109c18f
+   hash out: 6c8f94a2999b9cc39717c033b1d5f39ea2c28a95563bfff4ea0e4e4da8cd629c991d6021139b84ef9d19891b6109c18f
+     result: [32mPASS[0m
+
+     vector: s='message digest'
+openssl cmd: echo -n '$s' | openssl dgst -sha512 | awk '{print $NF}'
+   hash cmd: ./hash -a sha512 -s '$s' | awk '{print $NF}'
+openssl out: 267f7a92dd84bb5b1120d748c34479f26213ea31294c8d7560b1cc390683ba0463c516bc4e46aabea78fa16fcae64203a4fd9740f17396d6cc5cc5664655c1b0
+   hash out: 267f7a92dd84bb5b1120d748c34479f26213ea31294c8d7560b1cc390683ba0463c516bc4e46aabea78fa16fcae64203a4fd9740f17396d6cc5cc5664655c1b0
+     result: [32mPASS[0m
+
+     vector: s='message digest'
+openssl cmd: echo -n '$s' | openssl dgst -sha512-224 | awk '{print $NF}'
+   hash cmd: ./hash -a sha512-224 -s '$s' | awk '{print $NF}'
+openssl out: eb4982bb04cc9d4094c0d33781b38a08380d7f06999a38c1dc43e7a2
+   hash out: eb4982bb04cc9d4094c0d33781b38a08380d7f06999a38c1dc43e7a2
+     result: [32mPASS[0m
+
+     vector: s='message digest'
+openssl cmd: echo -n '$s' | openssl dgst -sha512-256 | awk '{print $NF}'
+   hash cmd: ./hash -a sha512-256 -s '$s' | awk '{print $NF}'
+openssl out: c89acc3b66186ce1c0306064c74b85a6f97c566a289996f48a1fdf0635f3c3ba
+   hash out: c89acc3b66186ce1c0306064c74b85a6f97c566a289996f48a1fdf0635f3c3ba
+     result: [32mPASS[0m
+
+     vector: s='message digest'
+openssl cmd: echo -n '$s' | openssl dgst -sha3-224 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-224 -s '$s' | awk '{print $NF}'
+openssl out: c6fa5c976e95b40eafb6e03afb251e3c79f175981a4031d4c762dd57
+   hash out: c6fa5c976e95b40eafb6e03afb251e3c79f175981a4031d4c762dd57
+     result: [32mPASS[0m
+
+     vector: s='message digest'
+openssl cmd: echo -n '$s' | openssl dgst -sha3-256 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-256 -s '$s' | awk '{print $NF}'
+openssl out: adce3d5cd132f88a48e0c18340ff99a10393caf16019be9bf42f7d9f549a941f
+   hash out: adce3d5cd132f88a48e0c18340ff99a10393caf16019be9bf42f7d9f549a941f
+     result: [32mPASS[0m
+
+     vector: s='message digest'
+openssl cmd: echo -n '$s' | openssl dgst -sha3-384 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-384 -s '$s' | awk '{print $NF}'
+openssl out: 91d4c1e4b9e9d2bfcf464909529edb5c3226d1ebaa11a53e24eec4afb17c7ffbc3151d0bef1ccb3e64f805b1b7febef0
+   hash out: 91d4c1e4b9e9d2bfcf464909529edb5c3226d1ebaa11a53e24eec4afb17c7ffbc3151d0bef1ccb3e64f805b1b7febef0
+     result: [32mPASS[0m
+
+     vector: s='message digest'
+openssl cmd: echo -n '$s' | openssl dgst -sha3-512 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-512 -s '$s' | awk '{print $NF}'
+openssl out: 3cc6ba30e83a39b8a0f309467f623bd9663f93a7ff50087f2fde851730ffbcfdfbfcdec63b84f108c2e8972e9b60429d20029b9815356a9daa29c746c24d5b6b
+   hash out: 3cc6ba30e83a39b8a0f309467f623bd9663f93a7ff50087f2fde851730ffbcfdfbfcdec63b84f108c2e8972e9b60429d20029b9815356a9daa29c746c24d5b6b
+     result: [32mPASS[0m
+
+     vector: s='message digest'
+openssl cmd: echo -n '$s' | openssl dgst -sm3 | awk '{print $NF}'
+   hash cmd: ./hash -a sm3 -s '$s' | awk '{print $NF}'
+openssl out: 1c35f39965f12101017b63af789620fa839e9e9ddb52801b4ea100f656c96c72
+   hash out: 1c35f39965f12101017b63af789620fa839e9e9ddb52801b4ea100f656c96c72
+     result: [32mPASS[0m
+
+     vector: s='abcdefghijklmnopqrstuvwxyz'
+openssl cmd: echo -n '$s' | openssl dgst -md4 | awk '{print $NF}'
+   hash cmd: ./hash -a md4 -s '$s' | awk '{print $NF}'
+openssl out: f9daee213f699933c52684a7c346680c
+   hash out: f9daee213f699933c52684a7c346680c
+     result: [32mPASS[0m
+
+     vector: s='abcdefghijklmnopqrstuvwxyz'
+openssl cmd: echo -n '$s' | openssl dgst -md5 | awk '{print $NF}'
+   hash cmd: ./hash -a md5 -s '$s' | awk '{print $NF}'
+openssl out: 3cb9cdaed257453cfa56b9ef81b44c57
+   hash out: 3cb9cdaed257453cfa56b9ef81b44c57
+     result: [32mPASS[0m
+
+     vector: s='abcdefghijklmnopqrstuvwxyz'
+openssl cmd: echo -n '$s' | openssl dgst -sha1 | awk '{print $NF}'
+   hash cmd: ./hash -a sha1 -s '$s' | awk '{print $NF}'
+openssl out: 03741358754cf9d715f4053434324bcc508d2107
+   hash out: 03741358754cf9d715f4053434324bcc508d2107
+     result: [32mPASS[0m
+
+     vector: s='abcdefghijklmnopqrstuvwxyz'
+openssl cmd: echo -n '$s' | openssl dgst -sha224 | awk '{print $NF}'
+   hash cmd: ./hash -a sha224 -s '$s' | awk '{print $NF}'
+openssl out: ee5323da1bab26f7e749df674da127b5057be99c10d3e360e82a82ad
+   hash out: ee5323da1bab26f7e749df674da127b5057be99c10d3e360e82a82ad
+     result: [32mPASS[0m
+
+     vector: s='abcdefghijklmnopqrstuvwxyz'
+openssl cmd: echo -n '$s' | openssl dgst -sha256 | awk '{print $NF}'
+   hash cmd: ./hash -a sha256 -s '$s' | awk '{print $NF}'
+openssl out: 7d0b83cdc7ad32b7d031a9a466e9073f80c46996422c010d1a0fbc55d4109b41
+   hash out: 7d0b83cdc7ad32b7d031a9a466e9073f80c46996422c010d1a0fbc55d4109b41
+     result: [32mPASS[0m
+
+     vector: s='abcdefghijklmnopqrstuvwxyz'
+openssl cmd: echo -n '$s' | openssl dgst -sha384 | awk '{print $NF}'
+   hash cmd: ./hash -a sha384 -s '$s' | awk '{print $NF}'
+openssl out: 6c8f94a2999b9cc39717c033b1d5f39ea2c28a95563bfff4ea0e4e4da8cd629c991d6021139b84ef9d19891b6109c18f
+   hash out: 6c8f94a2999b9cc39717c033b1d5f39ea2c28a95563bfff4ea0e4e4da8cd629c991d6021139b84ef9d19891b6109c18f
+     result: [32mPASS[0m
+
+     vector: s='abcdefghijklmnopqrstuvwxyz'
+openssl cmd: echo -n '$s' | openssl dgst -sha512 | awk '{print $NF}'
+   hash cmd: ./hash -a sha512 -s '$s' | awk '{print $NF}'
+openssl out: 267f7a92dd84bb5b1120d748c34479f26213ea31294c8d7560b1cc390683ba0463c516bc4e46aabea78fa16fcae64203a4fd9740f17396d6cc5cc5664655c1b0
+   hash out: 267f7a92dd84bb5b1120d748c34479f26213ea31294c8d7560b1cc390683ba0463c516bc4e46aabea78fa16fcae64203a4fd9740f17396d6cc5cc5664655c1b0
+     result: [32mPASS[0m
+
+     vector: s='abcdefghijklmnopqrstuvwxyz'
+openssl cmd: echo -n '$s' | openssl dgst -sha512-224 | awk '{print $NF}'
+   hash cmd: ./hash -a sha512-224 -s '$s' | awk '{print $NF}'
+openssl out: eb4982bb04cc9d4094c0d33781b38a08380d7f06999a38c1dc43e7a2
+   hash out: eb4982bb04cc9d4094c0d33781b38a08380d7f06999a38c1dc43e7a2
+     result: [32mPASS[0m
+
+     vector: s='abcdefghijklmnopqrstuvwxyz'
+openssl cmd: echo -n '$s' | openssl dgst -sha512-256 | awk '{print $NF}'
+   hash cmd: ./hash -a sha512-256 -s '$s' | awk '{print $NF}'
+openssl out: c89acc3b66186ce1c0306064c74b85a6f97c566a289996f48a1fdf0635f3c3ba
+   hash out: c89acc3b66186ce1c0306064c74b85a6f97c566a289996f48a1fdf0635f3c3ba
+     result: [32mPASS[0m
+
+     vector: s='abcdefghijklmnopqrstuvwxyz'
+openssl cmd: echo -n '$s' | openssl dgst -sha3-224 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-224 -s '$s' | awk '{print $NF}'
+openssl out: c6fa5c976e95b40eafb6e03afb251e3c79f175981a4031d4c762dd57
+   hash out: c6fa5c976e95b40eafb6e03afb251e3c79f175981a4031d4c762dd57
+     result: [32mPASS[0m
+
+     vector: s='abcdefghijklmnopqrstuvwxyz'
+openssl cmd: echo -n '$s' | openssl dgst -sha3-256 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-256 -s '$s' | awk '{print $NF}'
+openssl out: adce3d5cd132f88a48e0c18340ff99a10393caf16019be9bf42f7d9f549a941f
+   hash out: adce3d5cd132f88a48e0c18340ff99a10393caf16019be9bf42f7d9f549a941f
+     result: [32mPASS[0m
+
+     vector: s='abcdefghijklmnopqrstuvwxyz'
+openssl cmd: echo -n '$s' | openssl dgst -sha3-384 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-384 -s '$s' | awk '{print $NF}'
+openssl out: 91d4c1e4b9e9d2bfcf464909529edb5c3226d1ebaa11a53e24eec4afb17c7ffbc3151d0bef1ccb3e64f805b1b7febef0
+   hash out: 91d4c1e4b9e9d2bfcf464909529edb5c3226d1ebaa11a53e24eec4afb17c7ffbc3151d0bef1ccb3e64f805b1b7febef0
+     result: [32mPASS[0m
+
+     vector: s='abcdefghijklmnopqrstuvwxyz'
+openssl cmd: echo -n '$s' | openssl dgst -sha3-512 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-512 -s '$s' | awk '{print $NF}'
+openssl out: 3cc6ba30e83a39b8a0f309467f623bd9663f93a7ff50087f2fde851730ffbcfdfbfcdec63b84f108c2e8972e9b60429d20029b9815356a9daa29c746c24d5b6b
+   hash out: 3cc6ba30e83a39b8a0f309467f623bd9663f93a7ff50087f2fde851730ffbcfdfbfcdec63b84f108c2e8972e9b60429d20029b9815356a9daa29c746c24d5b6b
+     result: [32mPASS[0m
+
+     vector: s='abcdefghijklmnopqrstuvwxyz'
+openssl cmd: echo -n '$s' | openssl dgst -sm3 | awk '{print $NF}'
+   hash cmd: ./hash -a sm3 -s '$s' | awk '{print $NF}'
+openssl out: 1c35f39965f12101017b63af789620fa839e9e9ddb52801b4ea100f656c96c72
+   hash out: 1c35f39965f12101017b63af789620fa839e9e9ddb52801b4ea100f656c96c72
+     result: [32mPASS[0m
+
+     vector: s='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+openssl cmd: echo -n '$s' | openssl dgst -md4 | awk '{print $NF}'
+   hash cmd: ./hash -a md4 -s '$s' | awk '{print $NF}'
+openssl out: f9daee213f699933c52684a7c346680c
+   hash out: f9daee213f699933c52684a7c346680c
+     result: [32mPASS[0m
+
+     vector: s='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+openssl cmd: echo -n '$s' | openssl dgst -md5 | awk '{print $NF}'
+   hash cmd: ./hash -a md5 -s '$s' | awk '{print $NF}'
+openssl out: 3cb9cdaed257453cfa56b9ef81b44c57
+   hash out: 3cb9cdaed257453cfa56b9ef81b44c57
+     result: [32mPASS[0m
+
+     vector: s='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+openssl cmd: echo -n '$s' | openssl dgst -sha1 | awk '{print $NF}'
+   hash cmd: ./hash -a sha1 -s '$s' | awk '{print $NF}'
+openssl out: 03741358754cf9d715f4053434324bcc508d2107
+   hash out: 03741358754cf9d715f4053434324bcc508d2107
+     result: [32mPASS[0m
+
+     vector: s='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+openssl cmd: echo -n '$s' | openssl dgst -sha224 | awk '{print $NF}'
+   hash cmd: ./hash -a sha224 -s '$s' | awk '{print $NF}'
+openssl out: ee5323da1bab26f7e749df674da127b5057be99c10d3e360e82a82ad
+   hash out: ee5323da1bab26f7e749df674da127b5057be99c10d3e360e82a82ad
+     result: [32mPASS[0m
+
+     vector: s='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+openssl cmd: echo -n '$s' | openssl dgst -sha256 | awk '{print $NF}'
+   hash cmd: ./hash -a sha256 -s '$s' | awk '{print $NF}'
+openssl out: 7d0b83cdc7ad32b7d031a9a466e9073f80c46996422c010d1a0fbc55d4109b41
+   hash out: 7d0b83cdc7ad32b7d031a9a466e9073f80c46996422c010d1a0fbc55d4109b41
+     result: [32mPASS[0m
+
+     vector: s='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+openssl cmd: echo -n '$s' | openssl dgst -sha384 | awk '{print $NF}'
+   hash cmd: ./hash -a sha384 -s '$s' | awk '{print $NF}'
+openssl out: 6c8f94a2999b9cc39717c033b1d5f39ea2c28a95563bfff4ea0e4e4da8cd629c991d6021139b84ef9d19891b6109c18f
+   hash out: 6c8f94a2999b9cc39717c033b1d5f39ea2c28a95563bfff4ea0e4e4da8cd629c991d6021139b84ef9d19891b6109c18f
+     result: [32mPASS[0m
+
+     vector: s='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+openssl cmd: echo -n '$s' | openssl dgst -sha512 | awk '{print $NF}'
+   hash cmd: ./hash -a sha512 -s '$s' | awk '{print $NF}'
+openssl out: 267f7a92dd84bb5b1120d748c34479f26213ea31294c8d7560b1cc390683ba0463c516bc4e46aabea78fa16fcae64203a4fd9740f17396d6cc5cc5664655c1b0
+   hash out: 267f7a92dd84bb5b1120d748c34479f26213ea31294c8d7560b1cc390683ba0463c516bc4e46aabea78fa16fcae64203a4fd9740f17396d6cc5cc5664655c1b0
+     result: [32mPASS[0m
+
+     vector: s='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+openssl cmd: echo -n '$s' | openssl dgst -sha512-224 | awk '{print $NF}'
+   hash cmd: ./hash -a sha512-224 -s '$s' | awk '{print $NF}'
+openssl out: eb4982bb04cc9d4094c0d33781b38a08380d7f06999a38c1dc43e7a2
+   hash out: eb4982bb04cc9d4094c0d33781b38a08380d7f06999a38c1dc43e7a2
+     result: [32mPASS[0m
+
+     vector: s='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+openssl cmd: echo -n '$s' | openssl dgst -sha512-256 | awk '{print $NF}'
+   hash cmd: ./hash -a sha512-256 -s '$s' | awk '{print $NF}'
+openssl out: c89acc3b66186ce1c0306064c74b85a6f97c566a289996f48a1fdf0635f3c3ba
+   hash out: c89acc3b66186ce1c0306064c74b85a6f97c566a289996f48a1fdf0635f3c3ba
+     result: [32mPASS[0m
+
+     vector: s='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+openssl cmd: echo -n '$s' | openssl dgst -sha3-224 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-224 -s '$s' | awk '{print $NF}'
+openssl out: c6fa5c976e95b40eafb6e03afb251e3c79f175981a4031d4c762dd57
+   hash out: c6fa5c976e95b40eafb6e03afb251e3c79f175981a4031d4c762dd57
+     result: [32mPASS[0m
+
+     vector: s='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+openssl cmd: echo -n '$s' | openssl dgst -sha3-256 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-256 -s '$s' | awk '{print $NF}'
+openssl out: adce3d5cd132f88a48e0c18340ff99a10393caf16019be9bf42f7d9f549a941f
+   hash out: adce3d5cd132f88a48e0c18340ff99a10393caf16019be9bf42f7d9f549a941f
+     result: [32mPASS[0m
+
+     vector: s='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+openssl cmd: echo -n '$s' | openssl dgst -sha3-384 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-384 -s '$s' | awk '{print $NF}'
+openssl out: 91d4c1e4b9e9d2bfcf464909529edb5c3226d1ebaa11a53e24eec4afb17c7ffbc3151d0bef1ccb3e64f805b1b7febef0
+   hash out: 91d4c1e4b9e9d2bfcf464909529edb5c3226d1ebaa11a53e24eec4afb17c7ffbc3151d0bef1ccb3e64f805b1b7febef0
+     result: [32mPASS[0m
+
+     vector: s='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+openssl cmd: echo -n '$s' | openssl dgst -sha3-512 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-512 -s '$s' | awk '{print $NF}'
+openssl out: 3cc6ba30e83a39b8a0f309467f623bd9663f93a7ff50087f2fde851730ffbcfdfbfcdec63b84f108c2e8972e9b60429d20029b9815356a9daa29c746c24d5b6b
+   hash out: 3cc6ba30e83a39b8a0f309467f623bd9663f93a7ff50087f2fde851730ffbcfdfbfcdec63b84f108c2e8972e9b60429d20029b9815356a9daa29c746c24d5b6b
+     result: [32mPASS[0m
+
+     vector: s='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+openssl cmd: echo -n '$s' | openssl dgst -sm3 | awk '{print $NF}'
+   hash cmd: ./hash -a sm3 -s '$s' | awk '{print $NF}'
+openssl out: 1c35f39965f12101017b63af789620fa839e9e9ddb52801b4ea100f656c96c72
+   hash out: 1c35f39965f12101017b63af789620fa839e9e9ddb52801b4ea100f656c96c72
+     result: [32mPASS[0m
+
+     vector: s='12345678901234567890123456789012345678901234567890123456789012345678901234567890'
+openssl cmd: echo -n '$s' | openssl dgst -md4 | awk '{print $NF}'
+   hash cmd: ./hash -a md4 -s '$s' | awk '{print $NF}'
+openssl out: f9daee213f699933c52684a7c346680c
+   hash out: f9daee213f699933c52684a7c346680c
+     result: [32mPASS[0m
+
+     vector: s='12345678901234567890123456789012345678901234567890123456789012345678901234567890'
+openssl cmd: echo -n '$s' | openssl dgst -md5 | awk '{print $NF}'
+   hash cmd: ./hash -a md5 -s '$s' | awk '{print $NF}'
+openssl out: 3cb9cdaed257453cfa56b9ef81b44c57
+   hash out: 3cb9cdaed257453cfa56b9ef81b44c57
+     result: [32mPASS[0m
+
+     vector: s='12345678901234567890123456789012345678901234567890123456789012345678901234567890'
+openssl cmd: echo -n '$s' | openssl dgst -sha1 | awk '{print $NF}'
+   hash cmd: ./hash -a sha1 -s '$s' | awk '{print $NF}'
+openssl out: 03741358754cf9d715f4053434324bcc508d2107
+   hash out: 03741358754cf9d715f4053434324bcc508d2107
+     result: [32mPASS[0m
+
+     vector: s='12345678901234567890123456789012345678901234567890123456789012345678901234567890'
+openssl cmd: echo -n '$s' | openssl dgst -sha224 | awk '{print $NF}'
+   hash cmd: ./hash -a sha224 -s '$s' | awk '{print $NF}'
+openssl out: ee5323da1bab26f7e749df674da127b5057be99c10d3e360e82a82ad
+   hash out: ee5323da1bab26f7e749df674da127b5057be99c10d3e360e82a82ad
+     result: [32mPASS[0m
+
+     vector: s='12345678901234567890123456789012345678901234567890123456789012345678901234567890'
+openssl cmd: echo -n '$s' | openssl dgst -sha256 | awk '{print $NF}'
+   hash cmd: ./hash -a sha256 -s '$s' | awk '{print $NF}'
+openssl out: 7d0b83cdc7ad32b7d031a9a466e9073f80c46996422c010d1a0fbc55d4109b41
+   hash out: 7d0b83cdc7ad32b7d031a9a466e9073f80c46996422c010d1a0fbc55d4109b41
+     result: [32mPASS[0m
+
+     vector: s='12345678901234567890123456789012345678901234567890123456789012345678901234567890'
+openssl cmd: echo -n '$s' | openssl dgst -sha384 | awk '{print $NF}'
+   hash cmd: ./hash -a sha384 -s '$s' | awk '{print $NF}'
+openssl out: 6c8f94a2999b9cc39717c033b1d5f39ea2c28a95563bfff4ea0e4e4da8cd629c991d6021139b84ef9d19891b6109c18f
+   hash out: 6c8f94a2999b9cc39717c033b1d5f39ea2c28a95563bfff4ea0e4e4da8cd629c991d6021139b84ef9d19891b6109c18f
+     result: [32mPASS[0m
+
+     vector: s='12345678901234567890123456789012345678901234567890123456789012345678901234567890'
+openssl cmd: echo -n '$s' | openssl dgst -sha512 | awk '{print $NF}'
+   hash cmd: ./hash -a sha512 -s '$s' | awk '{print $NF}'
+openssl out: 267f7a92dd84bb5b1120d748c34479f26213ea31294c8d7560b1cc390683ba0463c516bc4e46aabea78fa16fcae64203a4fd9740f17396d6cc5cc5664655c1b0
+   hash out: 267f7a92dd84bb5b1120d748c34479f26213ea31294c8d7560b1cc390683ba0463c516bc4e46aabea78fa16fcae64203a4fd9740f17396d6cc5cc5664655c1b0
+     result: [32mPASS[0m
+
+     vector: s='12345678901234567890123456789012345678901234567890123456789012345678901234567890'
+openssl cmd: echo -n '$s' | openssl dgst -sha512-224 | awk '{print $NF}'
+   hash cmd: ./hash -a sha512-224 -s '$s' | awk '{print $NF}'
+openssl out: eb4982bb04cc9d4094c0d33781b38a08380d7f06999a38c1dc43e7a2
+   hash out: eb4982bb04cc9d4094c0d33781b38a08380d7f06999a38c1dc43e7a2
+     result: [32mPASS[0m
+
+     vector: s='12345678901234567890123456789012345678901234567890123456789012345678901234567890'
+openssl cmd: echo -n '$s' | openssl dgst -sha512-256 | awk '{print $NF}'
+   hash cmd: ./hash -a sha512-256 -s '$s' | awk '{print $NF}'
+openssl out: c89acc3b66186ce1c0306064c74b85a6f97c566a289996f48a1fdf0635f3c3ba
+   hash out: c89acc3b66186ce1c0306064c74b85a6f97c566a289996f48a1fdf0635f3c3ba
+     result: [32mPASS[0m
+
+     vector: s='12345678901234567890123456789012345678901234567890123456789012345678901234567890'
+openssl cmd: echo -n '$s' | openssl dgst -sha3-224 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-224 -s '$s' | awk '{print $NF}'
+openssl out: c6fa5c976e95b40eafb6e03afb251e3c79f175981a4031d4c762dd57
+   hash out: c6fa5c976e95b40eafb6e03afb251e3c79f175981a4031d4c762dd57
+     result: [32mPASS[0m
+
+     vector: s='12345678901234567890123456789012345678901234567890123456789012345678901234567890'
+openssl cmd: echo -n '$s' | openssl dgst -sha3-256 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-256 -s '$s' | awk '{print $NF}'
+openssl out: adce3d5cd132f88a48e0c18340ff99a10393caf16019be9bf42f7d9f549a941f
+   hash out: adce3d5cd132f88a48e0c18340ff99a10393caf16019be9bf42f7d9f549a941f
+     result: [32mPASS[0m
+
+     vector: s='12345678901234567890123456789012345678901234567890123456789012345678901234567890'
+openssl cmd: echo -n '$s' | openssl dgst -sha3-384 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-384 -s '$s' | awk '{print $NF}'
+openssl out: 91d4c1e4b9e9d2bfcf464909529edb5c3226d1ebaa11a53e24eec4afb17c7ffbc3151d0bef1ccb3e64f805b1b7febef0
+   hash out: 91d4c1e4b9e9d2bfcf464909529edb5c3226d1ebaa11a53e24eec4afb17c7ffbc3151d0bef1ccb3e64f805b1b7febef0
+     result: [32mPASS[0m
+
+     vector: s='12345678901234567890123456789012345678901234567890123456789012345678901234567890'
+openssl cmd: echo -n '$s' | openssl dgst -sha3-512 | awk '{print $NF}'
+   hash cmd: ./hash -a sha3-512 -s '$s' | awk '{print $NF}'
+openssl out: 3cc6ba30e83a39b8a0f309467f623bd9663f93a7ff50087f2fde851730ffbcfdfbfcdec63b84f108c2e8972e9b60429d20029b9815356a9daa29c746c24d5b6b
+   hash out: 3cc6ba30e83a39b8a0f309467f623bd9663f93a7ff50087f2fde851730ffbcfdfbfcdec63b84f108c2e8972e9b60429d20029b9815356a9daa29c746c24d5b6b
+     result: [32mPASS[0m
+
+     vector: s='12345678901234567890123456789012345678901234567890123456789012345678901234567890'
+openssl cmd: echo -n '$s' | openssl dgst -sm3 | awk '{print $NF}'
+   hash cmd: ./hash -a sm3 -s '$s' | awk '{print $NF}'
+openssl out: 1c35f39965f12101017b63af789620fa839e9e9ddb52801b4ea100f656c96c72
+   hash out: 1c35f39965f12101017b63af789620fa839e9e9ddb52801b4ea100f656c96c72
+     result: [32mPASS[0m
+

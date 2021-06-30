@@ -9,7 +9,7 @@ do
 		echo "     vector: s='$s'"
 		echo "openssl cmd: echo -n '\$s' | openssl dgst -$alg | awk '{print \$NF}'"
 		echo "   hash cmd: ./hash -a $alg -s '\$s' | awk '{print \$NF}'"
-		test1=$(echo -n '$s' | openssl dgst -$alg | awk '{print $NF}');
+		test1=$(echo -n '$s' | openssl dgst -$alg 2>/dev/null | awk '{print $NF}');
 		test2=$(./hash -a $alg -s '$s' | awk '{print $NF}');
 		echo "openssl out: $test1"
 		echo "   hash out: $test2"
