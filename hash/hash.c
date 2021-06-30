@@ -26,7 +26,16 @@ int HASH_Init(HASH_CTX *ctx, HASH_ALG alg)
 
     impl = create_hash_struct(alg, 0);
 
+    /*
+     * currently we don't use below 3 stuffs,
+     * just for future use, like hmac, hash_drbg, hmac_drbg and so on.
+     */
+    ctx->alg = alg;
+    ctx->block_size = impl->block_size;
+    ctx->digest_size = impl->digest_size;
+
     ctx->impl = impl;
+
     if (impl->init != NULL)
     {
         rc = impl->init(impl->context);
@@ -105,7 +114,16 @@ int HASH_Init_Ex(HASH_CTX *ctx, HASH_ALG alg, uint32_t ext)
 
     impl = create_hash_struct(alg, ext);
 
+    /*
+     * currently we don't use below 3 stuffs,
+     * just for future use, like hmac, hash_drbg, hmac_drbg and so on.
+     */
+    ctx->alg = alg;
+    ctx->block_size = impl->block_size;
+    ctx->digest_size = impl->digest_size;
+
     ctx->impl = impl;
+
     if (impl->init_ex != NULL)
     {
         rc = impl->init_ex(impl->context, impl->ext);

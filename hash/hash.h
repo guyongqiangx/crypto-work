@@ -42,7 +42,15 @@ typedef enum {
 } HASH_ALG;
 
 typedef struct hash_context {
-    void *impl;
+    /*
+     * currently we don't use below 3 stuffs,
+     * just for future use, like hmac, hash_drbg, hmac_drbg and so on.
+     */
+    HASH_ALG alg;
+    uint32_t block_size;
+    uint32_t digest_size;
+
+    void     *impl;
 }HASH_CTX;
 
 int HASH_Init(HASH_CTX *ctx, HASH_ALG alg);
