@@ -43,12 +43,18 @@ $(HMAC): $(HMAC_OBJS)
 
 test: $(TARGET)
 	@echo
-	@echo "Run Test..."
-#	./$(HASH) -a sha1 -s "abc"
-#	./$(HASH) -a sha512t -t 320 -s "abc"
-#	./$(HASH) -a shake128 -d 128 -s "abc"
-#	./$(HASH) -a shake128 -d 256 -s "abc"
-#	./hashtest.sh
+	@echo "Run HASH Test..."
+	./$(HASH) -a sha1 -s "abc"
+	./$(HASH) -a sha512t -t 320 -s "abc"
+	./$(HASH) -a shake128 -d 128 -s "abc"
+	./$(HASH) -a shake128 -d 256 -s "abc"
+	./hashtest.sh
+	@echo "Run HMAC Test..."
+	./$(HMAC) -a sha1 -k "I Love China!" -s "abc"
+	./$(HMAC) -a sha512t -t 320 -k "I Love China!" -s "abc"
+	./$(HMAC) -a shake128 -d 128 -k "I Love China!" -s "abc"
+	./$(HMAC) -a shake128 -d 256 -k "I Love China!" -s "abc"
+	./hmactest.sh
 
 clean:
 	$(RM) $(RMFLAGS) $(TARGET) $(OBJS)
