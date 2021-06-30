@@ -58,6 +58,9 @@ int HASH_Update(HASH_CTX *ctx, const void *data, size_t len);
 int HASH_Final(unsigned char *md, HASH_CTX *ctx);
 unsigned char *HASH(HASH_ALG alg, const unsigned char *data, size_t n, unsigned char *md);
 
+/*
+ * For SHA-512t, SHAKE128, SHAKE256
+ */
 int HASH_Init_Ex(HASH_CTX *ctx, HASH_ALG alg, uint32_t ext);
 unsigned char *HASH_Ex(HASH_ALG alg, const unsigned char *data, size_t n, unsigned char *md, uint32_t ext);
 
