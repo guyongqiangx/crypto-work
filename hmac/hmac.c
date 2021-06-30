@@ -33,7 +33,8 @@ int HMAC_Init(HMAC_CTX *ctx, HASH_ALG alg, const void *key, unsigned int key_len
     }
 
     /* check ctx and algorithm */
-    if ((NULL == ctx) || (alg >= HASH_ALG_MAX))
+    if ((NULL == ctx) || (alg >= HASH_ALG_MAX)
+      || (HASH_ALG_SHA512_T == alg) || (HASH_ALG_SHAKE128 == alg) || (HASH_ALG_SHAKE256 == alg))
     {
         return ERR_INV_PARAM;
     }
@@ -177,7 +178,12 @@ unsigned char *HMAC(HASH_ALG alg, const void *key, unsigned int key_len, const u
 {
     HMAC_CTX ctx;
 
-    if ((NULL == key) || (NULL == data) || (NULL == md) || (0 == key_len) || (alg >= HASH_ALG_INVALID))
+    if ((NULL == key) || (NULL == data) || (NULL == md) || (0 == key_len))
+    {
+        return NULL;
+    }
+
+    if ((alg >= HASH_ALG_MAX) || (HASH_ALG_SHA512_T == alg) || (HASH_ALG_SHAKE128 == alg) || HASH_ALG_SHAKE256 == alg)
     {
         return NULL;
     }
@@ -191,12 +197,140 @@ unsigned char *HMAC(HASH_ALG alg, const void *key, unsigned int key_len, const u
 
 int HMAC_Init_Ex(HMAC_CTX *ctx, HASH_ALG alg, const void *key, unsigned int key_len, uint32_t ext)
 {
-    return ERR_OK;
+    int rc = ERR_OK;
+
+    unsigned char *kp = NULL;
+    uint32_t kp_len = 0;
+
+    unsigned char *S= NULL; /* Pointer for buffer Si, So */
+
+    HASH_CTX *hashi = NULL;
+    HASH_CTX *hasho = NULL;
+
+    uint32_t i;
+
+    /* check key */
+    if ((NULL == key) || (0 == key_len))
+    {
+        return ERR_INV_PARAM;
+    }
+
+    /* check ctx and algorithm */
+    if ((NULL == ctx) || (alg >= HASH_ALG_MAX)
+      || ((HASH_ALG_SHA512_T != alg) && (HASH_ALG_SHAKE128 != alg) && (HASH_ALG_SHAKE256 != alg)))
+    {
+        return ERR_INV_PARAM;
+    }
+
+    memset(ctx, 0, sizeof(HMAC_CTX));
+    ctx->alg = alg;
+    ctx->block_size = HMAC_GetBlockSize(alg);
+    ctx->digest_size = HMAC_GetDigestSize(alg, ext);
+
+    /* prepare kp and kp_len */
+    if (key_len > ctx->digest_size)
+    {
+        kp_len = ctx->digest_size;
+        kp = (unsigned char *)malloc(kp_len);
+        if (NULL == kp)
+        {
+            printf("Out of memory in %s\n", __FUNCTION__);
+            rc = ERR_OUT_OF_MEMORY;
+            goto clean;
+        }
+        HASH_Ex(ctx->alg, key, key_len, kp, ext);
+    }
+    else
+    {
+        kp_len = key_len;
+        kp = (unsigned char *)key;
+    }
+
+    /* calculate Si in advance */
+    S = malloc(ctx->block_size);
+    if (NULL == S)
+    {
+        printf("Out of memory in %s\n", __FUNCTION__);
+        rc = ERR_OUT_OF_MEMORY;
+        goto clean;
+    }
+
+    memcpy(S, kp, kp_len);
+    memset(&S[kp_len], 0, ctx->block_size-kp_len);
+    for (i=0; i<ctx->block_size; i++)
+    {
+        S[i] ^= HMAC_IPAD;
+    }
+
+    hashi = (HASH_CTX *)malloc(sizeof(HASH_CTX));
+    if (NULL == hashi)
+    {
+        printf("Out of memory in %s\n", __FUNCTION__);
+        rc = ERR_OUT_OF_MEMORY;
+        goto clean;
+    }
+
+    HASH_Init_Ex(hashi, ctx->alg, ext);
+    HASH_Update(hashi, S, ctx->block_size);
+    ctx->hashi = hashi;
+
+    /* calculate So in advance */
+    memcpy(S, kp, kp_len);
+    memset(&S[kp_len], 0, ctx->block_size-kp_len);
+    for (i=0; i<ctx->block_size; i++)
+    {
+        S[i] ^= HMAC_OPAD;
+    }
+
+    hasho = (HASH_CTX *)malloc(sizeof(HASH_CTX));
+    if (NULL == hasho)
+    {
+        printf("Out of memory: %s\n", __FUNCTION__);
+        free(hashi);
+        hashi = NULL;
+        rc = ERR_OUT_OF_MEMORY;
+        goto clean;
+    }
+
+    HASH_Init_Ex(hasho, ctx->alg, ext);
+    HASH_Update(hasho, S, ctx->block_size);
+    ctx->hasho = hasho;
+
+clean:
+    if (S != NULL)
+    {
+        free(S);
+        S = NULL;
+    }
+    if ((NULL != kp) && (key != kp))
+    {
+        free(kp);
+        kp = NULL;
+    }
+
+    return rc;
 }
 
 unsigned char *HMAC_Ex(HASH_ALG alg,  const void *key, unsigned int key_len, const unsigned char *data, size_t n, unsigned char *md, uint32_t ext)
 {
-    return ERR_OK;
+    HMAC_CTX ctx;
+
+    if ((NULL == key) || (NULL == data) || (NULL == md) || (0 == key_len))
+    {
+        return NULL;
+    }
+
+    if ((alg >= HASH_ALG_MAX)
+      || ((HASH_ALG_SHA512_T != alg) && (HASH_ALG_SHAKE128 != alg) && (HASH_ALG_SHAKE256 != alg)))
+    {
+        return NULL;
+    }
+
+    HMAC_Init_Ex(&ctx, alg, key, key_len, ext);
+    HMAC_Update(&ctx, data, n);
+    HMAC_Final(md, &ctx);
+
+    return md;
 }
 
 uint32_t HMAC_GetBlockSize(HASH_ALG alg)
