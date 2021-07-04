@@ -290,20 +290,21 @@ static int key_shift(const uint8_t in[56], uint8_t out[56], uint8_t enc, uint8_t
     if (enc == 1)
     {
         shift = shift_enc[round];
-        for (i=0; i<56; i++)
+        for (i=0; i<28; i++)
         {
-            out[(i+56-shift)%56] = in[i];
+            out[(i+28-shift)%28] = in[i];
+            out[28+(i+28-shift)%28] = in[28+i];
         }
     }
     else
     {
         shift = shift_dec[round];
-        for (i=0; i<56; i++)
+        for (i=0; i<28; i++)
         {
             out[(i+shift)%56] = in[i];
+            out[28+(i+shift)%56] = in[28+i];
         }
     }
-
     return 0;
 }
 
@@ -312,11 +313,12 @@ static int key_schedule(uint8_t in[56], uint8_t out[56], uint8_t enc, uint8_t ro
     uint8_t temp[56];
 
     memset(temp, 0, 56);
+    //show_msb_bits(in, 56, "key before shift: ");
     key_shift(in, temp, enc, round);
-    show_msb_bits(temp, 56, "key after shift: ");
+    //show_msb_bits(temp, 56, "key after shift: ");
 
     key_permutation(temp, out, PC2, 48);
-    show_msb_bits(out, 48, "key after PC-2: ");
+    //show_msb_bits(out, 48, "key after PC-2: ");
 
     return 0;
 }
@@ -475,6 +477,40 @@ static void show_msb_bits(uint8_t *bits, int size, char *tips)
     printf("\n");
 }
 
+static void show_48bits_key(uint8_t *bits, int size, char *tips)
+{
+    int i, j;
+    uint8_t x;
+    uint8_t buf[16];
+
+    printf("[raw]%20s", tips);
+    for (i=0; i<size; i++)
+    {
+        printf("%d", bits[i]);
+        if (i%6 == 5)
+            printf(" ");
+    }
+    printf("\n");
+
+    for (i=0; i<size; i+=6)
+    {
+        x = 0;
+        for (j=0; j<6; j++)
+        {
+            x |= (bits[i+j] & 0x01) << (5-j);
+        }
+        buf[i/6] = x;
+    }
+    printf("[hex]%20s", tips);
+    for (i = 0; i < size/6; i++)
+    {
+        printf ("%02x", buf[i]);
+    }
+    printf("\n");
+
+    printf("\n");
+}
+
 static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8_t enc)
 {
     uint8_t data_bits[64];
@@ -529,8 +565,9 @@ static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8
 
         memcpy(data_bits, temp, 64);
 
-        show_msb_bits(round_key, 56, "key: ");
-        show_msb_bits(data_bits, 64, "data: ");
+        //show_msb_bits(round_key, 48, "key: ");
+        show_48bits_key(round_key, 48, "key: ");
+        //show_msb_bits(data_bits, 64, "data: ");
     }
 
     data_permutation(data_bits, 64, RIP, 64);
