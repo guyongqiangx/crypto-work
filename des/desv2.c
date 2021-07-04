@@ -349,33 +349,70 @@ static int s_box_operation(uint8_t in[6], uint8_t out[4], uint8_t sbox[64])
 
     temp = sbox[16 * row + col];
 
-    out[0] = temp & 0x01;
-    out[1] = (temp >> 1) & 0x01;
-    out[2] = (temp >> 2) & 0x01;
-    out[3] = (temp >> 3) & 0x01;
+    printf("%25sS(%d,%2d)=%02d\n", ": ", row, col, temp);
+
+    out[0] = (temp >> 3) & 0x01;
+    out[1] = (temp >> 2) & 0x01;
+    out[2] = (temp >> 1) & 0x01;
+    out[3] = temp & 0x01;
 
     return ERR_OK;
 }
 
-static int f_function(uint8_t data[32], uint8_t key[48])
+static void show_48bits_data(uint8_t *bits, int size, char *tips)
+{
+    int i;
+
+    printf("[raw]%20s", tips);
+    for (i=0; i<size; i++)
+    {
+        printf("%d", bits[i]);
+        if (i%6 == 5)
+            printf(" ");
+    }
+    printf("\n");
+
+    printf("\n");
+}
+
+static void show_bits_group(uint8_t *bits, int size, int group, char *tips)
+{
+    int i;
+
+    printf("[raw]%20s", tips);
+    for (i=0; i<size; i++)
+    {
+        printf("%d", bits[i]);
+        if (i%group == (group-1))
+            printf(" ");
+    }
+    printf("\n");
+}
+
+static int f(uint8_t data[32], uint8_t key[48])
 {
     int i;
     uint8_t expand[48];
 
+    show_msb_bits(data, 32, " before expand: ");
     for (i=0; i<48; i++)
     {
         expand[i] = data[E[i]-1];
     }
+    show_bits_group(expand, 48, 6, " after expand: ");
 
+    show_bits_group(key, 48, 6, " input key: ");
     for (i=0; i<48; i++)
     {
         expand[i] ^= key[i];
     }
+    show_bits_group(expand, 48, 6, " after key: ");
 
     for (i=0; i<48; i+=6)
     {
         s_box_operation(&expand[i], &data[i/6*4], SBox[i/6]);
     }
+    show_bits_group(data, 32, 4, " after sbox: ");
 
     data_permutation(data, 32, P, 32);
 
@@ -413,6 +450,7 @@ static void show_48bits_key(uint8_t *bits, int size, char *tips)
     uint8_t x;
     uint8_t buf[16];
 
+#if 0
     printf("[raw]%20s", tips);
     for (i=0; i<size; i++)
     {
@@ -421,7 +459,7 @@ static void show_48bits_key(uint8_t *bits, int size, char *tips)
             printf(" ");
     }
     printf("\n");
-
+#endif
     for (i=0; i<size; i+=6)
     {
         x = 0;
@@ -469,10 +507,10 @@ static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8
     print_hex(key, 8, "key: ");
 
     bytes_to_msb_bits(key, 8, temp);
-    show_msb_bits(temp, 64, "raw key: ");
+    //show_msb_bits(temp, 64, "raw key: ");
 
     key_permutation(temp, key_bits, PC1, 56);
-    show_msb_bits(key_bits, 56, "key  after PC-1: ");
+    //show_msb_bits(key_bits, 56, "key  after PC-1: ");
 
     memcpy(temp, data_bits, 64);
     for (t=0; t<16; t++)
@@ -481,13 +519,16 @@ static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8
         /* copy R0 to L1 */
         memcpy(&temp[L], &data_bits[R], 32);
 
+        show_msb_bits(&data_bits[L], 32, "L: ");
+        show_msb_bits(&data_bits[R], 32, "R: ");
+
         key_schedule(key_bits, round_key, enc, t);
         show_48bits_key(round_key, 48, "key: ");
 
-        f_function(&data_bits[R], round_key);
+        f(&data_bits[R], round_key);
         for (i=0; i<32; i++)
         {
-            temp[R+i] = temp[L+i] ^ data_bits[R+i];
+            temp[R+i] = data_bits[L+i] ^ data_bits[R+i];
         }
 
         memcpy(data_bits, temp, 64);
@@ -495,6 +536,7 @@ static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8
         show_msb_bits(data_bits, 64, "data: ");
     }
 
+    show_msb_bits(data_bits, 64, "before RIP: ");
     data_permutation(data_bits, 64, RIP, 64);
     show_msb_bits(data_bits, 64, "final: ");
     msb_bits_to_bytes(data_bits, 64, out);
@@ -536,8 +578,11 @@ int main(int argc, char *argv[])
 {
     uint8_t enc[8] = {0x02, 0x46, 0x8a, 0xce, 0xec, 0xa8, 0x64, 0x20};
     uint8_t key[8] = {0x0f, 0x15, 0x71, 0xc9, 0x47, 0xd9, 0xe8, 0x59};
-    //uint8_t dec[8] = {0x0f, 0x26, 0xc3, 0x20, 0xbc, 0x65, 0xb7, 0x1b};
+    //uint8_t dec[8] = {0xe5, 0x01, 0xcd, 0x35, 0x46, 0xdc, 0x5c, 0x37};
+    uint8_t dec[8] = {0xda, 0x02, 0xce, 0x3a, 0x89, 0xec, 0xac, 0x3b};
     uint8_t temp[8];
+
+    //uint8_t enc2[8] = {0x12, 0x46, 0x8a, 0xce, 0xec, 0xa8, 0x64, 0x20};
 
     memset(temp, 0, 8);
 
@@ -548,6 +593,10 @@ int main(int argc, char *argv[])
     //print_hex(dec, 8, "input: ");
     //DES_ProcessBlock(dec, temp, key, 0);
     //print_hex(temp, 8, "  dec: ");
+
+    //print_hex(enc2, 8, "input: ");
+    //DES_ProcessBlock(enc2, temp, key, 1);
+    //print_hex(temp, 8, " enc2: ");
 
     return 0;
 }
