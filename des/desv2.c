@@ -79,43 +79,6 @@ static int msb_bits_to_bytes(uint8_t *bits, int size, uint8_t *data)
     return ERR_OK;
 }
 
-static int to_bits(uint8_t data[8], int size, uint8_t bits[64])
-{
-
-    int i, j;
-
-    swap_bytes(data, size);
-    for (i=0; i<size; i++)
-    {
-        for(j=0; j<8; j++)
-        {
-            *bits++ = (data[i] >> j) & 0x01;
-        }
-    }
-
-    return ERR_OK;
-}
-
-static int to_bytes(uint8_t bits[64], int size, uint8_t data[8])
-{
-    int i, j;
-    uint8_t x;
-
-    for (i=0; i<size/8; i++)
-    {
-        x = 0;
-        for (j=0; j<8; j++)
-        {
-            x |= (bits[i*8+j] & 0x01) << j;
-        }
-        data[i] = x;
-    }
-
-    swap_bytes(data, size/8);
-
-    return ERR_OK;
-}
-
 static int print_hex(unsigned char *data, uint32_t len, const char *tips)
 {
     uint32_t i;
@@ -124,32 +87,6 @@ static int print_hex(unsigned char *data, uint32_t len, const char *tips)
     for (i = 0; i < len; i++)
     {
         printf ("%02x", data[i]);
-    }
-    printf("\n");
-
-    return 0;
-}
-
-static int print_bits_hex(uint8_t *bits, int size, const char * tips)
-{
-    uint8_t data[16];
-
-    to_bytes(bits, size, data);
-    print_hex(data, size/8, tips);
-
-    return 0;
-}
-
-static int print_bits_bin(uint8_t *bits, int size, const char *tips)
-{
-    int i;
-
-    printf("%s", tips);
-    for (i=0; i<size; i++)
-    {
-        printf("%d", bits[i]);
-        if (i%8 == 7)
-            printf(" ");
     }
     printf("\n");
 
@@ -513,31 +450,6 @@ static int f_function(uint8_t data[32], uint8_t key[48])
     return ERR_OK;
 }
 
-static void show_bits(uint8_t *bits, int size, char *tips)
-{
-    int i, len;
-    uint8_t buf[16];
-
-    printf("[raw]%20s", tips);
-    for (i=0; i<size; i++)
-    {
-        printf("%d", bits[i]);
-        if (i%8 == 7)
-            printf(" ");
-    }
-    printf("\n");
-
-    to_bytes(bits, size, buf);
-    printf("[hex]%20s", tips);
-    for (i = 0; i < size/8; i++)
-    {
-        printf ("%02x", buf[i]);
-    }
-    printf("\n");
-
-    printf("\n");
-}
-
 static void show_msb_bits(uint8_t *bits, int size, char *tips)
 {
     int i, len;
@@ -553,31 +465,6 @@ static void show_msb_bits(uint8_t *bits, int size, char *tips)
     printf("\n");
 
     msb_bits_to_bytes(bits, size, buf);
-    printf("[hex]%20s", tips);
-    for (i = 0; i < size/8; i++)
-    {
-        printf ("%02x", buf[i]);
-    }
-    printf("\n");
-
-    printf("\n");
-}
-
-static void show_data(uint8_t *bits, int size, char *tips)
-{
-    int i, len;
-    uint8_t buf[16];
-
-    printf("[raw]%20s", tips);
-    for (i=size-1; i>=0; i--)
-    {
-        printf("%d", bits[i]);
-        if (i%8 == 0)
-            printf(" ");
-    }
-    printf("\n");
-
-    to_bytes(bits, size, buf);
     printf("[hex]%20s", tips);
     for (i = 0; i < size/8; i++)
     {
@@ -647,6 +534,7 @@ static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8
     }
 
     data_permutation(data_bits, 64, RIP, 64);
+    show_msb_bits(data_bits, 64, "final: ");
     msb_bits_to_bytes(data_bits, 64, out);
 
     return 0;
@@ -688,7 +576,7 @@ int main(int argc, char *argv[])
 
     uint8_t enc[8] = {0x02, 0x46, 0x8a, 0xce, 0xec, 0xa8, 0x64, 0x20};
     uint8_t key[8] = {0x0f, 0x15, 0x71, 0xc9, 0x47, 0xd9, 0xe8, 0x59};
-    uint8_t dec[8] = {0xf9, 0x65, 0xdb, 0xf7, 0x39, 0xad, 0x41, 0x2b};
+    uint8_t dec[8] = {0x0f, 0x26, 0xc3, 0x20, 0xbc, 0x65, 0xb7, 0x1b};
     uint8_t temp[8];
     uint8_t bits[64];
 
