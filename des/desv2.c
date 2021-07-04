@@ -29,6 +29,9 @@
 
 #define DES_ROUND_NUM           16
 
+static int print_hex(unsigned char *data, uint32_t len, const char *tips);
+static void show_msb_bits(uint8_t *bits, int size, char *tips);
+
 static void swap_bytes(uint8_t *data, int size)
 {
     uint8_t x;
@@ -42,8 +45,43 @@ static void swap_bytes(uint8_t *data, int size)
 
     return;
 }
+
+static int bytes_to_msb_bits(uint8_t *data, int size, uint8_t *bits)
+{
+    int i, j;
+
+    for (i=0; i<size; i++)
+    {
+        for (j=7; j>=0; j--)
+        {
+            *bits ++ = (data[i] >> j) & 0x01;
+        }
+    }
+
+    return ERR_OK;
+}
+
+static int msb_bits_to_bytes(uint8_t *bits, int size, uint8_t *data)
+{
+    int i, j;
+    uint8_t x;
+
+    for (i=0; i<size; i+=8)
+    {
+        x = 0;
+        for (j=0; j<8; j++)
+        {
+            x |= (bits[i+j] & 0x01) << (7-j);
+        }
+        *data ++ = x;
+    }
+
+    return ERR_OK;
+}
+
 static int to_bits(uint8_t data[8], int size, uint8_t bits[64])
 {
+
     int i, j;
 
     swap_bytes(data, size);
@@ -58,22 +96,22 @@ static int to_bits(uint8_t data[8], int size, uint8_t bits[64])
     return ERR_OK;
 }
 
-static int to_bytes(uint8_t bits[64], int bits_size, uint8_t data[8])
+static int to_bytes(uint8_t bits[64], int size, uint8_t data[8])
 {
     int i, j;
     uint8_t x;
 
-    for (i=0; i<bits_size; i+=8)
+    for (i=0; i<size/8; i++)
     {
         x = 0;
-        for (j=7; j>=0; j--)
+        for (j=0; j<8; j++)
         {
-            x |= ((bits[i+j] & 0x01) << j);
+            x |= (bits[i*8+j] & 0x01) << j;
         }
-        *data++ = x;
+        data[i] = x;
     }
 
-    swap_bytes(data, bits_size/8);
+    swap_bytes(data, size/8);
 
     return ERR_OK;
 }
@@ -82,7 +120,7 @@ static int print_hex(unsigned char *data, uint32_t len, const char *tips)
 {
     uint32_t i;
 
-    printf("%s", tips);
+    printf("%25s", tips);
     for (i = 0; i < len; i++)
     {
         printf ("%02x", data[i]);
@@ -107,7 +145,7 @@ static int print_bits_bin(uint8_t *bits, int size, const char *tips)
     int i;
 
     printf("%s", tips);
-    for (i=0; i<64; i++)
+    for (i=0; i<size; i++)
     {
         printf("%d", bits[i]);
         if (i%8 == 7)
@@ -177,7 +215,7 @@ static uint8_t S1[64] =
 static uint8_t S2[64] =
 {
     15,  1,  8, 14,  6, 11,  3,  4,  9,  7,  2, 13, 12,  0,  5, 10,
-     3, 13,  4,  7, 15,  2,  8, 14, 12,  0,  1, 10,  6,  9, 11,  5, 
+     3, 13,  4,  7, 15,  2,  8, 14, 12,  0,  1, 10,  6,  9, 11,  5,
      0, 14,  7, 11, 10,  4, 13,  1,  5,  8, 12,  6,  9,  3,  2, 15,
     13,  8, 10,  1,  3, 15,  4,  2, 11,  6,  7, 12,  0,  5, 14,  9,
 };
@@ -216,17 +254,17 @@ static uint8_t S6[64] =
 
 static uint8_t S7[64] =
 {
-     4, 11,  2, 14, 15,  0,  8, 13,  3, 12,  9,  7,  5, 10,  6,  1,  
-    13,  0, 11,  7,  4,  9,  1, 10, 14,  3,  5, 12,  2, 15,  8,  6,  
-     1,  4, 11, 13, 12,  3,  7, 14, 10, 15,  6,  8,  0,  5,  9,  2,  
-     6, 11, 13,  8,  1,  4, 10,  7,  9,  5,  0, 15, 14,  2,  3, 12,  
+     4, 11,  2, 14, 15,  0,  8, 13,  3, 12,  9,  7,  5, 10,  6,  1,
+    13,  0, 11,  7,  4,  9,  1, 10, 14,  3,  5, 12,  2, 15,  8,  6,
+     1,  4, 11, 13, 12,  3,  7, 14, 10, 15,  6,  8,  0,  5,  9,  2,
+     6, 11, 13,  8,  1,  4, 10,  7,  9,  5,  0, 15, 14,  2,  3, 12,
 };
 
 static uint8_t S8[64] =
 {
-    13,  2,  8,  4,  6, 15, 11,  1, 10,  9,  3, 14,  5,  0, 12,  7,  
-     1, 15, 13,  8, 10,  3,  7,  4, 12,  5,  6, 11,  0, 14,  9,  2,  
-     7, 11,  4,  1,  9, 12, 14,  2,  0,  6, 10, 13, 15,  3,  5,  8,  
+    13,  2,  8,  4,  6, 15, 11,  1, 10,  9,  3, 14,  5,  0, 12,  7,
+     1, 15, 13,  8, 10,  3,  7,  4, 12,  5,  6, 11,  0, 14,  9,  2,
+     7, 11,  4,  1,  9, 12, 14,  2,  0,  6, 10, 13, 15,  3,  5,  8,
      2,  1, 14,  7,  4, 10,  8, 13, 15, 12,  9,  0,  3,  5,  6, 11,
 };
 
@@ -251,10 +289,10 @@ static uint8_t P[32] =
 static uint8_t PC1[56] =
 {
     57, 49, 41, 33, 25, 17,  9,  1,
-    58, 50, 42, 34, 26, 18, 10,  2, 
-    59, 51, 43, 35, 27, 19, 11,  3, 
-    60, 52, 44, 36, 63, 55, 47, 39, 
-    31, 23, 15,  7, 62, 54, 46, 38, 
+    58, 50, 42, 34, 26, 18, 10,  2,
+    59, 51, 43, 35, 27, 19, 11,  3,
+    60, 52, 44, 36, 63, 55, 47, 39,
+    31, 23, 15,  7, 62, 54, 46, 38,
     30, 22, 14,  6, 61, 53, 45, 37,
     29, 21, 13,  5, 28, 20, 12,  4,
 };
@@ -262,7 +300,7 @@ static uint8_t PC1[56] =
 /* Key Permute Choice 2 */
 static uint8_t PC2[48] =
 {
-    14, 17, 11, 24,  1,  5,  3, 28, 
+    14, 17, 11, 24,  1,  5,  3, 28,
     15,  6, 21, 10, 23, 19, 12,  4,
     26,  8, 16,  7, 27, 20, 13,  2,
     41, 52, 31, 37, 47, 55, 30, 40,
@@ -270,6 +308,19 @@ static uint8_t PC2[48] =
     34, 53, 46, 42, 50, 36, 29, 32,
 };
 
+/*
+ * |--------------------------------------------------------------------------------------------|
+ * | round      | 1  | 2  | 3  | 4  | 5  | 6  | 7  | 8  | 9  | 10 | 11 | 12 | 13 | 14 | 15 | 16 |
+ * |--------------------------------------------------------------------------------------------|
+ * |    single  | 1  | 1  | 2  | 2  | 2  | 2  | 2  | 2  | 1  | 2  | 2  | 2  | 2  | 2  | 2  | 1  |
+ * | enc(left)  |-------------------------------------------------------------------------------|
+ * |    total   | 1  | 2  | 4  | 6  | 8  | 10 | 12 | 14 | 15 | 17 | 19 | 21 | 23 | 25 | 27 | 28 |
+ * |--------------------------------------------------------------------------------------------|
+ * |    single  | 0  | 1  | 2  | 2  | 2  | 2  | 2  | 2  | 1  | 2  | 2  | 2  | 2  | 2  | 2  | 1  |
+ * | enc(right) |-------------------------------------------------------------------------------|
+ * |    total   | 0  | 1  | 3  | 5  | 7  | 9  | 11 | 13 | 14 | 16 | 18 | 20 | 22 | 24 | 26 | 27 |
+ * |--------------------------------------------------------------------------------------------|
+ */
 /* shift left: 1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1 */
 static uint8_t shift_enc[16] =
 {
@@ -282,16 +333,13 @@ static uint8_t shift_dec[16] =
     0, 1, 3, 5, 7, 9, 11, 13, 14, 16, 18, 20, 22, 24, 26, 27
 };
 
-static int key_permutation(uint8_t *bits, uint8_t bits_size, uint8_t *p, uint8_t p_size)
+static int key_permutation(uint8_t *in, uint8_t *out, uint8_t *p, uint8_t p_size)
 {
     int i, j;
-    uint8_t temp[64];
 
-    /* 56 bits --> 56 bits */
-    memcpy(temp, bits, bits_size);
     for (i=0; i<p_size; i++)
     {
-        bits[i] = temp[p[i]-1];
+        out[i] = in[p[i]-1];
     }
 
     return ERR_OK;
@@ -307,7 +355,7 @@ static int key_shift(const uint8_t in[56], uint8_t out[56], uint8_t enc, uint8_t
         shift = shift_enc[round];
         for (i=0; i<56; i++)
         {
-            out[(i+shift)%56] = in[i];
+            out[(i+56-shift)%56] = in[i];
         }
     }
     else
@@ -315,7 +363,7 @@ static int key_shift(const uint8_t in[56], uint8_t out[56], uint8_t enc, uint8_t
         shift = shift_dec[round];
         for (i=0; i<56; i++)
         {
-            out[i] = in[(i+shift)%56];
+            out[(i+shift)%56] = in[i];
         }
     }
 
@@ -326,10 +374,12 @@ static int key_schedule(uint8_t in[56], uint8_t out[56], uint8_t enc, uint8_t ro
 {
     uint8_t temp[56];
 
+    memset(temp, 0, 56);
     key_shift(in, temp, enc, round);
-    key_permutation(temp, 56, PC2, 48);
+    show_msb_bits(temp, 56, "key after shift: ");
 
-    memcpy(out, temp, 48);
+    key_permutation(temp, out, PC2, 48);
+    show_msb_bits(out, 48, "key after PC-2: ");
 
     return 0;
 }
@@ -369,15 +419,71 @@ static int s_box_operation(uint8_t in[6], uint8_t out[4], uint8_t sbox[64])
 static int key_to_bits(uint8_t key[8], uint8_t bits[56])
 {
     uint8_t i, j;
+    uint8_t *p;
 
-    swap_bytes(key, 8);
+    //swap_bytes(key, 8);
+    p = bits + 56 - 1;
     for (i=0; i<8; i++)
     {
-        for(j=0; j<7; j++)
+        for(j=1; j<8; j++) /* j!=0, which is parity bit */
         {
-            *bits++ = (key[i] >> j) & 0x01;
+            *p-- = (key[i] >> j) & 0x01;
         }
     }
+
+    return ERR_OK;
+}
+
+/* 64 bits --> 56 bits */
+static int raw_key_to_real_key(uint8_t raw[64], uint8_t key[56])
+{
+    int i, j;
+    uint8_t *p;
+
+    for (i=0, j=0; i<64; i++)
+    {
+        if (i%8 != 7)
+            key[j++] = raw[i];
+    }
+
+    return ERR_OK;
+}
+
+static int real_key_expand(uint8_t key[56], uint8_t raw[64])
+{
+    int i, j;
+    
+    for (i=0, j=0; i<64; i++)
+    {
+        if (i%8 == 7)
+        {
+            raw[i] = 0;
+        }
+        else
+        {
+            raw[i] =key[j++];
+        }
+    }
+
+    return 0;
+}
+
+static int bits_to_key(uint8_t bits[56], uint8_t key[8])
+{
+    int i, j;
+    uint8_t x;
+
+    for (i=0; i<56/8; i++)
+    {
+        x = 0;
+        for (j=0; j<7; j++)
+        {
+            x |= (bits[i*8+j] & 0x01) << j;
+        }
+        key[i] = x;
+    }
+
+    //swap_bytes(key, 56/8);
 
     return ERR_OK;
 }
@@ -407,6 +513,81 @@ static int f_function(uint8_t data[32], uint8_t key[48])
     return ERR_OK;
 }
 
+static void show_bits(uint8_t *bits, int size, char *tips)
+{
+    int i, len;
+    uint8_t buf[16];
+
+    printf("[raw]%20s", tips);
+    for (i=0; i<size; i++)
+    {
+        printf("%d", bits[i]);
+        if (i%8 == 7)
+            printf(" ");
+    }
+    printf("\n");
+
+    to_bytes(bits, size, buf);
+    printf("[hex]%20s", tips);
+    for (i = 0; i < size/8; i++)
+    {
+        printf ("%02x", buf[i]);
+    }
+    printf("\n");
+
+    printf("\n");
+}
+
+static void show_msb_bits(uint8_t *bits, int size, char *tips)
+{
+    int i, len;
+    uint8_t buf[16];
+
+    printf("[raw]%20s", tips);
+    for (i=0; i<size; i++)
+    {
+        printf("%d", bits[i]);
+        if (i%8 == 7)
+            printf(" ");
+    }
+    printf("\n");
+
+    msb_bits_to_bytes(bits, size, buf);
+    printf("[hex]%20s", tips);
+    for (i = 0; i < size/8; i++)
+    {
+        printf ("%02x", buf[i]);
+    }
+    printf("\n");
+
+    printf("\n");
+}
+
+static void show_data(uint8_t *bits, int size, char *tips)
+{
+    int i, len;
+    uint8_t buf[16];
+
+    printf("[raw]%20s", tips);
+    for (i=size-1; i>=0; i--)
+    {
+        printf("%d", bits[i]);
+        if (i%8 == 0)
+            printf(" ");
+    }
+    printf("\n");
+
+    to_bytes(bits, size, buf);
+    printf("[hex]%20s", tips);
+    for (i = 0; i < size/8; i++)
+    {
+        printf ("%02x", buf[i]);
+    }
+    printf("\n");
+
+    printf("\n");
+}
+
 static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8_t enc)
 {
     uint8_t data_bits[64];
@@ -416,48 +597,57 @@ static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8
     uint8_t temp[64];
     uint8_t i, t;
 
+    uint8_t L, R;
+
     uint8_t buf[16];
+
+    L =  0;
+    R = 32;
 
     print_hex(in, 8, "   in: ");
 
-    to_bits(in, 8, data_bits);
+    bytes_to_msb_bits(in, 8, data_bits);
+    show_msb_bits(data_bits, 64, "before permutation: ");
+
     data_permutation(data_bits, 64, IP, 64);
+    show_msb_bits(data_bits, 64, " after permutation: ");
 
-    to_bytes(data_bits, 64, buf);
-    print_hex(buf, 8, "after permutation: ");
+    show_msb_bits(&data_bits[L], 32, "L: ");
+    show_msb_bits(&data_bits[R], 32, "R: ");
 
-    //to_bytes(&data_bits[0], 32, buf);
-    //print_hex(buf, 4, "    L: ");
-    print_bits_hex(&data_bits[0], 32, "    L: ");
-    //to_bytes(&data_bits[32], 32, buf);
-    //print_hex(buf, 4, "    R: ");
-    print_bits_hex(&data_bits[32], 32, "    R: ");
+    print_hex(key, 8, "key: ");
 
-    print_hex(key, 8, "  key: ");
+    bytes_to_msb_bits(key, 8, temp);
+    show_msb_bits(temp, 64, "raw key: ");
 
-    key_to_bits(key, key_bits);
-    key_permutation(key_bits, 56, PC1, 56);
+    //raw_key_to_real_key(temp, key_bits);
+    //show_msb_key(key_bits, "real key: ");
 
+    key_permutation(temp, key_bits, PC1, 56);
+    show_msb_bits(key_bits, 56, "key  after PC-1: ");
+
+    memcpy(temp, data_bits, 64);
     for (t=0; t<16; t++)
     {
+        printf("%d: \n", t);
         /* copy R0 to L1 */
-        memcpy(temp, &data_bits[32], 32);
+        memcpy(&temp[L], &data_bits[R], 32);
 
         key_schedule(key_bits, round_key, enc, t);
-        f_function(&data_bits[32], round_key);
+        f_function(&data_bits[R], round_key);
         for (i=0; i<32; i++)
         {
-            temp[32+i] = data_bits[i] ^ data_bits[32+i];
+            temp[R+i] = temp[L+i] ^ data_bits[R+i];
         }
 
         memcpy(data_bits, temp, 64);
 
-        to_bytes(data_bits, 64, buf);
-        print_hex(buf, 8, "round: ");
+        show_msb_bits(round_key, 56, "key: ");
+        show_msb_bits(data_bits, 64, "data: ");
     }
 
     data_permutation(data_bits, 64, RIP, 64);
-    to_bytes(data_bits, 64, out);
+    msb_bits_to_bytes(data_bits, 64, out);
 
     return 0;
 }
@@ -471,6 +661,7 @@ static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8
  *        Key: 0x0f1571c947d9e859
  * Ciphertext: 0xda02ce3a89ecac3b
  *
+ *      Ki                 Li         Ri
  *   IP                    0x5a005a00 0x3cf03c0f
  *    1 0x1e030f03080d2930 0x3cf03c0f 0xbad22845
  *    2 0x0a31293432242318 0xbad22845 0x99e9b723
