@@ -29,14 +29,89 @@
 
 #define DES_ROUND_NUM           16
 
-static int print_hex(unsigned char *digest, uint32_t len, const char *tips)
+static void swap_bytes(uint8_t *data, int size)
+{
+    uint8_t x;
+    int i;
+    for (i=0; i<size/2; i++)
+    {
+        x = data[i];
+        data[i] = data[size-1-i];
+        data[size-1-i] = x;
+    }
+
+    return;
+}
+static int to_bits(uint8_t data[8], int size, uint8_t bits[64])
+{
+    int i, j;
+
+    swap_bytes(data, size);
+    for (i=0; i<size; i++)
+    {
+        for(j=0; j<8; j++)
+        {
+            *bits++ = (data[i] >> j) & 0x01;
+        }
+    }
+
+    return ERR_OK;
+}
+
+static int to_bytes(uint8_t bits[64], int bits_size, uint8_t data[8])
+{
+    int i, j;
+    uint8_t x;
+
+    for (i=0; i<bits_size; i+=8)
+    {
+        x = 0;
+        for (j=7; j>=0; j--)
+        {
+            x |= ((bits[i+j] & 0x01) << j);
+        }
+        *data++ = x;
+    }
+
+    swap_bytes(data, bits_size/8);
+
+    return ERR_OK;
+}
+
+static int print_hex(unsigned char *data, uint32_t len, const char *tips)
 {
     uint32_t i;
 
     printf("%s", tips);
     for (i = 0; i < len; i++)
     {
-        printf ("%02x", digest[i]);
+        printf ("%02x", data[i]);
+    }
+    printf("\n");
+
+    return 0;
+}
+
+static int print_bits_hex(uint8_t *bits, int size, const char * tips)
+{
+    uint8_t data[16];
+
+    to_bytes(bits, size, data);
+    print_hex(data, size/8, tips);
+
+    return 0;
+}
+
+static int print_bits_bin(uint8_t *bits, int size, const char *tips)
+{
+    int i;
+
+    printf("%s", tips);
+    for (i=0; i<64; i++)
+    {
+        printf("%d", bits[i]);
+        if (i%8 == 7)
+            printf(" ");
     }
     printf("\n");
 
@@ -259,39 +334,6 @@ static int key_schedule(uint8_t in[56], uint8_t out[56], uint8_t enc, uint8_t ro
     return 0;
 }
 
-static int to_bits(uint8_t data[8], uint8_t data_size, uint8_t bits[64])
-{
-    uint8_t i, j;
-
-    for (i=0; i<data_size; i++)
-    {
-        for(j=0; i<8; j++)
-        {
-            bits[i] = (data[i] >> j) & 0x01;
-        }
-    }
-
-    return ERR_OK;
-}
-
-static int to_bytes(uint8_t bits[64], uint8_t bits_size, uint8_t data[8])
-{
-    uint8_t i, j;
-    uint8_t x;
-
-    x = 0;
-    for (i=0; i<bits_size; i+=8)
-    {
-        for (j=0; j<8; j++)
-        {
-            x |= ((bits[i] & 0x01)<< j);
-        }
-        *data++ = x;
-    }
-
-    return ERR_OK;
-}
-
 static int data_permutation(uint8_t *bits, uint8_t bits_size, uint8_t *p, uint8_t p_size)
 {
     int i, j;
@@ -326,18 +368,17 @@ static int s_box_operation(uint8_t in[6], uint8_t out[4], uint8_t sbox[64])
 
 static int key_to_bits(uint8_t key[8], uint8_t bits[56])
 {
-    uint64_t x;
     uint8_t i, j;
 
-    x = be64toh(*(uint64_t *)key);
-    for (i=0, j=0; i<64; i++)
+    swap_bytes(key, 8);
+    for (i=0; i<8; i++)
     {
-        if (i%8==7)
+        for(j=0; j<7; j++)
         {
-            continue;
+            *bits++ = (key[i] >> j) & 0x01;
         }
-        bits[j++] = (uint8_t)(x >> i & 0x01);
     }
+
     return ERR_OK;
 }
 
@@ -385,8 +426,10 @@ static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8
     to_bytes(data_bits, 64, buf);
     print_hex(buf, 8, "after permutation: ");
 
+    to_bytes(&data_bits[0], 32, buf);
+    print_hex(buf, 4, "L: ");
     to_bytes(&data_bits[32], 32, buf);
-    print_hex(buf, 4, "new: ");
+    print_hex(buf, 4, "R: ");
 
     print_hex(key, 8, "key: ");
 
@@ -407,7 +450,7 @@ static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8
 
         memcpy(data_bits, temp, 64);
 
-        to_bytes(data_bits, 8, buf);
+        to_bytes(data_bits, 64, buf);
         print_hex(buf, 8, "round: ");
     }
 
@@ -420,72 +463,56 @@ static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8
 #define TEST
 
 #ifdef TEST
-#if 0
+#if 1
 int main(int argc, char *argv[])
 {
     int i;
-    //uint8_t data[8] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
-    uint8_t data[8] = {0x02, 0x46, 0x8a, 0xce, 0xec, 0xa8, 0x64, 0x20};
+
+    uint8_t enc[8] = {0x02, 0x46, 0x8a, 0xce, 0xec, 0xa8, 0x64, 0x20};
     uint8_t key[8] = {0x0f, 0x15, 0x71, 0xc9, 0x47, 0xd9, 0xe8, 0x59};
+    uint8_t dec[8] = {0xf9, 0x65, 0xdb, 0xf7, 0x39, 0xad, 0x41, 0x2b};
     uint8_t temp[8];
     uint8_t bits[64];
 
     memset(temp, 0, 8);
 
-    //print_buffer(data, 8, "");
+    print_hex(enc, 8, "input: ");
+    DES_ProcessBlock(enc, temp, key, 1);
+    print_hex(temp, 8, "  enc: ");
 
-    print_hex(data, 8, "input: ");
-    DES_ProcessBlock(data, temp, key, 1);
-    //print_buffer(temp, 8, "");
-    print_hex(temp, 8, "output: ");
+    print_hex(dec, 8, "input: ");
+    DES_ProcessBlock(dec, temp, key, 0);
+    print_hex(temp, 8, "  dec: ");
 
     return 0;
 }
 #else
 int main(int argc, char *argv[])
 {
-    uint8_t i;
-    //uint8_t data[8] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
+    int i;
+
     uint8_t data[8] = {0x02, 0x46, 0x8a, 0xce, 0xec, 0xa8, 0x64, 0x20};
+    uint8_t  key[8] = {0x0f, 0x15, 0x71, 0xc9, 0x47, 0xd9, 0xe8, 0x59};
     uint8_t temp[8];
     uint8_t bits[64];
 
-    printf("data: ");
-    for (i=0; i<sizeof(data); i++)
-    {
-        printf("0x%02x ", data[i]);
-    }
-    printf("\n");
+    print_hex(data, 8, "data: ");
 
     to_bits(data, 8, bits);
-    printf("bits before permutation:\n");
-    for (i=0; i<64; i++)
-    {
-        printf("%d", bits[i]);
-        if (i%8 == 7)
-            printf(" ");
-    }
-    printf("\n");
+    print_bits_hex(bits, 64, "origin: ");
+    print_bits_bin(bits, 64, "before: ");
 
     data_permutation(bits, 64, IP, 64);
+    print_bits_bin(bits, 64, " after: ");
 
-    printf("bits  after permutation:\n");
-    for (i=0; i<64; i++)
-    {
-        printf("%d", bits[i]);
-        if (i%8 == 7)
-            printf(" ");
-    }
-    printf("\n");
+    print_bits_hex(bits, 64, "temp: ");
 
-    memset(temp, 0, sizeof(temp));
-    to_bytes(bits, 64, temp);
-    printf("temp: ");
-    for (i=0; i<sizeof(temp); i++)
     {
-        printf("0x%02x ", temp[i]);
+        uint64_t x;
+
+        x = 0x02468aceeca86420;
+        printf("0x%016llx\n", x);
     }
-    printf("\n");
 
     return 0;
 }
