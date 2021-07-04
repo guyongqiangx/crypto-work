@@ -1,4 +1,4 @@
-.PHONY: all clean des test
+.PHONY: all clean des test mydes
 
 CROSS_COMPILE=
 
@@ -19,7 +19,13 @@ TARGET  = des
 
 OBJS 	= $(SRCS:.c=.o)
 
-all: des test
+# all: des test
+all: mydes
+
+mydes: desv2.o utils.o
+	$(RM) $(RMFLAGS) $@
+	$(CC) $(CFLAGS) $^ -o $@ $(LIBS) $(INCLUDE)
+	./$@
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
