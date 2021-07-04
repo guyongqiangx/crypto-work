@@ -37,38 +37,85 @@ static uint8_t RIP[64] =
     33,  1, 41,  9, 49, 17, 57, 25,
 };
 
-static int data_to_bits(uint8_t data[8], uint8_t bits[64])
+static int bytes_to_msb_bits(uint8_t *data, int size, uint8_t *bits)
 {
-    uint64_t x;
-    int i;
+    int i, j;
 
-    x = *(uint64_t *)data;
-    for (i=0; i<64; i++)
+    for (i=0; i<size; i++)
     {
-        bits[i] = (uint8_t)(x >> i & 0x01);
+        for (j=7; j>=0; j--)
+        {
+            *bits ++ = (data[i] >> j) & 0x01;
+        }
     }
+
     return 0;
 }
 
-static int data_permutation(uint8_t data[64], uint8_t p[64])
+static int msb_bits_to_bytes(uint8_t *bits, int size, uint8_t *data)
 {
     int i, j;
-    uint8_t temp[64];
+    uint8_t x;
 
-    memcpy(temp, data, sizeof(temp));
-    for (i=0; i<64; i++)
+    for (i=0; i<size; i+=8)
     {
-        data[i] = temp[p[i]-1];
+        x = 0;
+        for (j=0; j<8; j++)
+        {
+            x |= (bits[i+j] & 0x01) << (7-j);
+        }
+        *data ++ = x;
     }
 
     return 0;
+}
+
+static int data_permutation(uint8_t *bits, uint8_t bits_size, uint8_t *p, uint8_t p_size)
+{
+    int i;
+    uint8_t temp[64];
+
+    memcpy(temp, bits, bits_size);
+    for (i=0; i<bits_size; i++)
+    {
+        bits[i] = temp[p[i]-1];
+    }
+
+    return 0;
+}
+
+static void show_msb_bits(uint8_t *bits, int size, char *tips)
+{
+    int i;
+    uint8_t buf[16];
+
+    printf("[raw]%20s", tips);
+    for (i=0; i<size; i++)
+    {
+        printf("%d", bits[i]);
+        if (i%8 == 7)
+            printf(" ");
+    }
+    printf("\n");
+
+    msb_bits_to_bytes(bits, size, buf);
+    printf("[hex]%20s", tips);
+    for (i = 0; i < size/8; i++)
+    {
+        printf ("%02x", buf[i]);
+    }
+    printf("\n");
+
+    printf("\n");
 }
 
 int main(int argc, char *argv[])
 {
     int i;
-    uint8_t data[] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
+    uint8_t  data[8] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
+    uint8_t data2[8] = {0x75, 0xe8, 0xfd, 0x8f, 0x25, 0x89, 0x64, 0x90};
     uint8_t bits[64];
+    uint8_t temp[8];
 
     printf("data: ");
     for (i=0; i<sizeof(data); i++)
@@ -77,13 +124,27 @@ int main(int argc, char *argv[])
     }
     printf("\n");
 
-    data_to_bits(data, bits);
-    printf("bits: ");
-    for (i=0; i<64; i++)
+    bytes_to_msb_bits(data, 8, bits);
+    show_msb_bits(bits, 64, "1: ");
+
+    data_permutation(bits, 64, IP, 64);
+    show_msb_bits(bits, 64, "after permute: ");
+
+    data_permutation(bits, 64, RIP, 64);
+    show_msb_bits(bits, 64, "reverse permute: ");
+
+    msb_bits_to_bytes(bits, 64, temp);
+    printf("[hex]%10s: ", "bytes");
+    for (i=0; i<8; i++)
     {
-        printf("%d", bits[i]);
-        if (i%8 == 7)
-            printf(" ");
+        printf("0x%02x ", temp[i]);
     }
+    printf("\n");
+
+    bytes_to_msb_bits(data2, 8, bits);
+    show_msb_bits(bits, 64, "origin: ");
+    data_permutation(bits, 64, RIP, 64);
+    show_msb_bits(bits, 64, "permute: ");
+
     return 0;
 }
