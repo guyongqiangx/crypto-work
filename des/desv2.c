@@ -85,7 +85,7 @@ static int print_hex(unsigned char *data, uint32_t len, const char *tips)
 {
     uint32_t i;
 
-    printf("%25s", tips);
+    printf("%15s", tips);
     for (i = 0; i < len; i++)
     {
         printf ("%02x", data[i]);
@@ -316,7 +316,7 @@ static int key_schedule(uint8_t in[56], uint8_t out[56], uint8_t enc, uint8_t ro
     //show_msb_bits(temp, 56, "key after shift: ");
 
     key_permutation(temp, out, PC2, 48);
-    //show_msb_bits(out, 48, "key after PC-2: ");
+    //show_msb_bits(out, 48, "key after PC2: ");
 
     return 0;
 }
@@ -335,17 +335,20 @@ static int data_permutation(uint8_t *bits, uint8_t bits_size, uint8_t *p, uint8_
     return ERR_OK;
 }
 
-static int s_box_operation(uint8_t in[6], uint8_t out[4], uint8_t sbox[64])
+static int s_box_operation(uint8_t in[6], uint8_t out[4], uint8_t index)
 {
+    uint8_t *sbox;
     uint8_t row, col;
     uint8_t temp;
+
+    sbox = SBox[index];
 
     row = (in[0] << 1) | in[5];
     col = (in[1] << 3) | (in[2] << 2) | (in[3] << 1) | in[4];
 
     temp = sbox[16 * row + col];
 
-    printf("%25sS(%d,%2d)=%02d\n", ": ", row, col, temp);
+    printf("%15sS%d(%d,%2d)=%02d\n", "SBox: ", index+1, row, col, temp);
 
     out[0] = (temp >> 3) & 0x01;
     out[1] = (temp >> 2) & 0x01;
@@ -355,27 +358,11 @@ static int s_box_operation(uint8_t in[6], uint8_t out[4], uint8_t sbox[64])
     return ERR_OK;
 }
 
-static void show_48bits_data(uint8_t *bits, int size, char *tips)
-{
-    int i;
-
-    printf("[raw]%20s", tips);
-    for (i=0; i<size; i++)
-    {
-        printf("%d", bits[i]);
-        if (i%6 == 5)
-            printf(" ");
-    }
-    printf("\n");
-
-    printf("\n");
-}
-
 static void show_bits_group(uint8_t *bits, int size, int group, char *tips)
 {
     int i;
 
-    printf("[raw]%20s", tips);
+    printf("%15s[bin]", tips);
     for (i=0; i<size; i++)
     {
         printf("%d", bits[i]);
@@ -390,25 +377,25 @@ static int f(uint8_t data[32], uint8_t key[48])
     int i;
     uint8_t expand[48];
 
-    show_msb_bits(data, 32, " before expand: ");
+    show_msb_bits(data, 32, "before expand: ");
     for (i=0; i<48; i++)
     {
         expand[i] = data[E[i]-1];
     }
-    show_bits_group(expand, 48, 6, " after expand: ");
+    show_bits_group(expand, 48, 6, "after expand: ");
 
-    show_bits_group(key, 48, 6, " input key: ");
+    show_bits_group(key, 48, 6, "input key: ");
     for (i=0; i<48; i++)
     {
         expand[i] ^= key[i];
     }
-    show_bits_group(expand, 48, 6, " after key: ");
+    show_bits_group(expand, 48, 6, "after key: ");
 
     for (i=0; i<48; i+=6)
     {
-        s_box_operation(&expand[i], &data[i/6*4], SBox[i/6]);
+        s_box_operation(&expand[i], &data[i/6*4], i/6);
     }
-    show_bits_group(data, 32, 4, " after sbox: ");
+    show_bits_group(data, 32, 4, "after sbox: ");
 
     data_permutation(data, 32, P, 32);
 
@@ -420,7 +407,7 @@ static void show_msb_bits(uint8_t *bits, int size, char *tips)
     int i;
     uint8_t buf[16];
 
-    printf("[raw]%20s", tips);
+    printf("%15s[bin]", tips);
     for (i=0; i<size; i++)
     {
         printf("%d", bits[i]);
@@ -430,7 +417,7 @@ static void show_msb_bits(uint8_t *bits, int size, char *tips)
     printf("\n");
 
     msb_bits_to_bytes(bits, size, buf);
-    printf("[hex]%20s", tips);
+    printf("%15s[hex]", tips);
     for (i = 0; i < size/8; i++)
     {
         printf ("%02x", buf[i]);
@@ -446,8 +433,7 @@ static void show_48bits_key(uint8_t *bits, int size, char *tips)
     uint8_t x;
     uint8_t buf[16];
 
-#if 0
-    printf("[raw]%20s", tips);
+    printf("%15s[bin]", tips);
     for (i=0; i<size; i++)
     {
         printf("%d", bits[i]);
@@ -455,7 +441,7 @@ static void show_48bits_key(uint8_t *bits, int size, char *tips)
             printf(" ");
     }
     printf("\n");
-#endif
+
     for (i=0; i<size; i+=6)
     {
         x = 0;
@@ -465,7 +451,7 @@ static void show_48bits_key(uint8_t *bits, int size, char *tips)
         }
         buf[i/6] = x;
     }
-    printf("[hex]%20s", tips);
+    printf("%15s[hex]", tips);
     for (i = 0; i < size/6; i++)
     {
         printf ("%02x", buf[i]);
@@ -489,13 +475,13 @@ static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8
     L =  0;
     R = 32;
 
-    print_hex(in, 8, "   in: ");
+    print_hex(in, 8, "in: ");
 
     bytes_to_msb_bits(in, 8, data_bits);
-    show_msb_bits(data_bits, 64, "before permutation: ");
+    show_msb_bits(data_bits, 64, "before IP: ");
 
     data_permutation(data_bits, 64, IP, 64);
-    show_msb_bits(data_bits, 64, " after permutation: ");
+    show_msb_bits(data_bits, 64, "after IP: ");
 
     show_msb_bits(&data_bits[L], 32, "L: ");
     show_msb_bits(&data_bits[R], 32, "R: ");
@@ -503,15 +489,17 @@ static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8
     print_hex(key, 8, "key: ");
 
     bytes_to_msb_bits(key, 8, temp);
-    //show_msb_bits(temp, 64, "raw key: ");
+    show_msb_bits(temp, 64, "raw key: ");
 
     key_permutation(temp, key_bits, PC1, 56);
-    //show_msb_bits(key_bits, 56, "key  after PC-1: ");
+    show_msb_bits(key_bits, 56, "key after PC1: ");
 
     memcpy(temp, data_bits, 64);
     for (t=0; t<16; t++)
     {
-        printf("%d: \n", t);
+        printf("-------------------------------------------------------------------------------------\n");
+        printf("%13d: \n", t);
+
         /* copy R0 to L1 */
         memcpy(&temp[L], &data_bits[R], 32);
 
@@ -585,7 +573,7 @@ int main(int argc, char *argv[])
 
     print_hex(enc, 8, "input: ");
     DES_ProcessBlock(enc, temp, key, 1);
-    print_hex(temp, 8, "  enc: ");
+    print_hex(temp, 8, "enc: ");
 
     //print_hex(dec, 8, "input: ");
     //DES_ProcessBlock(dec, temp, key, 0);
