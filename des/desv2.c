@@ -516,13 +516,15 @@ static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8
 
         memcpy(data_bits, temp, 64);
 
-        show_msb_bits(data_bits, 64, "data: ");
+        show_msb_bits(data_bits, 64, "out data: ");
         printf("-------------------------------------------------------------------------------------\n");
     }
 
+    show_msb_bits(data_bits, 64, "swap L16/R16: ");
     memcpy(temp, data_bits, 64);
-    memcpy(&data_bits[L], &temp[R], 32);
+    /* Swap L16 and R16 */
     memcpy(&data_bits[R], &temp[L], 32);
+    memcpy(&data_bits[L], &temp[R], 32);
 
     show_msb_bits(data_bits, 64, "before RIP: ");
     data_permutation(data_bits, 64, RIP, 64);
@@ -567,8 +569,7 @@ int main(int argc, char *argv[])
 {
     uint8_t enc[8] = {0x02, 0x46, 0x8a, 0xce, 0xec, 0xa8, 0x64, 0x20};
     uint8_t key[8] = {0x0f, 0x15, 0x71, 0xc9, 0x47, 0xd9, 0xe8, 0x59};
-    uint8_t dec[8] = {0xe5, 0x01, 0xcd, 0x35, 0x46, 0xdc, 0x5c, 0x37};
-    //uint8_t dec[8] = {0xda, 0x02, 0xce, 0x3a, 0x89, 0xec, 0xac, 0x3b};
+    uint8_t dec[8] = {0xda, 0x02, 0xce, 0x3a, 0x89, 0xec, 0xac, 0x3b};
     uint8_t temp[8];
 
     //uint8_t enc2[8] = {0x12, 0x46, 0x8a, 0xce, 0xec, 0xa8, 0x64, 0x20};
@@ -581,11 +582,11 @@ int main(int argc, char *argv[])
 
     //print_hex(dec, 8, "input: ");
     //DES_ProcessBlock(dec, temp, key, 0);
-    //print_hex(temp, 8, "  dec: ");
+    //print_hex(temp, 8, "dec: ");
 
     //print_hex(enc2, 8, "input: ");
     //DES_ProcessBlock(enc2, temp, key, 1);
-    //print_hex(temp, 8, " enc2: ");
+    //print_hex(temp, 8, "enc2: ");
 
     return 0;
 }
