@@ -497,7 +497,6 @@ static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8
     memcpy(temp, data_bits, 64);
     for (t=0; t<16; t++)
     {
-        printf("-------------------------------------------------------------------------------------\n");
         printf("%13d: \n", t);
 
         /* copy R0 to L1 */
@@ -518,7 +517,12 @@ static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8
         memcpy(data_bits, temp, 64);
 
         show_msb_bits(data_bits, 64, "data: ");
+        printf("-------------------------------------------------------------------------------------\n");
     }
+
+    memcpy(temp, data_bits, 64);
+    memcpy(&data_bits[L], &temp[R], 32);
+    memcpy(&data_bits[R], &temp[L], 32);
 
     show_msb_bits(data_bits, 64, "before RIP: ");
     data_permutation(data_bits, 64, RIP, 64);
