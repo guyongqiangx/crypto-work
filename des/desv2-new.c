@@ -299,8 +299,8 @@ static int key_shift(const uint8_t in[56], uint8_t out[56], uint8_t enc, uint8_t
         shift = shift_dec[round];
         for (i=0; i<28; i++)
         {
-            out[(i+shift)%56] = in[i];
-            out[28+(i+shift)%56] = in[28+i];
+            out[(i+shift)%28] = in[i];
+            out[28+(i+shift)%28] = in[28+i];
         }
     }
     return 0;
@@ -372,7 +372,7 @@ static void show_bits_group(uint8_t *bits, int size, int group, char *tips)
     printf("\n");
 }
 
-static int f(uint8_t in[32], uint32_t out[32], uint8_t key[48])
+static int f(uint8_t in[32], uint8_t out[32], uint8_t key[48])
 {
     int i;
     uint8_t expand[48];
@@ -495,10 +495,10 @@ static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8
     key_permutation(temp, key_bits, PC1, 56);
     show_msb_bits(key_bits, 56, "key after PC1: ");
 
-    //memcpy(temp, data_bits, 64);
-    for (t=0; t<1; t++)
+    for (t=0; t<16; t++)
     {
-        printf("%13d: \n", t);
+        printf("%13d:\n", t+1);
+
 
         show_msb_bits(&data_bits[L], 32, "in L: ");
         show_msb_bits(&data_bits[R], 32, "in R: ");
@@ -506,13 +506,13 @@ static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8
         key_schedule(key_bits, round_key, enc, t);
         show_48bits_key(round_key, 48, "key: ");
 
-        f(&data_bits[R], &temp[R], round_key);
-
         /* copy R0 to L1 */
         memcpy(&temp[L], &data_bits[R], 32);
+
+        f(&data_bits[R], &temp[R], round_key);
         for (i=0; i<32; i++)
         {
-            temp[R+i] ^= temp[L+i];
+            temp[R+i] ^= data_bits[L+i];
         }
 
         memcpy(data_bits, temp, 64);
@@ -579,9 +579,9 @@ int main(int argc, char *argv[])
     DES_ProcessBlock(enc, temp, key, 1);
     print_hex(temp, 8, "enc: ");
 
-    //print_hex(dec, 8, "input: ");
-    //DES_ProcessBlock(dec, temp, key, 0);
-    //print_hex(temp, 8, "dec: ");
+    print_hex(dec, 8, "input: ");
+    DES_ProcessBlock(dec, temp, key, 0);
+    print_hex(temp, 8, "dec: ");
 
     //print_hex(enc2, 8, "input: ");
     //DES_ProcessBlock(enc2, temp, key, 1);

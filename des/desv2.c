@@ -323,8 +323,8 @@ static int key_shift(const uint8_t in[56], uint8_t out[56], uint8_t enc, uint8_t
         shift = shift_dec[round];
         for (i=0; i<28; i++)
         {
-            out[(i+shift)%56] = in[i];
-            out[28+(i+shift)%56] = in[28+i];
+            out[(i+shift)%28] = in[i];
+            out[28+(i+shift)%28] = in[28+i];
         }
     }
     return 0;
@@ -470,7 +470,7 @@ static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8
 
     for (t=0; t<16; t++)
     {
-        printf("%13d:\n", t);
+        printf("%13d:\n", t+1);
 
         /* copy Rn to Ln+1 */
         memcpy(&temp[L], &data_bits[R], 32);
@@ -554,9 +554,9 @@ int main(int argc, char *argv[])
     DES_ProcessBlock(enc, temp, key, 1);
     print_hex(temp, 8, "enc: ");
 
-    //print_hex(dec, 8, "input: ");
-    //DES_ProcessBlock(dec, temp, key, 0);
-    //print_hex(temp, 8, "dec: ");
+    print_hex(dec, 8, "input: ");
+    DES_ProcessBlock(dec, temp, key, 0);
+    print_hex(temp, 8, "dec: ");
 
     //print_hex(enc2, 8, "input: ");
     //DES_ProcessBlock(enc2, temp, key, 1);
