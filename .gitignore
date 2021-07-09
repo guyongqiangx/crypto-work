@@ -10,8 +10,8 @@ sm3/sm3
 .vscode
 */*.o
 
-# gtest
-# gtest/CMakeCache.txt
+# gtest files
+gtest/CMakeCache.txt
 gtest/CMakeFiles/
 gtest/Makefile
 gtest/_deps/
