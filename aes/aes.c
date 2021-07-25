@@ -28,6 +28,46 @@
 #define AES_ROW_COUNT   4
 #define AES_COL_COUNT   4 /* ((AES_BLOCK_SIZE)/(AES_LINE_SIZE) */
 
+/*
+ * KeyExpansion(byte key[4*Nk], word w[Nb*(Nr+1)], Nk)
+ * begin
+ *     word temp
+ *
+ *     i = 0
+ *
+ *     while (i < Nk)
+ *         w[i] = word(key[4*i], key[4*i+1], key[4*i+2], key[4*i+3])
+ *         i = i+1
+ *     end while
+ *
+ *     i = Nk
+ *
+ *     while (i < Nb * (Nr+1)]
+ *         temp = w[i-1]
+ *         if (i mod Nk = 0)
+ *             temp = SubWord(RotWord(temp)) xor Rcon[i/Nk]
+ *         else if (Nk > 6 and i mod Nk = 4)
+ *             temp = SubWord(temp)
+ *         end if
+ *         w[i] = w[i-Nk] xor temp
+ *         i = i + 1
+ *     end while
+ * end
+ */
+static int AES_Key_Expansion(uint8_t key, uint32_t size, uint32_t *W)
+{
+    uint32_t *pKey, temp;
+    uint32_t i;
+
+    pKey = (uint32_t *)key;
+    for (i=0; i<size; i+=4)
+    {
+        W[i/4] = be32toh(pKey[i/4]);
+    }
+
+    return ERR_OK;
+}
+
 static uint8_t s_box[256] =
 {
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
@@ -77,7 +117,7 @@ static int ShiftRows(uint8_t state[4][4])
 
 static int MixColumns(uint8_t state[4][4])
 {
-    int row, col
+    int row, col;
     uint8_t temp[4][4];
     static uint8_t mix[4][4] =
     {
@@ -100,14 +140,14 @@ static int MixColumns(uint8_t state[4][4])
 }
 
 /*
- * FIPS-192: Figure 5. Pseudo Code for the Cipher
+ * FIPS-197: Figure 5. Pseudo Code for the Cipher
  *
  * Cipher(byte in[4*Nb], byte out[4*Nb], word w[Nb*(Nr+1)])
  * begin
  *     byte state[4,Nb]
- * 
+ *
  *     state = in
- * 
+ *
  *     AddRoundKey(state, w[0, Nb-1])   // See Sec. 5.1.4
  * 
  *     for round = 1 step 1 to Nr–1
@@ -116,7 +156,7 @@ static int MixColumns(uint8_t state[4][4])
  *         MixColumns(state)            // See Sec. 5.1.3
  *         AddRoundKey(state, w[round*Nb, (round+1)*Nb-1])
  *     end for
- * 
+ *
  *     SubBytes(state)
  *     ShiftRows(state)
  *     AddRoundKey(state, w[Nr*Nb, (Nr+1)*Nb-1])
@@ -125,6 +165,31 @@ static int MixColumns(uint8_t state[4][4])
  * end
  */
 
+/*
+ * FIPS-197: Figure 12. Pseudo Code for the Inverse Cipher.
+ *
+ * InvCipher(byte in[4*Nb], byte out[4*Nb], word w[Nb*(Nr+1)])
+ * begin
+ *     byte state[4,Nb]
+ *
+ *     state = in
+ *
+ *     AddRoundKey(state, w[Nr*Nb, (Nr+1)*Nb-1]) // See Sec. 5.1.4
+ *
+ *     for round = Nr-1 step -1 downto 1
+ *         InvShiftRows(state)             // See Sec. 5.3.1
+ *         InvSubBytes(state)              // See Sec. 5.3.2
+ *         AddRoundKey(state, w[round*Nb, (round+1)*Nb-1])
+ *         InvMixColumns(state)            // See Sec. 5.3.3
+ *     end for
+ *
+ *     InvShiftRows(state)
+ *     InvSubBytes(state)
+ *     AddRoundKey(state, w[0, Nb-1])
+ *
+ *     out = state
+ * end
+ */
 
 static uint8_t s_box_i[256] =
 {
@@ -144,7 +209,7 @@ static uint8_t s_box_i[256] =
     0x60, 0x51, 0x7f, 0xa9, 0x19, 0xb5, 0x4a, 0x0d, 0x2d, 0xe5, 0x7a, 0x9f, 0x93, 0xc9, 0x9c, 0xef,
     0xa0, 0xe0, 0x3b, 0x4d, 0xae, 0x2a, 0xf5, 0xb0, 0xc8, 0xeb, 0xbb, 0x3c, 0x83, 0x53, 0x99, 0x61,
     0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d,
-}
+};
 
 int main(int argc, char *argv[])
 {
