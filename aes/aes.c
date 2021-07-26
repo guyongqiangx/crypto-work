@@ -196,16 +196,16 @@ static int SubBytes(uint8_t state[4][4])
 
 static int ShiftRows(uint8_t state[4][4])
 {
-    uint8_t temp[4];
+    uint8_t temp[3];
 
-    memcpy(temp, state[1], 4);
-    state[1][0] = temp[1]; state[1][1] = temp[2]; state[1][2] = temp[3]; state[1][3] = temp[0];
+    temp[0] = state[0][1];
+    state[0][1] = state[1][1]; state[1][1] = state[2][1]; state[2][1] = state[3][1]; state[3][1] = temp[0];
 
-    memcpy(temp, state[2], 4);
-    state[2][0] = temp[2]; state[2][1] = temp[3]; state[2][2] = temp[0]; state[2][3] = temp[1];
+    temp[0] = state[0][2]; temp[1] = state[1][2];
+    state[0][2] = state[2][2]; state[1][2] = state[3][2]; state[2][2] = temp[0];     state[3][2] = temp[1];
 
-    memcpy(temp, state[3], 4);
-    state[3][0] = temp[3]; state[3][1] = temp[0]; state[3][2] = temp[1]; state[3][3] = temp[2];
+    temp[0] = state[0][3]; temp[1] = state[1][3]; temp[2] = state[2][3];
+    state[0][3] = state[3][3]; state[1][3] = temp[0];     state[2][3] = temp[1];     state[3][3] = temp[2];
 
     return 0;
 }
@@ -291,8 +291,6 @@ static int Cipher(uint8_t *in, uint8_t *out, uint32_t *w, uint32_t Nr)
 
     for (round=1; round<=Nr-1; round++)
     {
-        printf("%d:\n", round);
-        print_buffer(state, 16, "             data:");
         SubBytes(state);
         print_buffer(state, 16, "   after SubBytes:");
         ShiftRows(state);
