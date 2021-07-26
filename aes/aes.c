@@ -27,14 +27,34 @@
 #endif
 
 #if (DUMP_KEY_SCHED == 1)
-#define key_dbg(...) printf(__VA_ARGS__)
+#define key_sched_print(...) printf(__VA_ARGS__)
 #else
-#define key_dbg(...)
+#define key_sched_print(...)
+#endif
+
+#if (DUMP_BLOCK_DATA == 1)
+#define block_data_print(...) printf(__VA_ARGS__)
+#else
+#define block_data_print(...)
 #endif
 
 #define AES_BLOCK_SIZE  16
 #define AES_ROW_COUNT   4
 #define AES_COL_COUNT   4 /* ((AES_BLOCK_SIZE)/(AES_LINE_SIZE) */
+
+static int print_hex(unsigned char *data, uint32_t len, const char *tips)
+{
+    uint32_t i;
+
+    printf("%15s[hex]", tips);
+    for (i = 0; i < len; i++)
+    {
+        printf ("%02x", data[i]);
+    }
+    printf("\n");
+
+    return 0;
+}
 
 static uint8_t S[256] =
 {
@@ -112,31 +132,32 @@ static uint32_t Rcon[] =
  *     end while
  * end
  */
-static int KeyExpansion(uint8_t *key, uint32_t *w, uint32_t Nk)
+static int KeyExpansion(uint8_t *key, uint32_t *w, uint32_t Nk, uint32_t Nr)
 {
     uint32_t *pKey, temp;
     uint32_t i;
-    uint32_t Nr; /* Number of rounds */
+    // uint32_t Nr; /* Number of rounds */
 
-    switch (Nk)
-    {
-        default:
-        case 4:    /* 4 x 32 = 128 bits */
-            Nr = 10;
-            break;
-        case 6:    /* 6 x 32 = 192 bits */
-            Nr = 12;
-            break;
-        case 8:    /* 8 x 32 = 256 bits */
-            Nr = 14;
-            break;
-    }
+    // switch (Nk)
+    // {
+    //     default:
+    //     case 4:    /* 4 x 32 = 128 bits */
+    //         Nr = 10;
+    //         break;
+    //     case 6:    /* 6 x 32 = 192 bits */
+    //         Nr = 12;
+    //         break;
+    //     case 8:    /* 8 x 32 = 256 bits */
+    //         Nr = 14;
+    //         break;
+    // }
 
     pKey = (uint32_t *)key;
     for (i=0; i<Nk; i++)
     {
-        w[i] = be32toh(pKey[i]);
-        key_dbg("w[%2d]=0x%08x\n", i, w[i]);
+        //w[i] = be32toh(pKey[i]);
+        w[i] = pKey[i];
+        key_sched_print("w[%2d]=0x%08x\n", i, w[i]);
     }
 
     for (i=Nk; i<4*(Nr+1); i++)
@@ -152,18 +173,22 @@ static int KeyExpansion(uint8_t *key, uint32_t *w, uint32_t Nk)
             temp = SubWord(temp);
         }
         w[i] = w[i-Nk] ^ temp;
-        key_dbg("w[%2d]=0x%08x\n", i, w[i]);
+        key_sched_print("w[%2d]=0x%08x\n", i, w[i]);
     }
 
     return ERR_OK;
 }
 
-static int SubBytes(uint8_t *state)
+static int SubBytes(uint8_t state[4][4])
 {
-    int i;
-    for (i=0; i<AES_BLOCK_SIZE; i++)
+    int i, j;
+
+    for (i=0; i<4; i++)
     {
-        state[i] = S[state[i]];
+        for (j=0; j<4; j++)
+        {
+            state[i][j] = S[state[i][j]];
+        }
     }
 
     return 0;
@@ -209,6 +234,23 @@ static int MixColumns(uint8_t state[4][4])
     return 0;
 }
 
+static int AddRoundKey(uint8_t state[4][4], const uint32_t *key)
+{
+    int i;
+    uint32_t *p;
+
+    print_hex(state, 16, "DATA: ");
+    print_hex(  key, 16, " KEY: ");
+
+    p = (uint32_t *)state[0];
+    for (i=0; i<4; i++)
+    {
+        *p++ ^= key[i];
+    }
+    print_hex(state, 16, " Out: ");
+    return 0;
+}
+
 /*
  * FIPS-197: Figure 5. Pseudo Code for the Cipher
  *
@@ -234,6 +276,46 @@ static int MixColumns(uint8_t state[4][4])
  *     out = state
  * end
  */
+
+static int Cipher(uint8_t *in, uint8_t *out, uint32_t *w, uint32_t Nr)
+{
+    uint32_t round;
+    uint8_t state[4][4];
+
+    memcpy(state, in, AES_BLOCK_SIZE);
+
+    print_buffer(state, 16, "               in:");
+    AddRoundKey(state, w);
+    print_buffer(w, 16, "         RoundKey:");
+    print_buffer(state, 16, "after AddRoundKey:");
+
+    for (round=1; round<=Nr-1; round++)
+    {
+        printf("%d:\n", round);
+        print_buffer(state, 16, "             data:");
+        SubBytes(state);
+        print_buffer(state, 16, "   after SubBytes:");
+        ShiftRows(state);
+        print_buffer(state, 16, "  after ShiftRows:");
+        MixColumns(state);
+        print_buffer(state, 16, " after MixColumns:");
+        AddRoundKey(state, w+round*4);
+        print_buffer(w+round*4, 16, "         RoundKey:");
+        print_buffer(state, 16, "after AddRoundKey:");
+    }
+
+    printf("final:\n");
+    SubBytes(state);
+    print_buffer(state, 16, "   after SubBytes:");
+    ShiftRows(state);
+    print_buffer(state, 16, "  after ShiftRows:");
+    AddRoundKey(state, w+Nr*4);
+    print_buffer(state, 16, "after AddRoundKey:");
+
+    memcpy(out, state, sizeof(state));
+
+    return 0;
+}
 
 /*
  * FIPS-197: Figure 12. Pseudo Code for the Inverse Cipher.
@@ -283,26 +365,35 @@ static uint8_t s_box_i[256] =
 
 #define TEST
 #ifdef TEST
-int test_KeyExpansion_128(void)
+static int test_KeyExpansion_128(void)
 {
+    // /*
+    //  * FIPS-197: A.1 Expansion of a 128-bit Cipher Key
+    //  * Cipher Key = 2b 7e 15 16 28 ae d2 a6 ab f7 15 88 09 cf 4f 3c
+    //  */
+    // uint8_t key[16] = {
+    //     0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
+    //     0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
+    // };
+
     /*
-     * FIPS-197: A.1 Expansion of a 128-bit Cipher Key
-     * Cipher Key = 2b 7e 15 16 28 ae d2 a6 ab f7 15 88 09 cf 4f 3c
+     * key = "0f1571c947d9e8590cb7add6af7f6798"
      */
-    uint8_t key[16] = {
-        0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
-        0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
+    uint8_t key[16] =
+    {
+        0x0f, 0x15, 0x71, 0xc9, 0x47, 0xd9, 0xe8, 0x59,
+        0x0c, 0xb7, 0xad, 0xd6, 0xaf, 0x7f, 0x67, 0x98
     };
 
     uint32_t W[44];
 
     print_buffer(key, 16, "");
-    KeyExpansion(key, W, 4);
+    KeyExpansion(key, W, 4, 10);
 
     return 0;
 }
 
-int test_KeyExpansion_192(void)
+static int test_KeyExpansion_192(void)
 {
     /*
      * FIPS-197: A.2 Expansion of a 192-bit Cipher Key
@@ -318,12 +409,12 @@ int test_KeyExpansion_192(void)
     uint32_t W[52];
 
     print_buffer(key, 24, "");
-    KeyExpansion(key, W, 6);
+    KeyExpansion(key, W, 6, 12);
 
     return 0;
 }
 
-int test_KeyExpansion_256(void)
+static int test_KeyExpansion_256(void)
 {
     /*
      * FIPS-197: A.3 Expansion of a 256-bit Cipher Key
@@ -340,7 +431,56 @@ int test_KeyExpansion_256(void)
     uint32_t W[60];
 
     print_buffer(key, 32, "");
-    KeyExpansion(key, W, 8);
+    KeyExpansion(key, W, 8, 14);
+
+    return 0;
+}
+
+static int test_Cipher_128(void)
+{
+#if 0
+    /* PlainText: 0123456789abcdeffedcba9876543210 */
+    uint8_t data[16] =
+    {
+        0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef,
+        0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10
+    };
+    /* Key: 0f1571c947d9e8590cb7add6af7f6798 */
+    uint8_t key[16] =
+    {
+        0x0f, 0x15, 0x71, 0xc9, 0x47, 0xd9, 0xe8, 0x59,
+        0x0c, 0xb7, 0xad, 0xd6, 0xaf, 0x7f, 0x67, 0x98
+    };
+#else
+    /*
+     * FIPS-197: Appendix B – Cipher Example
+     *      Input = 32 43 f6 a8 88 5a 30 8d 31 31 98 a2 e0 37 07 34
+     * Cipher Key = 2b 7e 15 16 28 ae d2 a6 ab f7 15 88 09 cf 4f 3c
+     */
+    uint8_t data[16] =
+    {
+        0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d,
+        0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34
+    };
+    uint8_t key[16] =
+    {
+        0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
+        0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
+    };
+#endif
+
+    uint8_t out[16];
+    uint32_t W[44];
+
+    memset(out, 0, sizeof(out));
+    memset(W, 0, sizeof(W));
+
+    print_buffer(data, 16, "");
+
+    KeyExpansion(key, W, 4, 10);
+    Cipher(data, out, W, 10);
+
+    print_buffer(out, 16, "");
 
     return 0;
 }
@@ -350,6 +490,8 @@ int main(int argc, char *argv[])
     //test_KeyExpansion_128();
     //test_KeyExpansion_192();
     //test_KeyExpansion_256();
+
+    test_Cipher_128();
     return 0;
 }
 #endif
