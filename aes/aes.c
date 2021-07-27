@@ -210,6 +210,39 @@ static int ShiftRows(uint8_t state[4][4])
     return 0;
 }
 
+static uint8_t xtime(uint8_t a, uint8_t b)
+{
+    uint8_t m, res;
+
+    m = a;
+    res = 0;
+    while (b != 0)
+    {
+        if (b & 0x01)
+        {
+            if (0 == res)
+            {
+                res = m;
+            }
+            else
+            {
+                res ^= m;
+            }
+        }
+        if (m & 0x80)   /* b7=1 */
+        {
+            m = (m << 1) ^ 0x1B; /* 0x1B = b00011011, m(x) = x4 + x3 + x + 1 */
+        }
+        else            /* b7=0 */
+        {
+            m <<= 1;
+        }
+        b >>= 1;
+    }
+
+    return res;
+}
+
 static int MixColumns(uint8_t state[4][4])
 {
     int row, col;
@@ -227,7 +260,7 @@ static int MixColumns(uint8_t state[4][4])
     {
         for (row=0; row<4; row++)
         {
-            state[row][col] = (mix[row][0] * temp[0][col]) ^ (mix[row][1] * temp[1][col]) ^ (mix[row][2] * temp[2][col]) ^ (mix[row][3] * temp[3][col]);
+            state[col][row] = xtime(mix[row][0], temp[col][0]) ^ xtime(mix[row][1], temp[col][1]) ^ xtime(mix[row][2], temp[col][2]) ^ xtime(mix[row][3], temp[col][3]);
         }
     }
 
