@@ -82,8 +82,6 @@ static int to_state(uint8_t in[16], uint8_t out[4][4])
         out[row][col] = in[i];
     }
 
-    //show_state(out, "");
-
     return 0;
 }
 
@@ -186,21 +184,6 @@ static int KeyExpansion(uint8_t *key, uint32_t *w, uint32_t Nk, uint32_t Nr)
 {
     uint32_t *pKey, temp;
     uint32_t i;
-    // uint32_t Nr; /* Number of rounds */
-
-    // switch (Nk)
-    // {
-    //     default:
-    //     case 4:    /* 4 x 32 = 128 bits */
-    //         Nr = 10;
-    //         break;
-    //     case 6:    /* 6 x 32 = 192 bits */
-    //         Nr = 12;
-    //         break;
-    //     case 8:    /* 8 x 32 = 256 bits */
-    //         Nr = 14;
-    //         break;
-    // }
 
     pKey = (uint32_t *)key;
     for (i=0; i<Nk; i++)
@@ -226,6 +209,11 @@ static int KeyExpansion(uint8_t *key, uint32_t *w, uint32_t Nk, uint32_t Nr)
         key_sched_print("w[%2d]=0x%08x\n", i, w[i]);
     }
 
+    for (i=0; i<4*(Nr+1); i++)
+    {
+        w[i] = htobe32(w[i]);
+    }
+
     return ERR_OK;
 }
 
@@ -248,14 +236,23 @@ static int ShiftRows(uint8_t state[4][4])
 {
     uint8_t temp[3];
 
-    temp[0] = state[0][1];
-    state[0][1] = state[1][1]; state[1][1] = state[2][1]; state[2][1] = state[3][1]; state[3][1] = temp[0];
+    temp[0] = state[1][0];
+    state[1][0] = state[1][1];
+    state[1][1] = state[1][2];
+    state[1][2] = state[1][3];
+    state[1][3] = temp[0];
 
-    temp[0] = state[0][2]; temp[1] = state[1][2];
-    state[0][2] = state[2][2]; state[1][2] = state[3][2]; state[2][2] = temp[0];     state[3][2] = temp[1];
+    temp[0] = state[2][0]; temp[1] = state[2][1];
+    state[2][0] = state[2][2];
+    state[2][1] = state[2][3];
+    state[2][2] = temp[0];
+    state[2][3] = temp[1];
 
-    temp[0] = state[0][3]; temp[1] = state[1][3]; temp[2] = state[2][3];
-    state[0][3] = state[3][3]; state[1][3] = temp[0];     state[2][3] = temp[1];     state[3][3] = temp[2];
+    temp[0] = state[3][0]; temp[1] = state[3][1]; temp[2] = state[3][2];
+    state[3][0] = state[3][3];
+    state[3][1] = temp[0];
+    state[3][2] = temp[1];
+    state[3][3] = temp[2];
 
     return 0;
 }
@@ -310,7 +307,7 @@ static int MixColumns(uint8_t state[4][4])
     {
         for (row=0; row<4; row++)
         {
-            state[col][row] = xtime(mix[row][0], temp[col][0]) ^ xtime(mix[row][1], temp[col][1]) ^ xtime(mix[row][2], temp[col][2]) ^ xtime(mix[row][3], temp[col][3]);
+            state[row][col] = xtime(mix[row][0], temp[0][col]) ^ xtime(mix[row][1], temp[1][col]) ^ xtime(mix[row][2], temp[2][col]) ^ xtime(mix[row][3], temp[3][col]);
         }
     }
 
@@ -326,8 +323,8 @@ static int AddRoundKey(uint8_t state[4][4], const uint8_t *key)
     //show_state(state, "    ");
 
     to_state(key, temp);
-    //printf(" key: \n");
-    //show_state(temp, "    ");
+    printf(" key: \n");
+    show_state(temp, "    ");
 
     for (i=0; i<4; i++)
     {
@@ -374,38 +371,51 @@ static int Cipher(uint8_t *in, uint8_t *out, uint32_t *w, uint32_t Nr)
     uint32_t round;
     uint8_t state[4][4];
 
-    //memcpy(state, in, AES_BLOCK_SIZE);
     to_state(in, state);
-    //print_buffer(state, 16, "               in:");
     printf("  in: \n");
     show_state(state, "    ");
 
     AddRoundKey(state, w);
-    print_buffer(w, 16, "         RoundKey:");
-    print_buffer(state, 16, "after AddRoundKey:");
 
     for (round=1; round<=Nr-1; round++)
     {
+        printf("%d: \n", round);
+
+        printf("   Start of Round: \n");
+        show_state(state, "    ");
+
         SubBytes(state);
-        print_buffer(state, 16, "   after SubBytes:");
+        printf("   after SubBytes: \n");
+        show_state(state, "    ");
+
         ShiftRows(state);
-        print_buffer(state, 16, "  after ShiftRows:");
+        printf("  after ShiftRows: \n");
+        show_state(state, "    ");
+
         MixColumns(state);
-        print_buffer(state, 16, " after MixColumns:");
+        printf("after MixColumns: \n");
+        show_state(state, "    ");
+
         AddRoundKey(state, w+round*4);
-        print_buffer(w+round*4, 16, "         RoundKey:");
-        print_buffer(state, 16, "after AddRoundKey:");
     }
 
     printf("final:\n");
-    SubBytes(state);
-    print_buffer(state, 16, "   after SubBytes:");
-    ShiftRows(state);
-    print_buffer(state, 16, "  after ShiftRows:");
-    AddRoundKey(state, w+Nr*4);
-    print_buffer(state, 16, "after AddRoundKey:");
+    printf("   Start of Round: \n");
+    show_state(state, "    ");
 
-    memcpy(out, state, sizeof(state));
+    SubBytes(state);
+    printf("   after SubBytes: \n");
+    show_state(state, "    ");
+
+    ShiftRows(state);
+    printf("  after ShiftRows: \n");
+    show_state(state, "    ");
+
+    AddRoundKey(state, w+Nr*4);
+    printf("after AddRoundKey: \n");
+    show_state(state, "    ");
+
+    from_state(state, out);
 
     return 0;
 }
@@ -531,7 +541,7 @@ static int test_KeyExpansion_256(void)
 
 static int test_Cipher_128(void)
 {
-#if 0
+#if 1
     /* PlainText: 0123456789abcdeffedcba9876543210 */
     uint8_t data[16] =
     {
