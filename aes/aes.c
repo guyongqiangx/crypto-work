@@ -56,6 +56,56 @@ static int print_hex(unsigned char *data, uint32_t len, const char *tips)
     return 0;
 }
 
+static void show_state(uint8_t state[4][4], char *indent)
+{
+    int i, j;
+    for (i=0; i<4; i++)
+    {
+        printf("%s", indent);
+        for (j=0; j<4; j++)
+        {
+            printf(j==3?"%02x\n":"%02x ", state[i][j]);
+        }
+    }
+}
+
+static int to_state(uint8_t in[16], uint8_t out[4][4])
+{
+    int i;
+    int row, col;
+
+    for (i=0; i<16; i++)
+    {
+        row = i%4;
+        col = i/4;
+
+        out[row][col] = in[i];
+    }
+
+    //show_state(out, "");
+
+    return 0;
+}
+
+static int from_state(uint8_t in[4][4], uint8_t out[16])
+{
+    int i;
+    int row, col;
+
+    show_state(in, "");
+
+    i = 0;
+    for (col=0; col<4; col++)
+    {
+        for (row=0; row<4; row++)
+        {
+            out[i++] = in[row][col];
+        }
+    }
+
+    return 0;
+}
+
 static uint8_t S[256] =
 {
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
@@ -155,8 +205,8 @@ static int KeyExpansion(uint8_t *key, uint32_t *w, uint32_t Nk, uint32_t Nr)
     pKey = (uint32_t *)key;
     for (i=0; i<Nk; i++)
     {
-        //w[i] = be32toh(pKey[i]);
-        w[i] = pKey[i];
+        w[i] = be32toh(pKey[i]);
+        //w[i] = pKey[i];
         key_sched_print("w[%2d]=0x%08x\n", i, w[i]);
     }
 
@@ -267,20 +317,29 @@ static int MixColumns(uint8_t state[4][4])
     return 0;
 }
 
-static int AddRoundKey(uint8_t state[4][4], const uint32_t *key)
+static int AddRoundKey(uint8_t state[4][4], const uint8_t *key)
 {
-    int i;
-    uint32_t *p;
+    int i, j;
+    uint8_t temp[4][4];
 
-    print_hex(state, 16, "DATA: ");
-    print_hex(  key, 16, " KEY: ");
+    //printf("data: \n");
+    //show_state(state, "    ");
 
-    p = (uint32_t *)state[0];
+    to_state(key, temp);
+    //printf(" key: \n");
+    //show_state(temp, "    ");
+
     for (i=0; i<4; i++)
     {
-        *p++ ^= key[i];
+        for (j=0; j<4; j++)
+        {
+            state[i][j] ^= temp[i][j];
+        }
     }
-    print_hex(state, 16, " Out: ");
+
+    //printf(" add: \n");
+    //show_state(state, "    ");
+
     return 0;
 }
 
@@ -315,9 +374,12 @@ static int Cipher(uint8_t *in, uint8_t *out, uint32_t *w, uint32_t Nr)
     uint32_t round;
     uint8_t state[4][4];
 
-    memcpy(state, in, AES_BLOCK_SIZE);
+    //memcpy(state, in, AES_BLOCK_SIZE);
+    to_state(in, state);
+    //print_buffer(state, 16, "               in:");
+    printf("  in: \n");
+    show_state(state, "    ");
 
-    print_buffer(state, 16, "               in:");
     AddRoundKey(state, w);
     print_buffer(w, 16, "         RoundKey:");
     print_buffer(state, 16, "after AddRoundKey:");
@@ -398,27 +460,27 @@ static uint8_t s_box_i[256] =
 #ifdef TEST
 static int test_KeyExpansion_128(void)
 {
-    // /*
-    //  * FIPS-197: A.1 Expansion of a 128-bit Cipher Key
-    //  * Cipher Key = 2b 7e 15 16 28 ae d2 a6 ab f7 15 88 09 cf 4f 3c
-    //  */
-    // uint8_t key[16] = {
-    //     0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
-    //     0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
-    // };
-
     /*
-     * key = "0f1571c947d9e8590cb7add6af7f6798"
+     * FIPS-197: A.1 Expansion of a 128-bit Cipher Key
+     * Cipher Key = 2b 7e 15 16 28 ae d2 a6 ab f7 15 88 09 cf 4f 3c
      */
-    uint8_t key[16] =
-    {
-        0x0f, 0x15, 0x71, 0xc9, 0x47, 0xd9, 0xe8, 0x59,
-        0x0c, 0xb7, 0xad, 0xd6, 0xaf, 0x7f, 0x67, 0x98
+    uint8_t key[16] = {
+        0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
+        0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
     };
+
+    // /*
+    //  * key = "0f1571c947d9e8590cb7add6af7f6798"
+    //  */
+    // uint8_t key[16] =
+    // {
+    //     0x0f, 0x15, 0x71, 0xc9, 0x47, 0xd9, 0xe8, 0x59,
+    //     0x0c, 0xb7, 0xad, 0xd6, 0xaf, 0x7f, 0x67, 0x98
+    // };
 
     uint32_t W[44];
 
-    print_buffer(key, 16, "");
+    show_state(key, " ");
     KeyExpansion(key, W, 4, 10);
 
     return 0;
