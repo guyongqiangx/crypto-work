@@ -56,7 +56,7 @@ static int print_hex(unsigned char *data, uint32_t len, const char *tips)
     return 0;
 }
 
-static void show_state(uint8_t state[4][4], char *indent)
+static void show_state(const uint8_t state[4][4], const char *indent)
 {
     int i, j;
     for (i=0; i<4; i++)
@@ -318,7 +318,7 @@ static int MixColumns(uint8_t state[4][4])
     return 0;
 }
 
-static int AddRoundKey(uint8_t state[4][4], const uint8_t *key)
+static int AddRoundKey(uint8_t state[4][4], uint8_t *key)
 {
     int i, j;
     uint8_t temp[4][4];
@@ -738,13 +738,114 @@ static int test_Cipher_128(void)
     return 0;
 }
 
+static int test_Cipher_192(void)
+{
+    /*
+     * FIPS-197: Appendix C – Example Vectors
+     * C.2 AES-192 (Nk=6, Nr=12)
+     * PLAINTEXT: 00112233445566778899aabbccddeeff
+     *       KEY: 000102030405060708090a0b0c0d0e0f1011121314151617
+     */
+    uint8_t data[16] =
+    {
+        0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+        0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
+    };
+
+    uint8_t key[24] =
+    {
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+        0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+        0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17
+    };
+
+    uint8_t enc[16], dec[16];
+    uint32_t W[52];
+
+    printf("AES-192 Encryption: \n");
+
+    memset(enc, 0, sizeof(enc));
+    memset(W, 0, sizeof(W));
+
+    print_buffer(data, 16, "");
+
+    KeyExpansion(key, W, 6, 12);
+    Cipher(data, enc, W, 12);
+
+    print_buffer(enc, 16, "   ");
+
+    printf("AES-192 Decryption: \n");
+
+    memset(dec, 0, sizeof(dec));
+    memset(W, 0, sizeof(W));
+
+    KeyExpansion(key, W, 6, 12);
+    InvCipher(enc, dec, W, 12);
+
+    print_buffer(dec, 16, "   ");
+
+    return 0;
+}
+
+static int test_Cipher_256(void)
+{
+    /*
+     * FIPS-197: Appendix C – Example Vectors
+     * C.3 AES-256 (Nk=8, Nr=14)
+     * PLAINTEXT: 00112233445566778899aabbccddeeff
+     *       KEY: 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
+     */
+    uint8_t data[16] =
+    {
+        0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+        0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
+    };
+
+    uint8_t key[32] =
+    {
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+        0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+        0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+        0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
+    };
+
+    uint8_t enc[16], dec[16];
+    uint32_t W[60];
+
+    printf("AES-256 Encryption: \n");
+
+    memset(enc, 0, sizeof(enc));
+    memset(W, 0, sizeof(W));
+
+    print_buffer(data, 16, "");
+
+    KeyExpansion(key, W, 8, 14);
+    Cipher(data, enc, W, 14);
+
+    print_buffer(enc, 16, "   ");
+
+    printf("AES-256 Decryption: \n");
+
+    memset(dec, 0, sizeof(dec));
+    memset(W, 0, sizeof(W));
+
+    KeyExpansion(key, W, 8, 14);
+    InvCipher(enc, dec, W, 14);
+
+    print_buffer(dec, 16, "   ");
+
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     //test_KeyExpansion_128();
     //test_KeyExpansion_192();
     //test_KeyExpansion_256();
 
-    test_Cipher_128();
+    //test_Cipher_128();
+    //test_Cipher_192();
+    test_Cipher_256();
     return 0;
 }
 #endif
