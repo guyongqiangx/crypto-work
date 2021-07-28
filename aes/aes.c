@@ -188,8 +188,8 @@ static int KeyExpansion(uint8_t *key, uint32_t *w, uint32_t Nk, uint32_t Nr)
     pKey = (uint32_t *)key;
     for (i=0; i<Nk; i++)
     {
+        /* convert big endian bytes to word(32bit) */
         w[i] = be32toh(pKey[i]);
-        //w[i] = pKey[i];
         key_sched_print("w[%2d]=0x%08x\n", i, w[i]);
     }
 
@@ -209,6 +209,7 @@ static int KeyExpansion(uint8_t *key, uint32_t *w, uint32_t Nk, uint32_t Nr)
         key_sched_print("w[%2d]=0x%08x\n", i, w[i]);
     }
 
+    /* convert word(32bit) back to big endian bytes */
     for (i=0; i<4*(Nr+1); i++)
     {
         w[i] = htobe32(w[i]);
@@ -319,9 +320,6 @@ static int AddRoundKey(uint8_t state[4][4], const uint8_t *key)
     int i, j;
     uint8_t temp[4][4];
 
-    //printf("data: \n");
-    //show_state(state, "    ");
-
     to_state(key, temp);
     printf(" key: \n");
     show_state(temp, "    ");
@@ -333,9 +331,6 @@ static int AddRoundKey(uint8_t state[4][4], const uint8_t *key)
             state[i][j] ^= temp[i][j];
         }
     }
-
-    //printf(" add: \n");
-    //show_state(state, "    ");
 
     return 0;
 }
@@ -465,6 +460,8 @@ static uint8_t s_box_i[256] =
     0xa0, 0xe0, 0x3b, 0x4d, 0xae, 0x2a, 0xf5, 0xb0, 0xc8, 0xeb, 0xbb, 0x3c, 0x83, 0x53, 0x99, 0x61,
     0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d,
 };
+
+
 
 #define TEST
 #ifdef TEST
