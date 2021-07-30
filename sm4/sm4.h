@@ -4,8 +4,8 @@
  * @      author: Gu Yongqiang
  * @        blog: https://blog.csdn.net/guyongqiangx
  */
-#ifndef __ROCKY_DES__H
-#define __ROCKY_DES__H
+#ifndef __ROCKY_SM4__H
+#define __ROCKY_SM4__H
 
 #define ERR_OK           0
 #define ERR_ERR         -1  /* generic error */
