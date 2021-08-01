@@ -10,7 +10,7 @@
 #include "utils.h"
 #include "aes.h"
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #define DBG(...) printf(__VA_ARGS__)
@@ -58,6 +58,7 @@ static int print_hex(unsigned char *data, uint32_t len, const char *tips)
 
 static void show_state(uint8_t state[4][4], const char *indent)
 {
+#if DEBUG
     int i, j;
     for (i=0; i<4; i++)
     {
@@ -67,7 +68,9 @@ static void show_state(uint8_t state[4][4], const char *indent)
             printf(j==3?"%02x\n":"%02x ", state[i][j]);
         }
     }
+#endif
 }
+
 
 static int to_state(uint8_t in[16], uint8_t out[4][4])
 {
@@ -324,7 +327,7 @@ static int AddRoundKey(uint8_t state[4][4], uint32_t *key)
     uint8_t temp[4][4];
 
     to_state((uint8_t *)key, temp);
-    printf(" key: \n");
+    DBG(" key: \n");
     show_state(temp, "    ");
 
     for (i=0; i<4; i++)
@@ -370,47 +373,47 @@ static int Cipher(uint8_t *in, uint8_t *out, uint32_t *w, uint32_t Nr)
     uint8_t state[4][4];
 
     to_state(in, state);
-    printf("  in: \n");
+    DBG("  in: \n");
     show_state(state, "    ");
 
     AddRoundKey(state, w);
 
     for (round=1; round<=Nr-1; round++)
     {
-        printf("%d: \n", round);
+        DBG("%d: \n", round);
 
-        printf("   Start of Round: \n");
+        DBG("   Start of Round: \n");
         show_state(state, "    ");
 
         SubBytes(state);
-        printf("   after SubBytes: \n");
+        DBG("   after SubBytes: \n");
         show_state(state, "    ");
 
         ShiftRows(state);
-        printf("  after ShiftRows: \n");
+        DBG("  after ShiftRows: \n");
         show_state(state, "    ");
 
         MixColumns(state);
-        printf("after MixColumns: \n");
+        DBG("after MixColumns: \n");
         show_state(state, "    ");
 
         AddRoundKey(state, w+round*4);
     }
 
-    printf("final:\n");
-    printf("   Start of Round: \n");
+    DBG("final:\n");
+    DBG("   Start of Round: \n");
     show_state(state, "    ");
 
     SubBytes(state);
-    printf("   after SubBytes: \n");
+    DBG("   after SubBytes: \n");
     show_state(state, "    ");
 
     ShiftRows(state);
-    printf("  after ShiftRows: \n");
+    DBG("  after ShiftRows: \n");
     show_state(state, "    ");
 
     AddRoundKey(state, w+Nr*4);
-    printf("after AddRoundKey: \n");
+    DBG("after AddRoundKey: \n");
     show_state(state, "    ");
 
     from_state(state, out);
@@ -533,51 +536,51 @@ static int InvCipher(uint8_t *in, uint8_t *out, uint32_t *w, uint32_t Nr)
     uint8_t state[4][4];
 
     to_state(in, state);
-    printf("  in: \n");
+    DBG("  in: \n");
     show_state(state, "    ");
 
     AddRoundKey(state, w+Nr*4);
-    printf("after AddRoundKey: \n");
+    DBG("after AddRoundKey: \n");
     show_state(state, "    ");
 
     for (round=Nr-1; round>=1; round--)
     {
-        printf("%d: \n", round);
+        DBG("%d: \n", round);
 
-        printf("   Start of Round: \n");
+        DBG("   Start of Round: \n");
         show_state(state, "    ");
 
         InvShiftRows(state);
-        printf("  after ShiftRows: \n");
+        DBG("  after ShiftRows: \n");
         show_state(state, "    ");
 
         InvSubBytes(state);
-        printf("   after SubBytes: \n");
+        DBG("   after SubBytes: \n");
         show_state(state, "    ");
 
         AddRoundKey(state, w+round*4);
-        printf("after AddRoundKey: \n");
+        DBG("after AddRoundKey: \n");
         show_state(state, "    ");
 
         InvMixColumns(state);
-        //printf("after MixColumns: \n");
+        //DBG("after MixColumns: \n");
         //show_state(state, "    ");
     }
 
-    printf("final:\n");
-    printf("   Start of Round: \n");
+    DBG("final:\n");
+    DBG("   Start of Round: \n");
     show_state(state, "    ");
 
     InvShiftRows(state);
-    printf("  after ShiftRows: \n");
+    DBG("  after ShiftRows: \n");
     show_state(state, "    ");
 
     InvSubBytes(state);
-    printf("   after SubBytes: \n");
+    DBG("   after SubBytes: \n");
     show_state(state, "    ");
 
     AddRoundKey(state, w);
-    printf("after AddRoundKey: \n");
+    DBG("after AddRoundKey: \n");
     show_state(state, "    ");
 
     from_state(state, out);
@@ -585,8 +588,81 @@ static int InvCipher(uint8_t *in, uint8_t *out, uint32_t *w, uint32_t Nr)
     return 0;
 }
 
+/* Encrypt a single block */
+int AES_Encryption(AES_ALG alg, const unsigned char *in, const unsigned char *key, unsigned char *out)
+{
+    uint32_t W[60];
+    uint32_t Nk = 0, Nr = 0;
 
-#define TEST
+    if ((NULL == in) || (NULL == key) || (out == NULL))
+    {
+        return ERR_INV_PARAM;
+    }
+
+    switch (alg)
+    {
+    case AES128:
+        Nk = 4;
+        Nr = 10;
+        break;
+    case AES192:
+        Nk = 6;
+        Nr = 12;
+        break;
+    case AES256:
+        Nk = 8;
+        Nr = 14;
+        break;
+    default:
+        return ERR_INV_PARAM;
+    }
+
+    memset(W, 0, sizeof(unsigned int)*(Nr+1));
+
+    KeyExpansion(key, W, Nk, Nr);
+    Cipher(in, out, W, Nr);
+
+    return ERR_OK;
+}
+
+/* Decrypt a single block */
+int AES_Decryption(AES_ALG alg, const unsigned char *in, const unsigned char *key, unsigned char *out)
+{
+    uint32_t W[60];
+    uint32_t Nk = 0, Nr = 0;
+
+    if ((NULL == in) || (NULL == key) || (out == NULL))
+    {
+        return ERR_INV_PARAM;
+    }
+
+    switch (alg)
+    {
+    case AES128:
+        Nk = 4;
+        Nr = 10;
+        break;
+    case AES192:
+        Nk = 6;
+        Nr = 12;
+        break;
+    case AES256:
+        Nk = 8;
+        Nr = 14;
+        break;
+    default:
+        return ERR_INV_PARAM;
+    }
+
+    memset(W, 0, sizeof(unsigned int)*(Nr+1));
+
+    KeyExpansion(key, W, Nk, Nr);
+    InvCipher(in, out, W, Nr);
+
+    return ERR_OK;
+}
+
+// #define TEST
 #ifdef TEST
 static int test_KeyExpansion_128(void)
 {
