@@ -18,7 +18,7 @@ typedef unsigned short     uint16_t;
 typedef unsigned int       uint32_t;
 typedef unsigned long long uint64_t;
 
-int DES_Encryption(const unsigned char *in, const unsigned char *key, unsigned char *out);
-int DES_Decryption(const unsigned char *in, const unsigned char *key, unsigned char *out);
+int DES_Encrypt(const unsigned char *in, const unsigned char *key, unsigned char *out);
+int DES_Decrypt(const unsigned char *in, const unsigned char *key, unsigned char *out);
 
 #endif

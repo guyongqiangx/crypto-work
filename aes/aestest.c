@@ -10,8 +10,9 @@
 #include <unistd.h> /* getopt */
 
 #include "aes.h"
+#include "utils.h"
 
-#define AES_BLOCK_SIZE      20      /* aes digest size */
+#define AES_BLOCK_SIZE      20      /* aes block size */
 #define FILE_BLOCK_SIZE     1024
 
 static int test_Cipher_128(void)
@@ -72,13 +73,13 @@ static int test_Cipher_128(void)
     printf("AES-128 Encryption: \n");
 
     memset(enc, 0, sizeof(enc));
-    AES_Encryption(AES128, data, key, enc);
+    AES_Encrypt(AES128, data, key, enc);
     print_buffer(enc, 16, "   ");
 
     printf("AES-128 Decryption: \n");
 
     memset(dec, 0, sizeof(dec));
-    AES_Decryption(AES128, enc, key, dec);
+    AES_Decrypt(AES128, enc, key, dec);
     print_buffer(dec, 16, "   ");
 
     return 0;
@@ -112,13 +113,13 @@ static int test_Cipher_192(void)
     printf("AES-192 Encryption: \n");
 
     memset(enc, 0, sizeof(enc));
-    AES_Encryption(AES192, data, key, enc);
+    AES_Encrypt(AES192, data, key, enc);
     print_buffer(enc, 16, "   ");
 
     printf("AES-192 Decryption: \n");
 
     memset(dec, 0, sizeof(dec));
-    AES_Decryption(AES192, enc, key, dec);
+    AES_Decrypt(AES192, enc, key, dec);
     print_buffer(dec, 16, "   ");
 
     return 0;
@@ -153,11 +154,11 @@ static int test_Cipher_256(void)
     printf("AES-256 Encryption: \n");
 
     memset(enc, 0, sizeof(enc));
-    AES_Encryption(AES256, data, key, enc);
+    AES_Encrypt(AES256, data, key, enc);
     print_buffer(enc, 16, "   ");
 
     printf("AES-256 Decryption: \n");
-    AES_Decryption(AES256, enc, key, dec);
+    AES_Decrypt(AES256, enc, key, dec);
     print_buffer(dec, 16, "   ");
 
     return 0;

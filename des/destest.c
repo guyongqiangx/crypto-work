@@ -53,21 +53,21 @@ int main(int argc, char *argv[])
 
     memset(temp, 0, 8);
     print_buffer(enc, 8, "     input: ");
-    DES_Encryption(enc, key, temp);
+    DES_Encrypt(enc, key, temp);
     print_buffer(temp, 8, "encryption: ");
 
     memset(temp, 0, 8);
     print_buffer(dec, 8, "     input: ");
-    DES_Decryption(dec, key, temp);
+    DES_Decrypt(dec, key, temp);
     print_buffer(temp, 8, "decryption: ");
 
     memset(temp, 0, 8);
     print_buffer(enc2, 8, "     input: ");
-    DES_Encryption(enc2, key, temp);
+    DES_Encrypt(enc2, key, temp);
     print_buffer(temp, 8, "encryption: ");
 
     memset(temp2, 0, 8);
-    DES_Decryption(temp, key, temp2);
+    DES_Decrypt(temp, key, temp2);
     print_buffer(temp2, 8, "decryption: ");
 
     return 0;

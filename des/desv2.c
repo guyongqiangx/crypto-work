@@ -518,7 +518,7 @@ static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8
 }
 
 /* Encrypt a single block */
-int DES_Encryption(const unsigned char *in, const unsigned char *key, unsigned char *out)
+int DES_Encrypt(const unsigned char *in, const unsigned char *key, unsigned char *out)
 {
     if ((NULL == in) || (NULL == key) || (NULL == out))
     {
@@ -531,7 +531,7 @@ int DES_Encryption(const unsigned char *in, const unsigned char *key, unsigned c
 }
 
 /* Decrypt a single block */
-int DES_Decryption(const unsigned char *in, const unsigned char *key, unsigned char *out)
+int DES_Decrypt(const unsigned char *in, const unsigned char *key, unsigned char *out)
 {
     if ((NULL == in) || (NULL == key) || (NULL == out))
     {

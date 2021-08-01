@@ -589,7 +589,7 @@ static int InvCipher(uint8_t *in, uint8_t *out, uint32_t *w, uint32_t Nr)
 }
 
 /* Encrypt a single block */
-int AES_Encryption(AES_ALG alg, const unsigned char *in, const unsigned char *key, unsigned char *out)
+int AES_Encrypt(AES_ALG alg, const unsigned char *in, const unsigned char *key, unsigned char *out)
 {
     uint32_t W[60];
     uint32_t Nk = 0, Nr = 0;
@@ -626,7 +626,7 @@ int AES_Encryption(AES_ALG alg, const unsigned char *in, const unsigned char *ke
 }
 
 /* Decrypt a single block */
-int AES_Decryption(AES_ALG alg, const unsigned char *in, const unsigned char *key, unsigned char *out)
+int AES_Decrypt(AES_ALG alg, const unsigned char *in, const unsigned char *key, unsigned char *out)
 {
     uint32_t W[60];
     uint32_t Nk = 0, Nr = 0;
