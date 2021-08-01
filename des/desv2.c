@@ -80,6 +80,7 @@ static int msb_bits_to_bytes(uint8_t *bits, int size, uint8_t *data)
 
 static int print_hex(unsigned char *data, uint32_t len, const char *tips)
 {
+#if DEBUG
     uint32_t i;
 
     printf("%15s[hex]", tips);
@@ -88,12 +89,13 @@ static int print_hex(unsigned char *data, uint32_t len, const char *tips)
         printf ("%02x", data[i]);
     }
     printf("\n");
-
+#endif
     return 0;
 }
 
 static void show_bits_group(uint8_t *bits, int size, int group, char *tips)
 {
+#if DEBUG
     int i;
 
     printf("%15s[bin]", tips);
@@ -104,10 +106,12 @@ static void show_bits_group(uint8_t *bits, int size, int group, char *tips)
             printf(" ");
     }
     printf("\n");
+#endif
 }
 
 static void show_msb_bits(uint8_t *bits, int size, char *tips)
 {
+#if DEBUG
     int i;
     uint8_t buf[16];
 
@@ -117,6 +121,7 @@ static void show_msb_bits(uint8_t *bits, int size, char *tips)
     print_hex(buf, size/8, tips);
 
     printf("\n");
+#endif
 }
 
 /* Initial Permutation Table */
@@ -372,7 +377,9 @@ static int s_box_operation(uint8_t in[6], uint8_t out[4], uint8_t index)
 
     temp = sbox[16 * row + col];
 
+#if DEBUG
     printf("%15sS%d(%d,%2d)=%02d\n", "SBox: ", index+1, row, col, temp);
+#endif
 
     out[0] = (temp >> 3) & 0x01;
     out[1] = (temp >> 2) & 0x01;
@@ -415,6 +422,7 @@ static int f(uint8_t in[32], uint8_t out[32], uint8_t key[48])
 
 static void show_48bits_key(uint8_t *bits, int size, char *tips)
 {
+#if DEBUG
     int i, j;
     uint8_t x;
     uint8_t buf[16];
@@ -433,6 +441,7 @@ static void show_48bits_key(uint8_t *bits, int size, char *tips)
     print_hex(buf, size/6, tips);
 
     printf("\n");
+#endif
 }
 
 static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8_t enc)
@@ -470,7 +479,7 @@ static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8
 
     for (t=0; t<16; t++)
     {
-        printf("%13d:\n", t+1);
+        DBG("%13d:\n", t+1);
 
         /* copy Rn to Ln+1 */
         memcpy(&temp[L], &data_bits[R], 32);
@@ -491,7 +500,7 @@ static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8
 
         memcpy(data_bits, temp, 64);
         show_msb_bits(data_bits, 64, "out data: ");
-        printf("-------------------------------------------------------------------------------------\n");
+        DBG("-------------------------------------------------------------------------------------\n");
     }
 
     show_msb_bits(data_bits, 64, "swap L16/R16: ");
@@ -508,8 +517,33 @@ static int DES_ProcessBlock(uint8_t in[8], uint8_t out[8], uint8_t key[8], uint8
     return 0;
 }
 
-#define TEST
+/* Encrypt a single block */
+int DES_Encryption(const unsigned char *in, const unsigned char *key, unsigned char *out)
+{
+    if ((NULL == in) || (NULL == key) || (NULL == out))
+    {
+        return ERR_INV_PARAM;
+    }
 
+    DES_ProcessBlock(in, out, key, 1);
+
+    return ERR_OK;
+}
+
+/* Decrypt a single block */
+int DES_Decryption(const unsigned char *in, const unsigned char *key, unsigned char *out)
+{
+    if ((NULL == in) || (NULL == key) || (NULL == out))
+    {
+        return ERR_INV_PARAM;
+    }
+
+    DES_ProcessBlock(in, out, key, 0);
+
+    return ERR_OK;
+}
+
+// #define TEST
 #ifdef TEST
 
 /*

@@ -18,18 +18,7 @@ typedef unsigned short     uint16_t;
 typedef unsigned int       uint32_t;
 typedef unsigned long long uint64_t;
 
-#define DES_KEY_SIZE    8
-#define DES_BLOCK_SIZE   8
-
-typedef struct des_context {
-    /* message total length in bytes */
-    uint64_t total;
-
-    uint8_t data[DES_BLOCK_SIZE];
-    uint8_t key[DES_KEY_SIZE];
-}DES_CTX;
-
-int DES_Encryption(const unsigned char *data, unsigned int data_len, const unsigned char *key, unsigned int key_len, const unsigned *out, unsigned int out_len);
-int DES_Decryption(const unsigned char *data, unsigned int data_len, const unsigned char *key, unsigned int key_len, const unsigned *out, unsigned int out_len);
+int DES_Encryption(const unsigned char *in, const unsigned char *key, unsigned char *out);
+int DES_Decryption(const unsigned char *in, const unsigned char *key, unsigned char *out);
 
 #endif
