@@ -56,7 +56,7 @@ static int print_hex(unsigned char *data, uint32_t len, const char *tips)
     return 0;
 }
 
-static void show_state(const uint8_t state[4][4], const char *indent)
+static void show_state(uint8_t state[4][4], const char *indent)
 {
     int i, j;
     for (i=0; i<4; i++)
@@ -318,12 +318,12 @@ static int MixColumns(uint8_t state[4][4])
     return 0;
 }
 
-static int AddRoundKey(uint8_t state[4][4], uint8_t *key)
+static int AddRoundKey(uint8_t state[4][4], uint32_t *key)
 {
     int i, j;
     uint8_t temp[4][4];
 
-    to_state(key, temp);
+    to_state((uint8_t *)key, temp);
     printf(" key: \n");
     show_state(temp, "    ");
 
@@ -610,7 +610,7 @@ static int test_KeyExpansion_128(void)
 
     uint32_t W[44];
 
-    show_state(key, " ");
+    show_state((uint8_t (*)[4])key, " ");
     KeyExpansion(key, W, 4, 10);
 
     return 0;
