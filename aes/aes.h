@@ -26,4 +26,7 @@ typedef enum aes_algorithm {
 
 int AES_Encrypt(AES_ALG alg, const unsigned char *in, const unsigned char *key, unsigned char *out);
 int AES_Decrypt(AES_ALG alg, const unsigned char *in, const unsigned char *key, unsigned char *out);
+
+int AES_CBC_Encrypt(AES_ALG alg, const unsigned char *in, unsigned int size, const unsigned char *key, const unsigned char *iv, unsigned char *out);
+int AES_CBC_Decrypt(AES_ALG alg, const unsigned char *in, unsigned int size, const unsigned char *key, const unsigned char *iv, unsigned char *out);
 #endif
