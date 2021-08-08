@@ -14,7 +14,7 @@ LIBS    =
 INCLUDE =
 CFLAGS  = -Wall -g -O2
 
-SRCS    = utils.c aes.c aes-cbc.c aestest.c
+SRCS    = utils.c aes.c aes-ecb.c aes-cbc.c aes-cfb.c aes-ofb.c aes-ctr.c aes-xts.c aestest.c
 TARGET  = aes
 
 OBJS 	= $(SRCS:.c=.o)

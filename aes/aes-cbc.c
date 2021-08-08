@@ -48,8 +48,8 @@ int AES_CBC_Encrypt(AES_ALG alg, const unsigned char *in, unsigned int size, con
 
     if (size > 0)
     {
-        memcpy(temp, in, size);     /* 0 ~ size-1 */
-        temp[size] = 0x80;          /* size */
+        memcpy(temp, in, size);     /* index: 0 ~ size-1 */
+        temp[size] = 0x80;          /* index: size */
         memset(&temp[size+1], 0, AES_BLOCK_SIZE-size-1); /* size ~ AES_BLOCK_SIZE-1 */
 
         xor(vector, temp, temp);
@@ -87,8 +87,8 @@ int AES_CBC_Decrypt(AES_ALG alg, const unsigned char *in, unsigned int size, con
 
     if (size > 0)
     {
-        memcpy(temp, in, size);     /* 0 ~ size-1 */
-        temp[size] = 0x80;          /* size */
+        memcpy(temp, in, size);     /* index: 0 ~ size-1 */
+        temp[size] = 0x80;          /* index: size */
         memset(&temp[size+1], 0, AES_BLOCK_SIZE-size-1); /* size ~ AES_BLOCK_SIZE-1 */
 
         AES_Decrypt(alg, temp, key, temp);
