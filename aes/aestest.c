@@ -187,12 +187,15 @@ static void test_AES(void)
 #include "aestest-ecb.c"
 #include "aestest-cbc.c"
 
+#include "aestest-ofb.c"
+
 int main(int argc, char *argv[])
 {
 
     //test_AES();
-    test_AES_ECB();
+    //test_AES_ECB();
     //test_AES_CBC();
+    test_AES_OFB();
 
     return 0;
 }
