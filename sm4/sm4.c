@@ -76,7 +76,7 @@ static uint32_t ROTL(uint32_t x, uint8_t shift)
 static uint32_t tao(uint32_t x)
 {
     /* tao(A) = (Sbox(a0), Sbox(a1), Sbox(a2), Sbox(a3))*/
-    return SBox[x&0xff] | (SBox[(x>>8)&0xff]<<8) || (SBox[(x>>16)&0xff]<<16) || (SBox[(x>>24&0xff)<<24]);
+    return SBox[x&0xff] | (SBox[(x>>8)&0xff]<<8) | (SBox[(x>>16)&0xff]<<16) | (SBox[(x>>24&0xff)]<<24);
 }
 
 /* 线性变换 L: linear transformation */
@@ -97,12 +97,6 @@ static uint32_t F(uint32_t X0, uint32_t X1, uint32_t X2, uint32_t X3, uint32_t r
     return X0 ^ T(X1 ^ X2 ^ X3 ^ rk);
 }
 
-// static uint32_t F(uint32_t *in, uint32_t *out, uint32_t key)
-// {
-//     uint32_t temp;
-// 
-//     return 0;
-// }
 
 /* 密钥扩展线性变换 L' */
 static uint32_t LPrime(uint32_t x)
@@ -116,23 +110,19 @@ static uint32_t TPrime(uint32_t x)
     return LPrime(tao(x));
 }
 
-/* 生成轮密钥 */
+/* 轮密钥生成函数 */
 static int generate_key_array(uint32_t MK[4], uint32_t rk[32])
 {
     int i;
     uint32_t K[35];
 
-    for (i=0; i<4; i++)
-    {
-        printf("MK[%2d]=%08x\n", i, be32toh(MK[i]));
-    }
-
+    /* 大端数组转换为本地数据 */
     for (i=0; i<4; i++)
     {
         K[i] = be32toh(MK[i]) ^ FK[i];
     }
 
-    for (i=0; i<31; i++)
+    for (i=0; i<32; i++)
     {
         rk[i] = K[i+4] = K[i] ^ TPrime(K[i+1] ^ K[i+2] ^ K[i+3] ^ CK[i]);
     }
@@ -207,8 +197,8 @@ int main(int argc, char* argv[])
     SM4_Encrypt(0, data, key, enc);
     print_buffer(enc, 16, " enc: ");
 
-    SM4_Encrypt(1, enc, key, dec);
-    print_buffer(dec, 16, " dec: ");
+    //SM4_Encrypt(1, enc, key, dec);
+    //print_buffer(dec, 16, " dec: ");
 
     return 0;
 }
