@@ -75,7 +75,7 @@ static uint32_t ROTL(uint32_t x, uint8_t shift)
 /* 非线性变换: non-linear transformation */
 static uint32_t tao(uint32_t x)
 {
-    /* tao(A) = (Sbox(a0), Sbox(a1), Sbox(a2), Sbox(a3))*/
+    /* （b0, b1, b2, b3) = tao(A) = (Sbox(a0), Sbox(a1), Sbox(a2), Sbox(a3))*/
     return SBox[x&0xff] | (SBox[(x>>8)&0xff]<<8) | (SBox[(x>>16)&0xff]<<16) | (SBox[(x>>24&0xff)]<<24);
 }
 
@@ -137,12 +137,13 @@ int SM4_Encrypt(int mode, const unsigned char *in, const unsigned char *key, uns
     uint32_t *p;
 
     generate_key_array((uint32_t *)key, rk);
-    for (i=0; i<32; i++)
-    {
-        printf("rk[%2d]=%08x\n", i, rk[i]);
-    }
+    // for (i=0; i<32; i++)
+    // {
+    //     printf("rk[%2d]=%08x\n", i, rk[i]);
+    // }
 
     p = (uint32_t *)in;
+    /* 大端数组转换为本地数据 */
     for (i=0; i<4; i++)
     {
         X[i] = be32toh(p[i]);
@@ -152,15 +153,20 @@ int SM4_Encrypt(int mode, const unsigned char *in, const unsigned char *key, uns
     {
         if (mode == 1) /* mode=1, encryption */
         {
-            X[i+4] = F(X[0], X[1], X[2], X[3], rk[i]);
+            X[i+4] = F(X[i+0], X[i+1], X[i+2], X[i+3], rk[i]);
         }
         else /* mode=0, decryption */
         {
-            X[i+4] = F(X[0], X[1], X[2], X[3], rk[31-i]);
+            X[i+4] = F(X[i+0], X[i+1], X[i+2], X[i+3], rk[31-i]);
         }
+
+        #if (DUMP_ROUND_DATA==1)
+        printf("rk[%2d]=%08x\tX[%2d]=%08x\n", i, rk[i], i+4, X[i+4]);
+        #endif
     }
 
     p = (uint32_t *)out;
+    /* 本地数据转换为大端数组 */
     p[0] = htobe32(X[35]);
     p[1] = htobe32(X[34]);
     p[2] = htobe32(X[33]);
@@ -181,6 +187,8 @@ int SM4_Decryption(const unsigned char *data, unsigned int data_len, const unsig
 
 int main(int argc, char* argv[])
 {
+    int i;
+
     uint8_t data[] = {
         0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10
     };
@@ -191,14 +199,28 @@ int main(int argc, char* argv[])
 
     uint8_t enc[16], dec[16];
 
+    /*
+     * TEST 1: Encryption and Decryption
+     */
     print_buffer(data, 16, "data: ");
     print_buffer(key, 16, " key: ");
 
-    SM4_Encrypt(0, data, key, enc);
+    SM4_Encrypt(1, data, key, enc);
     print_buffer(enc, 16, " enc: ");
 
-    //SM4_Encrypt(1, enc, key, dec);
-    //print_buffer(dec, 16, " dec: ");
+    SM4_Encrypt(0, enc, key, dec);
+    print_buffer(dec, 16, " dec: ");
+
+    /*
+     * TEST 2: Encryption 1 000 000 as in A.2
+     */
+    memcpy(enc, data, 16);
+    for (i=0; i<1000000; i++)
+    {
+        SM4_Encrypt(1, enc, key, dec);
+        memcpy(enc, dec, 16);
+    }
+    print_buffer(dec, 16, "final: ");
 
     return 0;
 }
