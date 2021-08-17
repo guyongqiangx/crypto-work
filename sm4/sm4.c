@@ -185,8 +185,31 @@ int SM4_Decryption(const unsigned char *data, unsigned int data_len, const unsig
     return ERR_OK;
 }
 
+void generate_ck(uint32_t CK[32])
+{
+    int i, j;
+    uint8_t x[32][4];
+    uint32_t *p;
+
+    for (i=0; i<32; i++)
+    {
+        for (j=0; j<4; j++)
+        {
+            x[i][j] = (4*i+j) * 7 % 256;
+        }
+    }
+
+    p = (uint32_t *)x;
+    for (i=0; i<32; i++)
+    {
+        CK[i] = be32toh(p[i]);
+        printf("CK[%2d]=%08x\n", i, CK[i]);
+    }
+}
+
 int main(int argc, char* argv[])
 {
+    uint32_t CK[32];
     int i;
 
     uint8_t data[] = {
@@ -198,6 +221,11 @@ int main(int argc, char* argv[])
     };
 
     uint8_t enc[16], dec[16];
+
+    /*
+     * 生成密钥扩展的固定参数CK
+     */
+    generate_ck(CK);
 
     /*
      * TEST 1: Encryption and Decryption
