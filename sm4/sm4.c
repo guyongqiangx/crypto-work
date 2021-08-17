@@ -48,11 +48,13 @@ static const uint8_t SBox[256] = {
     0x18, 0xf0, 0x7d, 0xec, 0x3a, 0xdc, 0x4d, 0x20, 0x79, 0xee, 0x5f, 0x3e, 0xd7, 0xcb, 0x39, 0x48
 };
 
+/* 系统参数 FK(FK0, FK1, FK2, FK3) */
 static const uint32_t FK[4] =
 {
     0xa3b1bac6, 0x56aa3350, 0x677d9197, 0xb27022dc
 };
 
+/* 固定参数 CK(CK0, CK1, ..., CK31) */
 static const uint32_t CK[32] = {
     0x00070e15, 0x1c232a31, 0x383f464d, 0x545b6269,
     0x70777e85, 0x8c939aa1, 0xa8afb6bd, 0xc4cbd2d9,
@@ -64,56 +66,117 @@ static const uint32_t CK[32] = {
     0x10171e25, 0x2c333a41, 0x484f565d, 0x646b7279,
 };
 
-/* ROTate Left (circular left shift) */
+/* 32位循环左移: ROTate Left (circular left shift) */
 static uint32_t ROTL(uint32_t x, uint8_t shift)
 {
     return (x << shift) | (x >> (32 - shift));
 }
 
-/* non-linear transformation */
+/* 非线性变换: non-linear transformation */
 static uint32_t tao(uint32_t x)
 {
-    return SBox[x&0xff] | (Sbox[(x>>8)&0xff]<<8) || (Sbox[(x>>16)&0xff]<<16) || (Sbox[(x>>24&0xff)<<24]);
+    /* tao(A) = (Sbox(a0), Sbox(a1), Sbox(a2), Sbox(a3))*/
+    return SBox[x&0xff] | (SBox[(x>>8)&0xff]<<8) || (SBox[(x>>16)&0xff]<<16) || (SBox[(x>>24&0xff)<<24]);
 }
 
-/* linear transformation */
+/* 线性变换 L: linear transformation */
 static uint32_t linear(uint32_t x)
 {
-    return x ^ ROTL(x, 2) ^ ROLT(x, 10) ^ ROLT(x, 18) ^ ROLT(x, 24);
+    return x ^ ROTL(x, 2) ^ ROTL(x, 10) ^ ROTL(x, 18) ^ ROTL(x, 24);
 }
 
-static uint32_t transform(uint32_t x)
+/* 合成置换 T: 由非线性变换和线性变换复合而成 */
+static uint32_t T(uint32_t x)
 {
     return linear(tao(x));
 }
 
-static uint32_t F(uint32_t *in, uint32_t *out, uint32_t key)
+/* 轮函数 F */
+static uint32_t F(uint32_t X0, uint32_t X1, uint32_t X2, uint32_t X3, uint32_t rk)
 {
-    uint32_t temp;
-
-    return 0;
+    return X0 ^ T(X1 ^ X2 ^ X3 ^ rk);
 }
 
-static uint32_t linear_prime(uint32_t x)
+// static uint32_t F(uint32_t *in, uint32_t *out, uint32_t key)
+// {
+//     uint32_t temp;
+// 
+//     return 0;
+// }
+
+/* 密钥扩展线性变换 L' */
+static uint32_t LPrime(uint32_t x)
 {
-    return x ^ ROTL(x, 13) ^ ROTL(x,);
+    return x ^ ROTL(x, 13) ^ ROTL(x, 23);
 }
 
-static int generate_key_array(uint32_t *in, uint32_t *out)
+/* 密钥扩展合成置换 T' */
+static uint32_t TPrime(uint32_t x)
+{
+    return LPrime(tao(x));
+}
+
+/* 生成轮密钥 */
+static int generate_key_array(uint32_t MK[4], uint32_t rk[32])
 {
     int i;
     uint32_t K[35];
 
     for (i=0; i<4; i++)
     {
-        K[i] = in[i] ^ FK[i];
+        printf("MK[%2d]=%08x\n", i, be32toh(MK[i]));
     }
 
     for (i=0; i<4; i++)
     {
-
+        K[i] = be32toh(MK[i]) ^ FK[i];
     }
+
+    for (i=0; i<31; i++)
+    {
+        rk[i] = K[i+4] = K[i] ^ TPrime(K[i+1] ^ K[i+2] ^ K[i+3] ^ CK[i]);
+    }
+
     return 0;
+}
+
+int SM4_Encrypt(int mode, const unsigned char *in, const unsigned char *key, unsigned char *out)
+{
+    int i;
+    uint32_t rk[32], X[35];
+    uint32_t *p;
+
+    generate_key_array((uint32_t *)key, rk);
+    for (i=0; i<32; i++)
+    {
+        printf("rk[%2d]=%08x\n", i, rk[i]);
+    }
+
+    p = (uint32_t *)in;
+    for (i=0; i<4; i++)
+    {
+        X[i] = be32toh(p[i]);
+    }
+
+    for (i=0; i<32; i++)
+    {
+        if (mode == 1) /* mode=1, encryption */
+        {
+            X[i+4] = F(X[0], X[1], X[2], X[3], rk[i]);
+        }
+        else /* mode=0, decryption */
+        {
+            X[i+4] = F(X[0], X[1], X[2], X[3], rk[31-i]);
+        }
+    }
+
+    p = (uint32_t *)out;
+    p[0] = htobe32(X[35]);
+    p[1] = htobe32(X[34]);
+    p[2] = htobe32(X[33]);
+    p[3] = htobe32(X[32]);
+
+    return ERR_OK;
 }
 
 int SM4_Encryption(const unsigned char *data, unsigned int data_len, const unsigned char *key, unsigned int key_len, const unsigned *out, unsigned int out_len)
@@ -124,4 +187,28 @@ int SM4_Encryption(const unsigned char *data, unsigned int data_len, const unsig
 int SM4_Decryption(const unsigned char *data, unsigned int data_len, const unsigned char *key, unsigned int key_len, const unsigned *out, unsigned int out_len)
 {
     return ERR_OK;
+}
+
+int main(int argc, char* argv[])
+{
+    uint8_t data[] = {
+        0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10
+    };
+
+    uint8_t key[] = {
+        0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10
+    };
+
+    uint8_t enc[16], dec[16];
+
+    print_buffer(data, 16, "data: ");
+    print_buffer(key, 16, " key: ");
+
+    SM4_Encrypt(0, data, key, enc);
+    print_buffer(enc, 16, " enc: ");
+
+    SM4_Encrypt(1, enc, key, dec);
+    print_buffer(dec, 16, " dec: ");
+
+    return 0;
 }
