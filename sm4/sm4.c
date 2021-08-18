@@ -130,7 +130,7 @@ static int generate_key_array(uint32_t MK[4], uint32_t rk[32])
     return 0;
 }
 
-int SM4_Encrypt(int mode, const unsigned char *in, const unsigned char *key, unsigned char *out)
+static int SM4(int mode, const unsigned char *in, const unsigned char *key, unsigned char *out)
 {
     int i;
     uint32_t rk[32], X[35];
@@ -185,7 +185,7 @@ int SM4_Decryption(const unsigned char *data, unsigned int data_len, const unsig
     return ERR_OK;
 }
 
-void generate_ck(uint32_t CK[32])
+static void generate_ck(uint32_t CK[32])
 {
     int i, j;
     uint8_t x[32][4];
