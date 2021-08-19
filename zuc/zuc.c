@@ -24,8 +24,14 @@
 #define DUMP_ROUND_DATA 0
 #endif
 
+/* 31位循环左移: ROTate Left (circular left shift) */
+static uint32_t ROTL31(uint32_t x, uint8_t shift)
+{
+    return (x << shift) | (x >> (31 - shift));
+}
+
 /* 32位循环左移: ROTate Left (circular left shift) */
-static uint32_t ROTL(uint32_t x, uint8_t shift)
+static uint32_t ROTL32(uint32_t x, uint8_t shift)
 {
     return (x << shift) | (x >> (32 - shift));
 }
@@ -33,13 +39,13 @@ static uint32_t ROTL(uint32_t x, uint8_t shift)
 /* 线性变换 L1 */
 static uint32_t L1(uint32_t x)
 {
-    return x ^ ROTL(x, 2) ^ ROTL(x, 10) ^ ROTL(x, 18) ^ ROTL(x, 24);
+    return x ^ ROTL32(x, 2) ^ ROTL32(x, 10) ^ ROTL32(x, 18) ^ ROTL32(x, 24);
 }
 
 /* 线性变换 L2 */
 static uint32_t L2(uint32_t x)
 {
-    return x ^ ROTL(x, 8) ^ ROTL(x, 14) ^ ROTL(x, 22) ^ ROTL(x, 30);
+    return x ^ ROTL32(x, 8) ^ ROTL32(x, 14) ^ ROTL32(x, 22) ^ ROTL32(x, 30);
 }
 
 /* The S-box S0 (S0=S2, S=(S0,S1,S2,S3)) */
@@ -92,9 +98,34 @@ static uint32_t F(uint32_t X0, uint32_t X1, uint32_t X2)
     return W;
 }
 
-static void LFSRWithInitialisationMode(uint32_t u)
+static void LFSRWithInitialisationMode(uint32_t u, uint32_t s[16])
 {
+    uint32_t s16;
     uint32_t v;
 
+    v = ROTL31(s[15], 15) + ROTL31(s[13], 17) + ROTL31(s[10], 21) + ROLT31(s[4], 20) + ROTL31(s[0], 8) + s[0] % (2<<31-1);
+    s16 = (v + u) % (2<<31-1);
 
+    if (0 == s16)
+    {
+        s16 = 2<<31 -1;
+    }
+
+    memcpy(&s[0], &s[1], 15);
+    s[15] = s16;
+}
+
+static void LFSRWithWorkMode(uint32_t s[16])
+{
+    uint32_t s16;
+
+    s16 = ROTL31(s[15], 15) + ROTL31(s[13], 17) + ROTL31(s[10], 21) + ROLT31(s[4], 20) + ROTL31(s[0], 8) + s[0] % (2<<31-1);
+
+    if (0 == s16)
+    {
+        s16 = 2<<31 -1;
+    }
+
+    memcpy(&s[0], &s[1], 15);
+    s[15] = s16;
 }
