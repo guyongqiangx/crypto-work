@@ -24,6 +24,18 @@
 #define DUMP_ROUND_DATA 0
 #endif
 
+#define ZUC_MOD_NUM (2<<31-1)
+
+typedef struct zuc_context {
+    uint32_t s[16];
+
+    uint32_t R1;
+    uint32_t R2;
+
+    uint32_t W1;
+    uint32_t W2;
+}ZUC_CTX;
+
 /* 31位循环左移: ROTate Left (circular left shift) */
 static uint32_t ROTL31(uint32_t x, uint8_t shift)
 {
@@ -90,42 +102,153 @@ static uint8_t S1[256] =
     0x64, 0xBE, 0x85, 0x9B, 0x2F, 0x59, 0x8A, 0xD7, 0xB0, 0x25, 0xAC, 0xAF, 0x12, 0x03, 0xE2, 0xF2
 };
 
-static uint32_t F(uint32_t X0, uint32_t X1, uint32_t X2)
+/* S盒变换 */
+static uint32_t S(uint32_t x)
 {
-    uint32_t W;
-
-    W = X0;
-    return W;
+    return (S0[(x>>24&0xff)]<<24) | (S1[(x>>16)&0xff]<<16) | (S0[(x>>8)&0xff]<<8) | S1[x&0xff];
 }
 
-static void LFSRWithInitialisationMode(uint32_t u, uint32_t s[16])
+/* 初始化模式 */
+static void LFSRWithInitialisationMode(ZUC_CTX *ctx, uint32_t u)
 {
+    uint32_t *s;
     uint32_t s16;
     uint32_t v;
 
-    v = ROTL31(s[15], 15) + ROTL31(s[13], 17) + ROTL31(s[10], 21) + ROLT31(s[4], 20) + ROTL31(s[0], 8) + s[0] % (2<<31-1);
+    s = ctx->s;
+
+    //v = (ROTL31(s[15], 15) + ROTL31(s[13], 17) + ROTL31(s[10], 21) + ROLT31(s[4], 20) + ROTL31(s[0], 8) + s[0]) % (2<<31-1);
+    v = (ROTL31(s[15], 15) + ROTL31(s[13], 17)) % ZUC_MOD_NUM;
+    v = (v + ROTL31(s[10], 21)) % ZUC_MOD_NUM;
+    v = (v + ROTL31(s[ 4], 20)) % ZUC_MOD_NUM;
+    v = (v + ROTL31(s[ 0],  8)) % ZUC_MOD_NUM;
+    v = (v + s[ 0]) % ZUC_MOD_NUM;
+
     s16 = (v + u) % (2<<31-1);
 
     if (0 == s16)
     {
-        s16 = 2<<31 -1;
+        s16 = ZUC_MOD_NUM;
     }
 
     memcpy(&s[0], &s[1], 15);
     s[15] = s16;
 }
 
-static void LFSRWithWorkMode(uint32_t s[16])
+/* 工作模式 */
+static void LFSRWithWorkMode(ZUC_CTX *ctx)
 {
+    uint32_t *s;
     uint32_t s16;
 
-    s16 = ROTL31(s[15], 15) + ROTL31(s[13], 17) + ROTL31(s[10], 21) + ROLT31(s[4], 20) + ROTL31(s[0], 8) + s[0] % (2<<31-1);
+    s = ctx->s;
+
+    //s16 = ROTL31(s[15], 15) + ROTL31(s[13], 17) + ROTL31(s[10], 21) + ROLT31(s[4], 20) + ROTL31(s[0], 8) + s[0] % (2<<31-1);
+    s16 = (ROTL31(s[15], 15) + ROTL31(s[13], 17)) % ZUC_MOD_NUM;
+    s16 = (s16 + ROTL31(s[10], 21)) % ZUC_MOD_NUM;
+    s16 = (s16 + ROTL31(s[ 4], 20)) % ZUC_MOD_NUM;
+    s16 = (s16 + ROTL31(s[ 0],  8)) % ZUC_MOD_NUM;
+    s16 = (s16 + s[ 0]) % ZUC_MOD_NUM;
 
     if (0 == s16)
     {
-        s16 = 2<<31 -1;
+        s16 = ZUC_MOD_NUM;
     }
 
     memcpy(&s[0], &s[1], 15);
     s[15] = s16;
+}
+
+#define HIGH16(x)   ((x)&0xFFFF0000)
+#define  LOW16(x)   ((x)&0x0000FFFF)
+
+/* 比特重组 BR (Bit-Reorganization) */
+static void BitReconstruction(ZUC_CTX *ctx, uint32_t X[4])
+{
+    uint32_t *s;
+
+    s = ctx->s;
+
+    X[0] = HIGH16(s[15]) |  LOW16(s[14]);
+    X[1] =  LOW16(s[11]) | HIGH16(s[ 9]);
+    X[2] =  LOW16(s[ 7]) | HIGH16(s[ 5]);
+    X[3] =  LOW16(s[ 2]) | HIGH16(s[ 0]);
+}
+
+/* 非线性函数 F */
+static uint32_t F(ZUC_CTX *ctx, uint32_t X0, uint32_t X1, uint32_t X2)
+{
+    uint32_t W;
+
+    W = ((X0 ^ ctx->R1) + ctx->R2) % (1<<31);
+    ctx->W1 = (ctx->R1 + X1) % (1<<31);
+    ctx->W2 = ctx->R2 ^ X2;
+
+    ctx->R1 = S(L1(LOW16(ctx->W1) | HIGH16(ctx->W2)));
+    ctx->R2 = S(L2(LOW16(ctx->W2) | HIGH16(ctx->W1)));
+
+    return W;
+}
+
+static uint32_t D[16] =
+{
+    0x44D7, 0x26BC, 0x626B, 0x135E, 0x5789, 0x35E2, 0x7135, 0x09AF,
+    0x4D78, 0x2F13, 0x6BC4, 0x1AF1, 0x5E26, 0x3C4D, 0x789A, 0x47AC
+};
+
+static void load_key(ZUC_CTX *ctx, uint8_t key[16], uint8_t iv[16])
+{
+    uint32_t *s;
+    int i;
+
+    s = ctx->s;
+    for (i=0; i<16; i++)
+    {
+        s[i] = (key[i] << 23) | (D[i] << 8) | iv[i];
+    }
+}
+
+static void initialize(ZUC_CTX *ctx, uint8_t key[16], uint8_t iv[16])
+{
+    int i;
+    uint32_t X[4];
+    uint32_t W;
+
+    load_key(ctx, key, iv);
+    ctx->R1 = 0;
+    ctx->R2 = 0;
+
+    for (i=0; i<32; i++)
+    {
+        BitReconstruction(ctx, X);
+        W = F(ctx, X[0], X[1], X[2]);
+        LFSRWithInitialisationMode(ctx, W>>1);
+    }
+}
+
+static void work(ZUC_CTX *ctx, uint32_t *out, uint32_t len)
+{
+    int i;
+    uint32_t X[4];
+    uint32_t Z;
+
+    BitReconstruction(ctx, X);
+    F(ctx, X[0], X[1], X[2]);
+    LFSRWithWorkMode(ctx);
+
+    while (len > 0)
+    {
+        BitReconstruction(ctx, X);
+        Z = F(ctx, X[0], X[1], X[2]) ^ X[3];
+        LFSRWithWorkMode(ctx);
+
+        *out ++ = Z;
+        len --;
+    }
+}
+
+int main(int argc, char *argv)
+{
+    printf("0x%08x --> 0x%08x\n", 0x12345678, S(0x12345678));
+    return 0;
 }
