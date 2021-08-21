@@ -108,7 +108,18 @@ static uint32_t S(uint32_t x)
     return (S0[(x>>24&0xff)]<<24) | (S1[(x>>16)&0xff]<<16) | (S0[(x>>8)&0xff]<<8) | S1[x&0xff];
 }
 
-/* 初始化模式 */
+/* 模 2^32-1 加法 */
+static uint32_t Mod2p31_Add(uint32_t a, uint32_t b)
+{
+    uint32_t c;
+
+    c = a + b;
+    c = (c & 0x7FFFFFFF) + (c >> 31);
+
+    return c;
+}
+
+/* LFSR 初始化模式 */
 static void LFSRWithInitialisationMode(ZUC_CTX *ctx, uint32_t u)
 {
     uint32_t *s;
@@ -117,25 +128,25 @@ static void LFSRWithInitialisationMode(ZUC_CTX *ctx, uint32_t u)
 
     s = ctx->s;
 
-    //v = (ROTL31(s[15], 15) + ROTL31(s[13], 17) + ROTL31(s[10], 21) + ROLT31(s[4], 20) + ROTL31(s[0], 8) + s[0]) % (2<<31-1);
-    v = (ROTL31(s[15], 15) + ROTL31(s[13], 17)) % ZUC_MOD_NUM;
-    v = (v + ROTL31(s[10], 21)) % ZUC_MOD_NUM;
-    v = (v + ROTL31(s[ 4], 20)) % ZUC_MOD_NUM;
-    v = (v + ROTL31(s[ 0],  8)) % ZUC_MOD_NUM;
-    v = (v + s[ 0]) % ZUC_MOD_NUM;
+    //v = (ROTL31(s[15], 15) + ROTL31(s[13], 17) + ROTL31(s[10], 21) + ROTL31(s[4], 20) + ROTL31(s[0], 8) + s[0]) % (2<<31-1);
+    v = Mod2p31_Add(ROTL31(s[15], 15), ROTL31(s[13], 17));
+    v = Mod2p31_Add(v, ROTL31(s[10], 21));
+    v = Mod2p31_Add(v, ROTL31(s[ 4], 20));
+    v = Mod2p31_Add(v, ROTL31(s[ 0],  8));
+    v = Mod2p31_Add(v, s[ 0]);
 
-    s16 = (v + u) % (2<<31-1);
+    s16 = Mod2p31_Add(v, u);
 
     if (0 == s16)
     {
         s16 = ZUC_MOD_NUM;
     }
 
-    memcpy(&s[0], &s[1], 15);
+    memcpy(&s[0], &s[1], 15 * sizeof(s[0]));
     s[15] = s16;
 }
 
-/* 工作模式 */
+/* LFSR 工作模式 */
 static void LFSRWithWorkMode(ZUC_CTX *ctx)
 {
     uint32_t *s;
@@ -144,18 +155,18 @@ static void LFSRWithWorkMode(ZUC_CTX *ctx)
     s = ctx->s;
 
     //s16 = ROTL31(s[15], 15) + ROTL31(s[13], 17) + ROTL31(s[10], 21) + ROLT31(s[4], 20) + ROTL31(s[0], 8) + s[0] % (2<<31-1);
-    s16 = (ROTL31(s[15], 15) + ROTL31(s[13], 17)) % ZUC_MOD_NUM;
-    s16 = (s16 + ROTL31(s[10], 21)) % ZUC_MOD_NUM;
-    s16 = (s16 + ROTL31(s[ 4], 20)) % ZUC_MOD_NUM;
-    s16 = (s16 + ROTL31(s[ 0],  8)) % ZUC_MOD_NUM;
-    s16 = (s16 + s[ 0]) % ZUC_MOD_NUM;
+    s16 = Mod2p31_Add(ROTL31(s[15], 15), ROTL31(s[13], 17));
+    s16 = Mod2p31_Add(s16, ROTL31(s[10], 21));
+    s16 = Mod2p31_Add(s16, ROTL31(s[ 4], 20));
+    s16 = Mod2p31_Add(s16, ROTL31(s[ 0],  8));
+    s16 = Mod2p31_Add(s16, s[ 0]);
 
     if (0 == s16)
     {
         s16 = ZUC_MOD_NUM;
     }
 
-    memcpy(&s[0], &s[1], 15);
+    memcpy(&s[0], &s[1], 15 * sizeof(s[0]));
     s[15] = s16;
 }
 
@@ -190,6 +201,7 @@ static uint32_t F(ZUC_CTX *ctx, uint32_t X0, uint32_t X1, uint32_t X2)
     return W;
 }
 
+/* 240 bits 的密钥常量 */
 static uint32_t D[16] =
 {
     0x44D7, 0x26BC, 0x626B, 0x135E, 0x5789, 0x35E2, 0x7135, 0x09AF,
@@ -205,9 +217,11 @@ static void load_key(ZUC_CTX *ctx, uint8_t key[16], uint8_t iv[16])
     for (i=0; i<16; i++)
     {
         s[i] = (key[i] << 23) | (D[i] << 8) | iv[i];
+        printf("s[%2d]=0x%08x\n", i, s[i]);
     }
 }
 
+/* 算法初始化阶段 */
 static void initialize(ZUC_CTX *ctx, uint8_t key[16], uint8_t iv[16])
 {
     int i;
@@ -223,9 +237,13 @@ static void initialize(ZUC_CTX *ctx, uint8_t key[16], uint8_t iv[16])
         BitReconstruction(ctx, X);
         W = F(ctx, X[0], X[1], X[2]);
         LFSRWithInitialisationMode(ctx, W>>1);
+
+        printf("%2d: X[0]=0x%08x, X[1]=0x%08x, X[2]=0x%08x, X[3]=0x%08x, R1=0x%08x, R2=0x%08x, W=0x%08x, S15=0x%08x\n",
+            i, X[0], X[1], X[2], X[3], ctx->R1, ctx->R2, W, ctx->s[15]);
     }
 }
 
+/* 算法工作阶段 */
 static void work(ZUC_CTX *ctx, uint32_t *out, uint32_t len)
 {
     int i;
@@ -249,6 +267,22 @@ static void work(ZUC_CTX *ctx, uint32_t *out, uint32_t len)
 
 int main(int argc, char *argv)
 {
-    printf("0x%08x --> 0x%08x\n", 0x12345678, S(0x12345678));
+    ZUC_CTX ctx;
+
+    uint8_t key[16] =
+    {
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+    uint8_t iv[16] =
+    {
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+
+    uint32_t z[2];
+
+    initialize(&ctx, key, iv);
+    work(&ctx, z, 2);
+    printf("0x%08x, 0x%08x\n", z[0], z[1]);
+
     return 0;
 }
