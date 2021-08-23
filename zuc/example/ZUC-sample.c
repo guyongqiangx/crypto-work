@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 /* ——————————————————————- */
 typedef unsigned char u8;
 typedef unsigned int u32;
@@ -199,6 +201,20 @@ void Initialization(u8 *k, u8 *iv)
     LFSR_S13 = MAKEU31(k[13], EK_d[13], iv[13]);
     LFSR_S14 = MAKEU31(k[14], EK_d[14], iv[14]);
     LFSR_S15 = MAKEU31(k[15], EK_d[15], iv[15]);
+
+    // debug
+    {
+        u32 s[16] = {
+            LFSR_S0, LFSR_S1,  LFSR_S2,  LFSR_S3,  LFSR_S4,  LFSR_S5,  LFSR_S6,  LFSR_S7,
+            LFSR_S8, LFSR_S9, LFSR_S10, LFSR_S11, LFSR_S12, LFSR_S13, LFSR_S14, LFSR_S15,
+        };
+        int i;
+        for (i=0; i<16; i++)
+        {
+            printf("s[%2d]=0x%08x\n", i, s[i]);
+        }
+    }
+
     /* set F_R1 and F_R2 to zero */
     F_R1 = 0;
     F_R2 = 0;
@@ -209,6 +225,10 @@ void Initialization(u8 *k, u8 *iv)
         w = F();
         LFSRWithInitialisationMode(w >> 1);
         nCount--;
+
+        // debug
+        printf("%2u: X[0]=0x%08x, X[1]=0x%08x, X[2]=0x%08x, X[3]=0x%08x, R1=0x%08x, R2=0x%08x, W=0x%08x, S15=0x%08x\n",
+            32-nCount, BRC_X0, BRC_X1, BRC_X2, BRC_X3, F_R1, F_R2, w, LFSR_S15);
     }
 }
 void GenerateKeystream(u32 *pKeystream, int KeystreamLen)
@@ -225,4 +245,24 @@ void GenerateKeystream(u32 *pKeystream, int KeystreamLen)
         pKeystream[i] = F() ^ BRC_X3;
         LFSRWithWorkMode();
     }
+}
+
+// Example for test data check
+int main(int argc, char *argv[])
+{
+    unsigned char key[16] =
+    {
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+    unsigned char iv[16] =
+    {
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+
+    //u32 temp[256];
+
+    Initialization(key, iv);
+    //GenerateKeystream(temp, 256);
+
+    return 0;
 }
