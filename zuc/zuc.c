@@ -39,7 +39,8 @@ typedef struct zuc_context {
 /* 31位循环左移: ROTate Left (circular left shift) */
 static uint32_t ROTL31(uint32_t x, uint8_t shift)
 {
-    return (x << shift) | (x >> (31 - shift));
+    // return (x << shift) | (x >> (31 - shift));
+    return ((x << shift) | (x >> (31 - shift))) & 0x7FFFFFFF;
 }
 
 /* 32位循环左移: ROTate Left (circular left shift) */
@@ -113,7 +114,7 @@ static uint32_t modular_add(uint32_t a, uint32_t b)
 {
     uint32_t c;
 
-    /* 附录B. 模 2^31-1 和 模 2^31-1 加法的实现 */
+    /* 附录B. 模 2^31-1 加法的实现 */
     c = a + b;
     c = (c & 0x7FFFFFFF) + (c >> 31);
 
@@ -182,10 +183,10 @@ static void BitReconstruction(ZUC_CTX *ctx, uint32_t X[4])
     s = ctx->s;
 
     // X[0] = HIGH16(s[15]) | LOW16(s[14]);
-    X[0] = ((s[15] & 0x7FFF8000) <<  1) |  (s[14] & 0x0000FFFF);
-    X[1] = ((s[11] & 0x0000FFFF) << 16) | ((s[ 9] & 0x7FFF0000) >> 15);
-    X[2] = ((s[ 7] & 0x0000FFFF) << 16) | ((s[ 5] & 0x7FFF0000) >> 15);
-    X[3] = ((s[ 2] & 0x0000FFFF) << 16) | ((s[ 0] & 0x7FFF0000) >> 15);
+    X[0] = ((s[15] & 0x7FFF8000) <<  1) | (s[14] & 0x0000FFFF);
+    X[1] = ((s[11] & 0x0000FFFF) << 16) | (s[ 9] >> 15);
+    X[2] = ((s[ 7] & 0x0000FFFF) << 16) | (s[ 5] >> 15);
+    X[3] = ((s[ 2] & 0x0000FFFF) << 16) | (s[ 0] >> 15);
 }
 
 /* 非线性函数 F */
@@ -193,7 +194,7 @@ static uint32_t F(ZUC_CTX *ctx, uint32_t X0, uint32_t X1, uint32_t X2)
 {
     uint32_t W;
 
-    W = X0 ^ ctx->R1 + ctx->R2;
+    W = (X0 ^ ctx->R1) + ctx->R2; /* '+' 运算符优先级高于 '^', 这里一定要加括号, 真是害死个人 */
     ctx->W1 = ctx->R1 + X1;
     ctx->W2 = ctx->R2 ^ X2;
 
@@ -269,6 +270,7 @@ static void work(ZUC_CTX *ctx, uint32_t *out, uint32_t len)
 
 int main(int argc, char *argv)
 {
+    int i;
     ZUC_CTX ctx;
 
     uint8_t key[16] =
@@ -283,6 +285,10 @@ int main(int argc, char *argv)
     uint32_t z[2];
 
     initialize(&ctx, key, iv);
+    for (i=0; i<16; i++)
+    {
+        printf("s[%2d]=0x%08x\n", i, ctx.s[i]);
+    }
     work(&ctx, z, 2);
     printf("0x%08x, 0x%08x\n", z[0], z[1]);
 
