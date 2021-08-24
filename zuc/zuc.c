@@ -181,10 +181,11 @@ static void BitReconstruction(ZUC_CTX *ctx, uint32_t X[4])
 
     s = ctx->s;
 
-    X[0] = HIGH16(s[15]) |  LOW16(s[14]);
-    X[1] =  LOW16(s[11]) | HIGH16(s[ 9]);
-    X[2] =  LOW16(s[ 7]) | HIGH16(s[ 5]);
-    X[3] =  LOW16(s[ 2]) | HIGH16(s[ 0]);
+    // X[0] = HIGH16(s[15]) | LOW16(s[14]);
+    X[0] = ((s[15] & 0x7FFF8000) <<  1) |  (s[14] & 0x0000FFFF);
+    X[1] = ((s[11] & 0x0000FFFF) << 16) | ((s[ 9] & 0x7FFF0000) >> 15);
+    X[2] = ((s[ 7] & 0x0000FFFF) << 16) | ((s[ 5] & 0x7FFF0000) >> 15);
+    X[3] = ((s[ 2] & 0x0000FFFF) << 16) | ((s[ 0] & 0x7FFF0000) >> 15);
 }
 
 /* 非线性函数 F */
@@ -192,12 +193,12 @@ static uint32_t F(ZUC_CTX *ctx, uint32_t X0, uint32_t X1, uint32_t X2)
 {
     uint32_t W;
 
-    W = ((X0 ^ ctx->R1) + ctx->R2) % (1<<31);
-    ctx->W1 = (ctx->R1 + X1) % (1<<31);
+    W = X0 ^ ctx->R1 + ctx->R2;
+    ctx->W1 = ctx->R1 + X1;
     ctx->W2 = ctx->R2 ^ X2;
 
-    ctx->R1 = S(L1(LOW16(ctx->W1) | HIGH16(ctx->W2)));
-    ctx->R2 = S(L2(LOW16(ctx->W2) | HIGH16(ctx->W1)));
+    ctx->R1 = S(L1((LOW16(ctx->W1) << 16) | (HIGH16(ctx->W2) >> 16)));
+    ctx->R2 = S(L2((LOW16(ctx->W2) << 16) | (HIGH16(ctx->W1) >> 16)));
 
     return W;
 }
