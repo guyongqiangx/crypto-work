@@ -108,11 +108,12 @@ static uint32_t S(uint32_t x)
     return (S0[(x>>24&0xff)]<<24) | (S1[(x>>16)&0xff]<<16) | (S0[(x>>8)&0xff]<<8) | S1[x&0xff];
 }
 
-/* 模 2^32-1 加法 */
-static uint32_t Mod2p31_Add(uint32_t a, uint32_t b)
+/* 模 2^32-1 加法, c = (a + b) mod (2^31 - 1) */
+static uint32_t modular_add(uint32_t a, uint32_t b)
 {
     uint32_t c;
 
+    /* 附录B. 模 2^31-1 和 模 2^31-1 加法的实现 */
     c = a + b;
     c = (c & 0x7FFFFFFF) + (c >> 31);
 
@@ -129,13 +130,13 @@ static void LFSRWithInitialisationMode(ZUC_CTX *ctx, uint32_t u)
     s = ctx->s;
 
     //v = (ROTL31(s[15], 15) + ROTL31(s[13], 17) + ROTL31(s[10], 21) + ROTL31(s[4], 20) + ROTL31(s[0], 8) + s[0]) % (2<<31-1);
-    v = Mod2p31_Add(ROTL31(s[15], 15), ROTL31(s[13], 17));
-    v = Mod2p31_Add(v, ROTL31(s[10], 21));
-    v = Mod2p31_Add(v, ROTL31(s[ 4], 20));
-    v = Mod2p31_Add(v, ROTL31(s[ 0],  8));
-    v = Mod2p31_Add(v, s[ 0]);
+    v = modular_add(ROTL31(s[15], 15), ROTL31(s[13], 17));
+    v = modular_add(v, ROTL31(s[10], 21));
+    v = modular_add(v, ROTL31(s[ 4], 20));
+    v = modular_add(v, ROTL31(s[ 0],  8));
+    v = modular_add(v, s[ 0]);
 
-    s16 = Mod2p31_Add(v, u);
+    s16 = modular_add(v, u);
 
     if (0 == s16)
     {
@@ -155,11 +156,11 @@ static void LFSRWithWorkMode(ZUC_CTX *ctx)
     s = ctx->s;
 
     //s16 = ROTL31(s[15], 15) + ROTL31(s[13], 17) + ROTL31(s[10], 21) + ROLT31(s[4], 20) + ROTL31(s[0], 8) + s[0] % (2<<31-1);
-    s16 = Mod2p31_Add(ROTL31(s[15], 15), ROTL31(s[13], 17));
-    s16 = Mod2p31_Add(s16, ROTL31(s[10], 21));
-    s16 = Mod2p31_Add(s16, ROTL31(s[ 4], 20));
-    s16 = Mod2p31_Add(s16, ROTL31(s[ 0],  8));
-    s16 = Mod2p31_Add(s16, s[ 0]);
+    s16 = modular_add(ROTL31(s[15], 15), ROTL31(s[13], 17));
+    s16 = modular_add(s16, ROTL31(s[10], 21));
+    s16 = modular_add(s16, ROTL31(s[ 4], 20));
+    s16 = modular_add(s16, ROTL31(s[ 0],  8));
+    s16 = modular_add(s16, s[ 0]);
 
     if (0 == s16)
     {
