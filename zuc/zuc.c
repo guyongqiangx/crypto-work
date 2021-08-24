@@ -241,7 +241,7 @@ static void initialize(ZUC_CTX *ctx, uint8_t key[16], uint8_t iv[16])
         W = F(ctx, X[0], X[1], X[2]);
         LFSRWithInitialisationMode(ctx, W>>1);
 
-        printf("%2d: X[0]=0x%08x, X[1]=0x%08x, X[2]=0x%08x, X[3]=0x%08x, R1=0x%08x, R2=0x%08x, W=0x%08x, S15=0x%08x\n",
+        printf("%2d: X0=0x%08x, X1=0x%08x, X2=0x%08x, X3=0x%08x, R1=0x%08x, R2=0x%08x, W=0x%08x, S15=0x%08x\n",
             i, X[0], X[1], X[2], X[3], ctx->R1, ctx->R2, W, ctx->s[15]);
     }
 }
@@ -254,8 +254,11 @@ static void work(ZUC_CTX *ctx, uint32_t *out, uint32_t len)
     uint32_t Z;
 
     BitReconstruction(ctx, X);
-    F(ctx, X[0], X[1], X[2]);
+    // F(ctx, X[0], X[1], X[2]);
+    Z=F(ctx, X[0], X[1], X[2]) ^ X[3];
     LFSRWithWorkMode(ctx);
+    printf("    X0=0x%08x, X1=0x%08x, X2=0x%08x, X3=0x%08x, R1=0x%08x, R2=0x%08x, z=0x%08x, S15=0x%08x\n",
+        X[0], X[1], X[2], X[3], ctx->R1, ctx->R2, Z, ctx->s[15]);
 
     while (len > 0)
     {
@@ -263,12 +266,18 @@ static void work(ZUC_CTX *ctx, uint32_t *out, uint32_t len)
         Z = F(ctx, X[0], X[1], X[2]) ^ X[3];
         LFSRWithWorkMode(ctx);
 
+        printf("    X0=0x%08x, X1=0x%08x, X2=0x%08x, X3=0x%08x, R1=0x%08x, R2=0x%08x, z=0x%08x, S15=0x%08x\n",
+            X[0], X[1], X[2], X[3], ctx->R1, ctx->R2, Z, ctx->s[15]);
+
         *out ++ = Z;
         len --;
     }
 }
 
-int main(int argc, char *argv)
+#define TEST_OUT_KEY_LEN 2
+
+/* 附录C.1 测试向量1(全0) */
+void TestVector1(void)
 {
     int i;
     ZUC_CTX ctx;
@@ -282,15 +291,75 @@ int main(int argc, char *argv)
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
     };
 
-    uint32_t z[2];
+    uint32_t z[TEST_OUT_KEY_LEN];
 
     initialize(&ctx, key, iv);
+    printf("R1=0x%08x, R2=0x%08x\n", ctx.R1, ctx.R2);
     for (i=0; i<16; i++)
     {
-        printf("s[%2d]=0x%08x\n", i, ctx.s[i]);
+        printf("s[%2d]=0x%08x ", i, ctx.s[i]);
+        if (i%8 == 7)
+        {
+            printf("\n");
+        }
     }
-    work(&ctx, z, 2);
-    printf("0x%08x, 0x%08x\n", z[0], z[1]);
+    work(&ctx, z, TEST_OUT_KEY_LEN);
+    printf("out stream: \n");
+    for (i=0; i<TEST_OUT_KEY_LEN; i++)
+    {
+        printf("0x%08x ", z[i]);
+        if (i%8 == 7)
+        {
+            printf("\n");
+        }
+    }
+    printf("\n");
+}
+
+/* 附录C.2 测试向量2(全1) */
+void TestVector2(void)
+{
+    int i;
+    ZUC_CTX ctx;
+
+    uint8_t key[16] =
+    {
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+    };
+    uint8_t iv[16] =
+    {
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+    };
+
+    uint32_t z[TEST_OUT_KEY_LEN];
+
+    initialize(&ctx, key, iv);
+    printf("R1=0x%08x, R2=0x%08x\n", ctx.R1, ctx.R2);
+    for (i=0; i<16; i++)
+    {
+        printf("s[%2d]=0x%08x ", i, ctx.s[i]);
+        if (i%8 == 7)
+        {
+            printf("\n");
+        }
+    }
+    work(&ctx, z, TEST_OUT_KEY_LEN);
+    printf("out stream: \n");
+    for (i=0; i<TEST_OUT_KEY_LEN; i++)
+    {
+        printf("0x%08x ", z[i]);
+        if (i%8 == 7)
+        {
+            printf("\n");
+        }
+    }
+    printf("\n");
+}
+
+int main(int argc, char *argv)
+{
+    // TestVector1();
+    TestVector2();
 
     return 0;
 }
