@@ -10,30 +10,24 @@
 #include "utils.h"
 #include "zuc.h"
 
-//#define DEBUG
+#define TEST
+#define DEBUG
 
 #ifdef DEBUG
 #define DBG(...) printf(__VA_ARGS__)
-#define DUMP_BLOCK_DATA 1
-#define DUMP_BLOCK_HASH 1
-#define DUMP_ROUND_DATA 1
 #else
 #define DBG(...)
-#define DUMP_BLOCK_DATA 0
-#define DUMP_BLOCK_HASH 0
-#define DUMP_ROUND_DATA 0
 #endif
 
 #define ZUC_MOD_NUM (2<<31-1)
 
 typedef struct zuc_context {
+    /* 16 个 31 bit 变量 */
     uint32_t s[16];
 
+    /* 32 bit 内部状态机变量 */
     uint32_t R1;
     uint32_t R2;
-
-    uint32_t W1;
-    uint32_t W2;
 }ZUC_CTX;
 
 /* 31位循环左移: ROTate Left (circular left shift) */
@@ -174,9 +168,6 @@ static void LFSRWithWorkMode(ZUC_CTX *ctx)
     s[15] = s16;
 }
 
-#define HIGH16(x)   ((x)&0xFFFF0000)
-#define  LOW16(x)   ((x)&0x0000FFFF)
-
 /* 比特重组 BR (Bit-Reorganization) */
 static void BitReconstruction(ZUC_CTX *ctx, uint32_t X[4])
 {
@@ -185,7 +176,8 @@ static void BitReconstruction(ZUC_CTX *ctx, uint32_t X[4])
     s = ctx->s;
 
     /*
-     * s[0]~s[15] 为 31 bit 整数, bit 15~30 代表高半部分, 而不是 bit 16~31
+     * 按照 3.1 运算符 一节的描述, H 取最高的 16 比特, L 取最低的 16 比特。
+     * s[0]~s[15] 为 31 bit 整数, bit 15~30 代表高半部分, 而不是 bit 16~31; bit 0~15 代表低半部分, 中间 bit 15 属于重叠的部分
      * X[0]~X[ 4] 为 32 bit 整数, bit 16~31 代表高半部分
      * 31 bit 整数重组为 32 bit 整数:
      *    1. 31高->32高(左移1位)
@@ -199,17 +191,20 @@ static void BitReconstruction(ZUC_CTX *ctx, uint32_t X[4])
     X[3] = ((s[ 2] & 0x0000FFFF) << 16) | (s[ 0] >> 15);
 }
 
+#define HIGH16(x)   ((x)&0xFFFF0000)
+#define  LOW16(x)   ((x)&0x0000FFFF)
+
 /* 非线性函数 F */
 static uint32_t F(ZUC_CTX *ctx, uint32_t X0, uint32_t X1, uint32_t X2)
 {
-    uint32_t W;
+    uint32_t W, W1, W2;
 
     W = (X0 ^ ctx->R1) + ctx->R2; /* '+' 运算符优先级高于 '^', 这里一定要加括号, 真是害死个人 */
-    ctx->W1 = ctx->R1 + X1;
-    ctx->W2 = ctx->R2 ^ X2;
+    W1 = ctx->R1 + X1;
+    W2 = ctx->R2 ^ X2;
 
-    ctx->R1 = S(L1((LOW16(ctx->W1) << 16) | (HIGH16(ctx->W2) >> 16)));
-    ctx->R2 = S(L2((LOW16(ctx->W2) << 16) | (HIGH16(ctx->W1) >> 16)));
+    ctx->R1 = S(L1((LOW16(W1) << 16) | (HIGH16(W2) >> 16)));
+    ctx->R2 = S(L2((LOW16(W2) << 16) | (HIGH16(W1) >> 16)));
 
     return W;
 }
@@ -230,7 +225,7 @@ static void load_key(ZUC_CTX *ctx, uint8_t key[16], uint8_t iv[16])
     for (i=0; i<16; i++)
     {
         s[i] = (key[i] << 23) | (D[i] << 8) | iv[i];
-        printf("s[%2d]=0x%08x\n", i, s[i]);
+        DBG("s[%2d]=0x%08x\n", i, s[i]);
     }
 }
 
@@ -251,7 +246,7 @@ static void initialize(ZUC_CTX *ctx, uint8_t key[16], uint8_t iv[16])
         W = F(ctx, X[0], X[1], X[2]);
         LFSRWithInitialisationMode(ctx, W>>1);
 
-        printf("%2d: X0=0x%08x, X1=0x%08x, X2=0x%08x, X3=0x%08x, R1=0x%08x, R2=0x%08x, W=0x%08x, S15=0x%08x\n",
+        DBG("%2d: X0=0x%08x, X1=0x%08x, X2=0x%08x, X3=0x%08x, R1=0x%08x, R2=0x%08x, W=0x%08x, S15=0x%08x\n",
             i, X[0], X[1], X[2], X[3], ctx->R1, ctx->R2, W, ctx->s[15]);
     }
 }
@@ -267,7 +262,7 @@ static void work(ZUC_CTX *ctx, uint32_t *out, uint32_t len)
     // F(ctx, X[0], X[1], X[2]);
     Z=F(ctx, X[0], X[1], X[2]) ^ X[3];
     LFSRWithWorkMode(ctx);
-    printf("    X0=0x%08x, X1=0x%08x, X2=0x%08x, X3=0x%08x, R1=0x%08x, R2=0x%08x, z=0x%08x, S15=0x%08x\n",
+    DBG("    X0=0x%08x, X1=0x%08x, X2=0x%08x, X3=0x%08x, R1=0x%08x, R2=0x%08x, z=0x%08x, S15=0x%08x\n",
         X[0], X[1], X[2], X[3], ctx->R1, ctx->R2, Z, ctx->s[15]);
 
     while (len > 0)
@@ -276,7 +271,7 @@ static void work(ZUC_CTX *ctx, uint32_t *out, uint32_t len)
         Z = F(ctx, X[0], X[1], X[2]) ^ X[3];
         LFSRWithWorkMode(ctx);
 
-        printf("    X0=0x%08x, X1=0x%08x, X2=0x%08x, X3=0x%08x, R1=0x%08x, R2=0x%08x, z=0x%08x, S15=0x%08x\n",
+        DBG("    X0=0x%08x, X1=0x%08x, X2=0x%08x, X3=0x%08x, R1=0x%08x, R2=0x%08x, z=0x%08x, S15=0x%08x\n",
             X[0], X[1], X[2], X[3], ctx->R1, ctx->R2, Z, ctx->s[15]);
 
         *out ++ = Z;
@@ -284,6 +279,7 @@ static void work(ZUC_CTX *ctx, uint32_t *out, uint32_t len)
     }
 }
 
+#ifdef TEST
 #define TEST_KEY_IV_SIZE 16
 #define TEST_OUT_KEY_LEN 2
 
@@ -357,3 +353,4 @@ int main(int argc, char *argv)
 
     return 0;
 }
+#endif
