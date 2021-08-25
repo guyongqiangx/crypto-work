@@ -39,8 +39,10 @@ typedef struct zuc_context {
 /* 31位循环左移: ROTate Left (circular left shift) */
 static uint32_t ROTL31(uint32_t x, uint8_t shift)
 {
-    // return (x << shift) | (x >> (31 - shift));
-    return ((x << shift) | (x >> (31 - shift))) & 0x7FFFFFFF;
+    /* Example: 0x7F00000F << 5 = 0x600001FF
+     * 0111 1111 0000 0000 0000 0000 0000 1111 << 5 ---> 0110 0000 0000 0000 0000 0001 1111 1111
+     */
+    return ((x << shift) & 0x7FFFFFFF) | (x >> (31 - shift));
 }
 
 /* 32位循环左移: ROTate Left (circular left shift) */
