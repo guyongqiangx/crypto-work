@@ -11,7 +11,7 @@
 #include "zuc.h"
 
 #define TEST
-//#define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
 #define DBG(...) printf(__VA_ARGS__)
@@ -21,9 +21,21 @@
 
 #define ZUC_MOD_NUM (2<<31-1)
 
+typedef enum {
+    ZUC_STATE_INVALID = 0,
+    ZUC_STATE_INITIALIZED,
+    ZUC_STATE_WORKING,
+    ZUC_STATE_MAX = ZUC_STATE_WORKING
+} ZUC_STATE;
+
 typedef struct zuc_context {
+    ZUC_STATE state;
+
     /* 16 个 31 bit 变量 */
     uint32_t s[16];
+
+    /* 4 个 32 bit 重组变量 */
+    uint32_t X[4];
 
     /* 32 bit 内部状态机变量 */
     uint32_t R1;
@@ -169,11 +181,12 @@ static void LFSRWithWorkMode(ZUC_CTX *ctx)
 }
 
 /* 比特重组 BR (Bit-Reorganization) */
-static void BitReconstruction(ZUC_CTX *ctx, uint32_t X[4])
+static void BitReconstruction(ZUC_CTX *ctx)
 {
-    uint32_t *s;
+    uint32_t *S, *X;
 
-    s = ctx->s;
+    S = ctx->s;
+    X = ctx->X;
 
     /*
      * 按照 3.1 运算符 一节的描述, H 取最高的 16 比特, L 取最低的 16 比特。
@@ -185,23 +198,23 @@ static void BitReconstruction(ZUC_CTX *ctx, uint32_t X[4])
      *    3. 31低->32高(左移16位)
      *    4. 31低->32低(不动)
      */
-    X[0] = ((s[15] & 0x7FFF8000) <<  1) | (s[14] & 0x0000FFFF);
-    X[1] = ((s[11] & 0x0000FFFF) << 16) | (s[ 9] >> 15);
-    X[2] = ((s[ 7] & 0x0000FFFF) << 16) | (s[ 5] >> 15);
-    X[3] = ((s[ 2] & 0x0000FFFF) << 16) | (s[ 0] >> 15);
+    X[0] = ((S[15] & 0x7FFF8000) <<  1) | (S[14] & 0x0000FFFF);
+    X[1] = ((S[11] & 0x0000FFFF) << 16) | (S[ 9] >> 15);
+    X[2] = ((S[ 7] & 0x0000FFFF) << 16) | (S[ 5] >> 15);
+    X[3] = ((S[ 2] & 0x0000FFFF) << 16) | (S[ 0] >> 15);
 }
 
 #define HIGH16(x)   ((x)&0xFFFF0000)
 #define  LOW16(x)   ((x)&0x0000FFFF)
 
 /* 非线性函数 F */
-static uint32_t F(ZUC_CTX *ctx, uint32_t X0, uint32_t X1, uint32_t X2)
+static uint32_t F(ZUC_CTX *ctx)
 {
     uint32_t W, W1, W2;
 
-    W = (X0 ^ ctx->R1) + ctx->R2; /* '+' 运算符优先级高于 '^', 这里一定要加括号, 真是害死个人 */
-    W1 = ctx->R1 + X1;
-    W2 = ctx->R2 ^ X2;
+    W = (ctx->X[0] ^ ctx->R1) + ctx->R2; /* '+' 运算符优先级高于 '^', 这里一定要加括号, 真是害死个人 */
+    W1 = ctx->R1 + ctx->X[1];
+    W2 = ctx->R2 ^ ctx->X[2];
 
     ctx->R1 = S(L1((LOW16(W1) << 16) | (HIGH16(W2) >> 16)));
     ctx->R2 = S(L2((LOW16(W2) << 16) | (HIGH16(W1) >> 16)));
@@ -230,11 +243,13 @@ static void load_key(ZUC_CTX *ctx, uint8_t key[16], uint8_t iv[16])
 }
 
 /* 算法初始化阶段 */
-static void initialize(ZUC_CTX *ctx, uint8_t key[16], uint8_t iv[16])
+static int initialize(ZUC_CTX *ctx, uint8_t key[16], uint8_t iv[16])
 {
     int i;
     uint32_t X[4];
     uint32_t W;
+
+    ctx->state = ZUC_STATE_INVALID;
 
     load_key(ctx, key, iv);
     ctx->R1 = 0;
@@ -242,41 +257,56 @@ static void initialize(ZUC_CTX *ctx, uint8_t key[16], uint8_t iv[16])
 
     for (i=0; i<32; i++)
     {
-        BitReconstruction(ctx, X);
-        W = F(ctx, X[0], X[1], X[2]);
+        BitReconstruction(ctx);
+        W = F(ctx);
         LFSRWithInitialisationMode(ctx, W>>1);
 
         DBG("%2d: X0=0x%08x, X1=0x%08x, X2=0x%08x, X3=0x%08x, R1=0x%08x, R2=0x%08x, W=0x%08x, S15=0x%08x\n",
-            i, X[0], X[1], X[2], X[3], ctx->R1, ctx->R2, W, ctx->s[15]);
+            i, ctx->X[0], ctx->X[1], ctx->X[2], ctx->X[3], ctx->R1, ctx->R2, W, ctx->s[15]);
     }
+
+    ctx->state = ZUC_STATE_INITIALIZED;
+
+    return ERR_OK;
 }
 
 /* 算法工作阶段 */
-static void work(ZUC_CTX *ctx, uint32_t *out, uint32_t len)
+static int work(ZUC_CTX *ctx, uint32_t *out, uint32_t len)
 {
     int i;
-    uint32_t X[4];
     uint32_t Z;
 
-    BitReconstruction(ctx, X);
-    // F(ctx, X[0], X[1], X[2]);
-    Z=F(ctx, X[0], X[1], X[2]) ^ X[3];
-    LFSRWithWorkMode(ctx);
-    DBG("    X0=0x%08x, X1=0x%08x, X2=0x%08x, X3=0x%08x, R1=0x%08x, R2=0x%08x, z=0x%08x, S15=0x%08x\n",
-        X[0], X[1], X[2], X[3], ctx->R1, ctx->R2, Z, ctx->s[15]);
+    if ((NULL == ctx) || (NULL == out) || (ctx->state == ZUC_STATE_INVALID))
+    {
+        return ERR_INV_PARAM;
+    }
+
+    if (ctx->state == ZUC_STATE_INITIALIZED)
+    {
+        BitReconstruction(ctx);
+        // F(ctx);
+        Z=F(ctx) ^ ctx->X[3]; /* 调试需要, 保存 F 函数结果 */
+        LFSRWithWorkMode(ctx);
+        DBG("    X0=0x%08x, X1=0x%08x, X2=0x%08x, X3=0x%08x, R1=0x%08x, R2=0x%08x, z=0x%08x, S15=0x%08x\n",
+            ctx->X[0], ctx->X[1], ctx->X[2], ctx->X[3], ctx->R1, ctx->R2, Z, ctx->s[15]);
+
+        ctx->state = ZUC_STATE_WORKING;
+    }
 
     while (len > 0)
     {
-        BitReconstruction(ctx, X);
-        Z = F(ctx, X[0], X[1], X[2]) ^ X[3];
+        BitReconstruction(ctx);
+        Z = F(ctx) ^ ctx->X[3];
         LFSRWithWorkMode(ctx);
 
         DBG("    X0=0x%08x, X1=0x%08x, X2=0x%08x, X3=0x%08x, R1=0x%08x, R2=0x%08x, z=0x%08x, S15=0x%08x\n",
-            X[0], X[1], X[2], X[3], ctx->R1, ctx->R2, Z, ctx->s[15]);
+            ctx->X[0], ctx->X[1], ctx->X[2], ctx->X[3], ctx->R1, ctx->R2, Z, ctx->s[15]);
 
         *out ++ = Z;
         len --;
     }
+
+    return ERR_OK;
 }
 
 /*
@@ -843,9 +873,9 @@ static void EIA3Tests(void)
 
 int main(int argc, char *argv[])
 {
-    //ZUCTests();
+    ZUCTests();
     //EEA3Tests();
-    EIA3Tests();
+    //EIA3Tests();
 
     return 0;
 }
