@@ -42,6 +42,8 @@ typedef struct zuc_context {
 int ZUC_Init(ZUC_CTX *ctx, unsigned char *key, unsigned char *iv);
 int ZUC_GenerateKeyStream(ZUC_CTX *ctx, unsigned int *out, unsigned int len);
 
+int ZUC(unsigned char *key, unsigned char *iv, unsigned int length, unsigned int *ibs, unsigned int *obs);
+
 int EEA3(unsigned char *CK, unsigned int COUNT, unsigned int BEARER, unsigned int DIRECTION, unsigned int LENGTH, unsigned int *IBS, unsigned int *OBS);
 int EIA3(unsigned char *IK, unsigned int COUNT, unsigned int BEARER, unsigned int DIRECTION, unsigned int LENGTH, unsigned int *M, unsigned int *MAC);
 #endif

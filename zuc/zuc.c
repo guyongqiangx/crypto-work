@@ -285,6 +285,44 @@ int ZUC_GenerateKeyStream(ZUC_CTX *ctx, unsigned int *out, unsigned int len)
     return ERR_OK;
 }
 
+int ZUC(unsigned char *key, unsigned char *iv, unsigned int length, unsigned int *ibs, unsigned int *obs)
+{
+    ZUC_CTX ctx;
+    int i;
+    uint32_t len, quotient, remainder;
+
+    if ((NULL == key) || (NULL == iv) || (NULL == ibs) || (NULL == obs) || (0 == length))
+    {
+        return ERR_INV_PARAM;
+    }
+
+    len = (length + 31) / 32;
+    quotient = length / 32;
+    remainder = length % 32;
+
+    ZUC_Init(&ctx, key, iv);
+
+    ZUC_GenerateKeyStream(&ctx, obs, len);
+
+    /* 逐字处理 32 bit 部分 */
+    for (i=0; i<quotient; i++)
+    {
+        *obs++ ^= *ibs++;
+        len --;
+    }
+
+    /* 处理不足 32 bit 的剩余部分 */
+    if (remainder)
+    {
+        /* 计算最后 32 bit */
+        *obs ^= *ibs;
+        /* 清除不需要的 bit */
+        *obs = (*obs >> (32-remainder)) << (32-remainder);
+    }
+
+    return ERR_OK;
+}
+
 /*
  * 128-EEA3: EPS Encryption Algorithm 3, 机密性算法(Confidentiality)
  *        CK: 128-bit confidentiality key
