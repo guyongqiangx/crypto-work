@@ -21,27 +21,6 @@
 
 #define ZUC_MOD_NUM (2<<31-1)
 
-typedef enum {
-    ZUC_STATE_INVALID = 0,
-    ZUC_STATE_INITIALIZED,
-    ZUC_STATE_WORKING,
-    ZUC_STATE_MAX = ZUC_STATE_WORKING
-} ZUC_STATE;
-
-typedef struct zuc_context {
-    ZUC_STATE state;
-
-    /* 16 个 31 bit 变量 */
-    uint32_t s[16];
-
-    /* 4 个 32 bit 重组变量 */
-    uint32_t X[4];
-
-    /* 32 bit 内部状态机变量 */
-    uint32_t R1;
-    uint32_t R2;
-}ZUC_CTX;
-
 /* 31位循环左移: ROTate Left (circular left shift) */
 static uint32_t ROTL31(uint32_t x, uint8_t shift)
 {
@@ -229,7 +208,7 @@ static uint32_t D[16] =
     0x4D78, 0x2F13, 0x6BC4, 0x1AF1, 0x5E26, 0x3C4D, 0x789A, 0x47AC
 };
 
-static void load_key(ZUC_CTX *ctx, uint8_t key[16], uint8_t iv[16])
+static void ZUC_LoadKey(ZUC_CTX *ctx, uint8_t key[16], uint8_t iv[16])
 {
     uint32_t *s;
     int i;
@@ -243,7 +222,7 @@ static void load_key(ZUC_CTX *ctx, uint8_t key[16], uint8_t iv[16])
 }
 
 /* 算法初始化阶段 */
-static int initialize(ZUC_CTX *ctx, uint8_t key[16], uint8_t iv[16])
+int ZUC_Init(ZUC_CTX *ctx, unsigned char *key, unsigned char *iv)
 {
     int i;
     uint32_t X[4];
@@ -251,7 +230,7 @@ static int initialize(ZUC_CTX *ctx, uint8_t key[16], uint8_t iv[16])
 
     ctx->state = ZUC_STATE_INVALID;
 
-    load_key(ctx, key, iv);
+    ZUC_LoadKey(ctx, key, iv);
     ctx->R1 = 0;
     ctx->R2 = 0;
 
@@ -271,7 +250,7 @@ static int initialize(ZUC_CTX *ctx, uint8_t key[16], uint8_t iv[16])
 }
 
 /* 算法工作阶段 */
-static int work(ZUC_CTX *ctx, uint32_t *out, uint32_t len)
+int ZUC_GenerateKeyStream(ZUC_CTX *ctx, unsigned int *out, unsigned int len)
 {
     int i;
     uint32_t Z;
@@ -319,7 +298,7 @@ static int work(ZUC_CTX *ctx, uint32_t *out, uint32_t len)
  *       IBS: input bit stream
  *       OBS: output bit stream
  */
-static int EEA3(uint8_t *CK, uint32_t COUNT, uint32_t BEARER, uint32_t DIRECTION, uint32_t LENGTH, uint32_t *IBS, uint32_t *OBS)
+int EEA3(unsigned char *CK, unsigned int COUNT, unsigned int BEARER, unsigned int DIRECTION, unsigned int LENGTH, unsigned int *IBS, unsigned int *OBS)
 {
     ZUC_CTX ctx;
     int i;
@@ -342,10 +321,10 @@ static int EEA3(uint8_t *CK, uint32_t COUNT, uint32_t BEARER, uint32_t DIRECTION
     iv[ 7] = 0x00;
     memcpy(&iv[8], &iv[0], 8);
 
-    initialize(&ctx, CK, iv);
+    ZUC_Init(&ctx, CK, iv);
 
     len = (LENGTH + 31) / 32;
-    work(&ctx, OBS, len);
+    ZUC_GenerateKeyStream(&ctx, OBS, len);
 
     main = LENGTH / 32;
     rest = LENGTH % 32;
@@ -384,7 +363,7 @@ static uint32_t GetWord(uint32_t S[2], uint32_t offset)
  *         M: message
  *       MAC: message authentication code
  */
-static int EIA3(uint8_t *IK, uint32_t COUNT, uint32_t BEARER, uint32_t DIRECTION, uint32_t LENGTH, uint32_t *M, uint32_t *MAC)
+int EIA3(unsigned char *IK, unsigned int COUNT, unsigned int BEARER, unsigned int DIRECTION, unsigned int LENGTH, unsigned int *M, unsigned int *MAC)
 {
     ZUC_CTX ctx;
     int i, j;
@@ -411,11 +390,11 @@ static int EIA3(uint8_t *IK, uint32_t COUNT, uint32_t BEARER, uint32_t DIRECTION
     iv[ 8] ^= DIRECTION << 7;
     iv[14] ^= DIRECTION << 7;
 
-    initialize(&ctx, IK, iv);
+    ZUC_Init(&ctx, IK, iv);
 
     L = (LENGTH + 31) / 32 + 2;
     obs = (uint32_t *)malloc(L * sizeof(uint32_t));
-    work(&ctx, obs, L);
+    ZUC_GenerateKeyStream(&ctx, obs, L);
 
     T = 0;
 
@@ -474,13 +453,13 @@ static void TestingZUC(uint8_t *key, uint8_t *iv, uint32_t len)
 
     z = (uint32_t *)malloc(len * sizeof(uint32_t));
 
-    initialize(&ctx, key, iv);
+    ZUC_Init(&ctx, key, iv);
     printf("R1=0x%08x, R2=0x%08x\n", ctx.R1, ctx.R2);
     for (i=0; i<16; i++)
     {
         printf("s[%2d]=0x%08x\n", i, ctx.s[i]);
     }
-    work(&ctx, z, len);
+    ZUC_GenerateKeyStream(&ctx, z, len);
     printf("out stream: \n");
     for (i=0; i<len; i++)
     {
