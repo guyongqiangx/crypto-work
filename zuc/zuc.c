@@ -11,7 +11,7 @@
 #include "zuc.h"
 
 #define TEST
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #define DBG(...) printf(__VA_ARGS__)
@@ -105,7 +105,7 @@ static uint32_t S(uint32_t x)
     return (S0[(x>>24&0xff)]<<24) | (S1[(x>>16)&0xff]<<16) | (S0[(x>>8)&0xff]<<8) | S1[x&0xff];
 }
 
-/* 模 2^32-1 加法, c = (a + b) mod (2^31 - 1) */
+/* 模 2^31-1 加法, c = (a + b) mod (2^31 - 1) */
 static uint32_t modular_add(uint32_t a, uint32_t b)
 {
     uint32_t c;
@@ -292,8 +292,10 @@ static void work(ZUC_CTX *ctx, uint32_t *out, uint32_t len)
 static int EEA3(uint8_t *CK, uint32_t COUNT, uint32_t BEARER, uint32_t DIRECTION, uint32_t LENGTH, uint32_t *IBS, uint32_t *OBS)
 {
     ZUC_CTX ctx;
+    int i;
     uint8_t iv[16];
-    uint32_t i, len;
+    uint32_t temp;
+    uint32_t len, main, rest;
 
     if ((NULL == CK) || (NULL == IBS) || (NULL == OBS) || (0 == LENGTH))
     {
@@ -315,9 +317,21 @@ static int EEA3(uint8_t *CK, uint32_t COUNT, uint32_t BEARER, uint32_t DIRECTION
     len = (LENGTH + 31) / 32;
     work(&ctx, OBS, len);
 
-    for (i=0; i<len; i++)
+    main = LENGTH / 32;
+    rest = LENGTH % 32;
+
+    for (i=0; i<main; i++)
     {
         *OBS++ ^= *IBS ++;
+    }
+
+    /* 消息长度不是 32 bit 整数倍的情况, 处理剩余部分 */
+    if (rest)
+    {
+        /* 计算最后 32 bit */
+        *OBS ^= *IBS;
+        /* 清除不需要的 bit */
+        *OBS = (*OBS >> (32-rest)) << (32-rest);
     }
 
     return ERR_OK;
@@ -344,7 +358,7 @@ static unsigned int EIA3(uint8_t *IK, uint32_t COUNT, uint32_t BEARER, uint32_t 
 
 #define TEST_OUT_KEY_LEN 2
 
-static void TestVector(uint8_t *key, uint8_t *iv, uint32_t len)
+static void TestingZUC(uint8_t *key, uint8_t *iv, uint32_t len)
 {
     int i;
     ZUC_CTX ctx;
@@ -375,7 +389,7 @@ static void TestVector(uint8_t *key, uint8_t *iv, uint32_t len)
     z = NULL;
 }
 
-static void TestZUC(void)
+static void ZUCTests(void)
 {
     /* 附录C.1 测试向量1(全0) */
     uint8_t key1[16] =
@@ -419,100 +433,104 @@ static void TestZUC(void)
     };
 
     printf("Test All 0...\n");
-    TestVector(key1, iv1, 2);
+    TestingZUC(key1, iv1, 2);
 
     printf("Test All 1...\n");
-    TestVector(key2, iv2, 2);
+    TestingZUC(key2, iv2, 2);
 
     printf("Test Random Bits...\n");
-    TestVector(key3, iv3, 2);
+    TestingZUC(key3, iv3, 2);
 
     printf("Test Random Bits with 2000 outputs\n");
-    TestVector(key4, iv4, 2000);
+    TestingZUC(key4, iv4, 2000);
 }
 
-//#define TEST_EEA3_1
-//#define TEST_EEA3_2
-//#define TEST_EEA3_3
-//#define TEST_EEA3_4
-#define TEST_EEA3_5
+static void TestingEEA3(uint8_t *ck, uint32_t count, uint32_t bearer, uint32_t direction, uint32_t length, uint32_t *ibs)
+{
+    int i;
+    uint32_t *obs, size;
 
-static void TestEEA3(void)
+    size = (length + 31) / 32;
+    obs = (uint32_t *)malloc(size * 4);
+    memset(obs, size * 4, 0);
+
+    EEA3(ck, count, bearer, direction, length, ibs, obs);
+
+    printf("Input Bit Stream:\n");
+    for (i=0; i<size; i++)
+    {
+        printf("0x%08x ", ibs[i]);
+        if (i%8 == 7)
+        {
+            printf("\n");
+        }
+    }
+    printf("\n");
+    printf("Output Bit Stream:\n");
+    for (i=0; i<size; i++)
+    {
+        printf("0x%08x ", obs[i]);
+        if (i%8 == 7)
+        {
+            printf("\n");
+        }
+    }
+    printf("\n");
+    free(obs);
+    obs = NULL;
+}
+
+static void EEA3Tests(void)
 {
     int i;
     uint32_t *obs;
 
-#ifdef TEST_EEA3_1
-    /* 附录A. 第一组加密实例 */
     {
-        uint8_t ck1[16] =
+        /* 附录A. 第一组加密实例 */
+        uint8_t ck[16] =
         {
             0x17, 0x3d, 0x14, 0xba, 0x50, 0x03, 0x73, 0x1d, 0x7a, 0x60, 0x04, 0x94, 0x70, 0xf0, 0x0a, 0x29
         };
-        uint32_t ibs1[] = {
+        uint32_t ibs[] = {
             0x6cf65340, 0x735552ab, 0x0c9752fa, 0x6f9025fe, 0x0bd675d9, 0x005875b2, 0x00000000
         };
+        uint32_t     count = 0x66035492;
+        uint32_t    bearer = 0x0f;
+        uint32_t direction = 0;
+        uint32_t    length = 0xc1; /* 193 bits */
 
-        obs = (uint32_t *)malloc(sizeof(ibs1));
-        memset(obs, sizeof(ibs1), 0);
-
-        EEA3(ck1, 0x66035492, 0x0f, 0, 0xc1, ibs1, obs);
-        printf("Out Bit Stream:\n");
-        for (i=0; i<sizeof(ibs1)/sizeof(ibs1[0]); i++)
-        {
-            printf("0x%08x ", obs[i]);
-            if (i%8 == 7)
-            {
-                printf("\n");
-            }
-        }
-        printf("\n");
-        free(obs);
-        obs = NULL;
+        printf("Test Set 1:\n");
+        TestingEEA3(ck, count, bearer, direction, length, ibs);
     }
-#endif
 
-#ifdef TEST_EEA3_2
-    /* 附录A. 第二组加密实例 */
     {
-        uint8_t ck2[16] =
+        /* 附录A. 第二组加密实例 */
+        uint8_t ck[16] =
         {
             0xe5, 0xbd, 0x3e, 0xa0, 0xeb, 0x55, 0xad, 0xe8, 0x66, 0xc6, 0xac, 0x58, 0xbd, 0x54, 0x30, 0x2a
         };
-        uint32_t ibs2[] = {
+        uint32_t ibs[] = {
             0x14a8ef69, 0x3d678507, 0xbbe7270a, 0x7f67ff50, 0x06c3525b, 0x9807e467, 0xc4e56000, 0xba338f5d,
             0x42955903, 0x67518222, 0x46c80d3b, 0x38f07f4b, 0xe2d8ff58, 0x05f51322, 0x29bde93b, 0xbbdcaf38,
             0x2bf1ee97, 0x2fbf9977, 0xbada8945, 0x847a2a6c, 0x9ad34a66, 0x7554e04d, 0x1f7fa2c3, 0x3241bd8f,
             0x01ba220d
         };
+        uint32_t     count = 0x56823;
+        uint32_t    bearer = 0x18;
+        uint32_t direction = 0x1;
+        uint32_t    length = 0x320; /* 800 bits */
 
-        obs = (uint32_t *)malloc(sizeof(ibs2));
-        memset(obs, sizeof(ibs2), 0);
-
-        EEA3(ck2, 0x56823, 0x18, 1, 0x320, ibs2, obs);
-        printf("Out Bit Stream:\n");
-        for (i=0; i<sizeof(ibs2)/sizeof(ibs2[0]); i++)
-        {
-            printf("0x%08x ", obs[i]);
-            if (i%8 == 7)
-            {
-                printf("\n");
-            }
-        }
-        printf("\n");
-        free(obs);
-        obs = NULL;
+        printf("Test Set 2:\n");
+        TestingEEA3(ck, count, bearer, direction, length, ibs);
     }
-#endif
 
-#ifdef TEST_EEA3_3
-    /* Test Set 3 */
     {
-        uint8_t ck3[16] =
+        /* Test Set 3 */
+        uint8_t ck[16] =
         {
             0xd4, 0x55, 0x2a, 0x8f, 0xd6, 0xe6, 0x1c, 0xc8, 0x1a, 0x20, 0x09, 0x14, 0x1a, 0x29, 0xc1, 0x0b
         };
-        uint32_t ibs3[] = {
+        uint32_t ibs[] = {
             0x38f07f4b, 0xe2d8ff58, 0x05f51322, 0x29bde93b, 0xbbdcaf38, 0x2bf1ee97, 0x2fbf9977, 0xbada8945,
             0x847a2a6c, 0x9ad34a66, 0x7554e04d, 0x1f7fa2c3, 0x3241bd8f, 0x01ba220d, 0x3ca4ec41, 0xe074595f,
             0x54ae2b45, 0x4fd97143, 0x20436019, 0x65cca85c, 0x2417ed6c, 0xbec3bada, 0x84fc8a57, 0x9aea7837,
@@ -521,34 +539,22 @@ static void TestEEA3(void)
             0x61cce52a, 0x0515e348, 0xd196664a, 0x3456b182, 0xa07c406e, 0x4a207912, 0x71cfeda1, 0x65d535ec,
             0x5ea2d4df, 0x40000000,
         };
+        uint32_t     count = 0x76452ec1;
+        uint32_t    bearer = 0x02;
+        uint32_t direction = 0x1;
+        uint32_t    length = 1570;
 
-        obs = (uint32_t *)malloc(sizeof(ibs3));
-        memset(obs, sizeof(ibs3), 0);
-
-        EEA3(ck3, 0x76452ec1, 0x02, 1, 1570, ibs3, obs);
-        printf("Out Bit Stream:\n");
-        for (i=0; i<sizeof(ibs3)/sizeof(ibs3[0]); i++)
-        {
-            printf("0x%08x ", obs[i]);
-            if (i%8 == 7)
-            {
-                printf("\n");
-            }
-        }
-        printf("\n");
-        free(obs);
-        obs = NULL;
+        printf("Test Set 3:\n");
+        TestingEEA3(ck, count, bearer, direction, length, ibs);
     }
-#endif
 
-#ifdef TEST_EEA3_4
-    /* Test Set 4 */
     {
-        uint8_t ck4[16] =
+        /* Test Set 4 */
+        uint8_t ck[16] =
         {
             0xdb, 0x84, 0xb4, 0xfb, 0xcc, 0xda, 0x56, 0x3b, 0x66, 0x22, 0x7b, 0xfe, 0x45, 0x6f, 0x0f, 0x77
         };
-        uint32_t ibs4[] = {
+        uint32_t ibs[] = {
             0xe539f3b8, 0x973240da, 0x03f2b8aa, 0x05ee0a00, 0xdbafc0e1, 0x82055dfe, 0x3d7383d9, 0x2cef40e9,
             0x2928605d, 0x52d05f4f, 0x9018a1f1, 0x89ae3997, 0xce19155f, 0xb1221db8, 0xbb0951a8, 0x53ad852c,
             0xe16cff07, 0x382c93a1, 0x57de00dd, 0xb125c753, 0x9fd85045, 0xe4ee07e0, 0xc43f9e9d, 0x6f414fc4,
@@ -561,34 +567,22 @@ static void TestEEA3(void)
             0x6f9c64d9, 0x7462ad5d, 0xfa63b5cf, 0xe08acb95, 0x32866f5c, 0xa787566f, 0xca93e6b1, 0x693ee15c,
             0xf6f7a2d6, 0x89d97417, 0x98dc1c23, 0x8e1be650, 0x733b18fb, 0x34ff880e, 0x16bbd21b, 0x47ac0000,
         };
+        uint32_t     count = 0xe4850fe1;
+        uint32_t    bearer = 0x10;
+        uint32_t direction = 0x1;
+        uint32_t    length = 2798;
 
-        obs = (uint32_t *)malloc(sizeof(ibs4));
-        memset(obs, sizeof(ibs4), 0);
-
-        EEA3(ck4, 0xe4850fe1, 0x10, 1, 2798, ibs4, obs);
-        printf("Out Bit Stream:\n");
-        for (i=0; i<sizeof(ibs4)/sizeof(ibs4[0]); i++)
-        {
-            printf("0x%08x ", obs[i]);
-            if (i%8 == 7)
-            {
-                printf("\n");
-            }
-        }
-        printf("\n");
-        free(obs);
-        obs = NULL;
+        printf("Test Set 4:\n");
+        TestingEEA3(ck, count, bearer, direction, length, ibs);
     }
-#endif
 
-#ifdef TEST_EEA3_5
-    /* Test Set 5 */
     {
-        uint8_t ck5[16] =
+        /* Test Set 5 */
+        uint8_t ck[16] =
         {
             0xe1, 0x3f, 0xed, 0x21, 0xb4, 0x6e, 0x4e, 0x7e, 0xc3, 0x12, 0x53, 0xb2, 0xbb, 0x17, 0xb3, 0xe0
         };
-        uint32_t ibs5[] = {
+        uint32_t ibs[] = {
             0x8d74e20d, 0x54894e06, 0xd3cb13cb, 0x3933065e, 0x8674be62, 0xadb1c72b, 0x3a646965, 0xab63cb7b,
             0x7854dfdc, 0x27e84929, 0xf49c64b8, 0x72a490b1, 0x3f957b64, 0x827e71f4, 0x1fbd4269, 0xa42c97f8,
             0x24537027, 0xf86e9f4a, 0xd82d1df4, 0x51690fdd, 0x98b6d03f, 0x3a0ebe3a, 0x312d6b84, 0x0ba5a182,
@@ -606,25 +600,15 @@ static void TestEEA3(void)
             0x5b961be5, 0xfdfb6807, 0x814039e7, 0x137636bd, 0x1d7fa9e0, 0x9efd2007, 0x505906a5, 0xac45dfde,
             0xed7757bb, 0xee745749, 0xc2963335, 0x0bee0ea6, 0xf409df45, 0x80160000,
         };
+        uint32_t     count = 0x2738cdaa;
+        uint32_t    bearer = 0x1a;
+        uint32_t direction = 0x0;
+        uint32_t    length = 4019;
 
-        obs = (uint32_t *)malloc(sizeof(ibs5));
-        memset(obs, sizeof(ibs5), 0);
-
-        EEA3(ck5, 0x2738cdaa, 0x1a, 0, 4019, ibs5, obs);
-        printf("Out Bit Stream:\n");
-        for (i=0; i<sizeof(ibs5)/sizeof(ibs5[0]); i++)
-        {
-            printf("0x%08x ", obs[i]);
-            if (i%8 == 7)
-            {
-                printf("\n");
-            }
-        }
-        printf("\n");
-        free(obs);
-        obs = NULL;
+        printf("Test Set 5:\n");
+        TestingEEA3(ck, count, bearer, direction, length, ibs);
     }
-#endif
+
 }
 
 void TestEIA3(void)
@@ -634,8 +618,8 @@ void TestEIA3(void)
 
 int main(int argc, char *argv[])
 {
-    //TestZUC();
-    TestEEA3();
+    ZUCTests();
+    //EEA3Tests();
 
     return 0;
 }
