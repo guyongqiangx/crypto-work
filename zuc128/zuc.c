@@ -385,7 +385,31 @@ int EEA3(unsigned char *CK, unsigned int COUNT, unsigned int BEARER, unsigned in
 /* 取 offset 开始开始的 32 bit */
 static uint32_t GetWord(uint32_t S[2], uint32_t offset)
 {
-    return (S[0] << offset) | (S[1] >> (32-offset));
+    uint32_t temp;
+
+    /*
+     * 根据《C陷阱与缺陷》第 7.5 节:
+     * 2. 移位计数(即移位操作的位数)允许的取值范围是什么？
+     *    如果被移位对象的长度是 n 位，那么移位计数必须大于或等于0，而严格小于 n.
+     *    因此，不可能做到在单次操作中将某个数值的所有位都移出。
+     * 所以，如果这里只是单纯使用: (offset = 0 或 32 时就会出错)
+     *    temp = (S[0] << offset) | (S[1] >> (32-offset));
+     */
+
+    if (0 == offset)
+    {
+        temp = S[0];
+    }
+    else if (32 == offset)
+    {
+        temp = S[1];
+    }
+    else
+    {
+        temp = (S[0] << offset) | (S[1] >> (32-offset));
+    }
+
+    return temp;
 }
 /*
  * 128-EIA3: EPS Integrity Algorithm 3, 完整性算法(Integrity)
@@ -402,7 +426,7 @@ int EIA3(unsigned char *IK, unsigned int COUNT, unsigned int BEARER, unsigned in
     ZUC_CTX ctx;
     int i, j;
     uint8_t iv[16];
-    uint32_t L, T, z;
+    uint32_t L, T;
     uint32_t quotient, remainder;
     uint32_t *obs;
 
@@ -421,8 +445,8 @@ int EIA3(unsigned char *IK, unsigned int COUNT, unsigned int BEARER, unsigned in
     iv[ 7] = 0x00;
 
     memcpy(&iv[8], &iv[0], 8);
-    iv[ 8] ^= DIRECTION << 7;
-    iv[14] ^= DIRECTION << 7;
+    iv[ 8] ^= (DIRECTION & 0x01) << 7;
+    iv[14] ^= (DIRECTION & 0x01) << 7;
 
     ZUC_Init(&ctx, IK, iv);
 
@@ -442,8 +466,7 @@ int EIA3(unsigned char *IK, unsigned int COUNT, unsigned int BEARER, unsigned in
         {
             if (M[i] & (0x01 << (31-j)))
             {
-                z = GetWord(&obs[i], j);
-                T ^= z;
+                T ^= GetWord(&obs[i], j);
             }
         }
     }
@@ -455,16 +478,13 @@ int EIA3(unsigned char *IK, unsigned int COUNT, unsigned int BEARER, unsigned in
         {
             if (M[quotient] & (0x01 << (31-j)))
             {
-                z = GetWord(&obs[quotient], j);
-                T ^= z;
+                T ^= GetWord(&obs[quotient], j);
             }
         }
     }
 
     /* T = T ^ Zlen */
-    z = GetWord(&obs[quotient], remainder);
-    T ^= z;
-
+    T ^= GetWord(&obs[quotient], remainder);
     T ^= obs[L-1];
 
     free(obs);
