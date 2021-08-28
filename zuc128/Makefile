@@ -1,4 +1,4 @@
-.PHONY: all clean zuc test
+.PHONY: all clean zuc128 test
 
 CROSS_COMPILE=
 
@@ -14,8 +14,8 @@ LIBS    =
 INCLUDE =
 CFLAGS  = -Wall -g -O2
 
-SRCS    = utils.c zuc.c eea3-128.c eia3-128.c zuctest.c
-TARGET  = zuc
+SRCS    = utils.c zuc128.c eea3-128.c eia3-128.c zuc128test.c
+TARGET  = zuc128
 
 OBJS 	= $(SRCS:.c=.o)
 

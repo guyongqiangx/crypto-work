@@ -1,5 +1,5 @@
 /*
- * @        file: zuc.h
+ * @        file: zuc128.h
  * @ description: header file for zuc.c
  * @      author: Gu Yongqiang
  * @        blog: https://blog.csdn.net/guyongqiangx

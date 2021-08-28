@@ -9,7 +9,7 @@
 #include <string.h> /* strlen */
 #include <unistd.h> /* getopt */
 
-#include "zuc.h"
+#include "zuc128.h"
 
 static void TestingZUC(uint8_t *key, uint8_t *iv, uint32_t len)
 {

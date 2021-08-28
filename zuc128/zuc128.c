@@ -8,7 +8,7 @@
 #include <string.h>
 
 #include "utils.h"
-#include "zuc.h"
+#include "zuc128.h"
 
 //#define DEBUG
 
