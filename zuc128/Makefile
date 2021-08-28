@@ -14,7 +14,7 @@ LIBS    =
 INCLUDE =
 CFLAGS  = -Wall -g -O2
 
-SRCS    = utils.c zuc.c zuctest.c
+SRCS    = utils.c zuc.c eea3-128.c eia3-128.c zuctest.c
 TARGET  = zuc
 
 OBJS 	= $(SRCS:.c=.o)
