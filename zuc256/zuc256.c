@@ -245,7 +245,7 @@ static const uint8_t d[16] =
     0x40, 0x40, 0x40, 0x40, 0x40, 0x52, 0x10, 0x30
 };
 
-#define MAKE31U(a,b,c,d) (((a)<<23)|((b)<<16)|((c)<<8)|(d))
+#define MAKE31U(a,b,c,d) ((((a)<<23)|((b)<<16)|((c)<<8)|(d))&0x7FFFFFFF)
 
 /*
  *  K:  K[0]~K[31], 8 bit
@@ -264,19 +264,20 @@ static void ZUC256_LoadKey(ZUC256_CTX *ctx, uint8_t K[32], uint8_t IV[25])
     s[ 3] = MAKE31U(  K[3], d[ 3], K[24], K[19]);
     s[ 4] = MAKE31U(  K[4], d[ 4], K[25], K[20]);
 
-    s[ 5] = MAKE31U(IV[ 0], d[ 5] | (IV[17] & 0x06),  K[ 5],  K[26]);
-    s[ 6] = MAKE31U(IV[ 1], d[ 6] | (IV[18] & 0x06),  K[ 6],  K[27]);
-    s[ 7] = MAKE31U(IV[10], d[ 7] | (IV[19] & 0x06),  K[ 7], IV[ 2]);
-    s[ 8] = MAKE31U( K[ 8], d[ 8] | (IV[20] & 0x06), IV[ 3], IV[11]);
-    s[ 9] = MAKE31U( K[ 9], d[ 9] | (IV[21] & 0x06), IV[12], IV[ 4]);
+    s[ 5] = MAKE31U(IV[ 0], d[ 5] | (IV[17] & 0x3F),  K[ 5],  K[26]);
+    s[ 6] = MAKE31U(IV[ 1], d[ 6] | (IV[18] & 0x3F),  K[ 6],  K[27]);
+    s[ 7] = MAKE31U(IV[10], d[ 7] | (IV[19] & 0x3F),  K[ 7], IV[ 2]);
+    s[ 8] = MAKE31U( K[ 8], d[ 8] | (IV[20] & 0x3F), IV[ 3], IV[11]);
+    s[ 9] = MAKE31U( K[ 9], d[ 9] | (IV[21] & 0x3F), IV[12], IV[ 4]);
 
-    s[10] = MAKE31U(IV[ 5], d[10] | (IV[22] & 0x06),  K[10],  K[28]);
-    s[11] = MAKE31U( K[11], d[11] | (IV[23] & 0x06), IV[ 6], IV[13]);
-    s[12] = MAKE31U( K[12], d[12] | (IV[24] & 0x06), IV[ 7], IV[14]);
+    s[10] = MAKE31U(IV[ 5], d[10] | (IV[22] & 0x3F),  K[10],  K[28]);
+    s[11] = MAKE31U( K[11], d[11] | (IV[23] & 0x3F), IV[ 6], IV[13]);
+    s[12] = MAKE31U( K[12], d[12] | (IV[24] & 0x3F), IV[ 7], IV[14]);
     s[13] = MAKE31U( K[13], d[13],                   IV[15], IV[ 8]);
 
-    s[14] = MAKE31U( K[14], d[14] | ((K[31] >> 27) && 0x0F), IV[16], IV[19]);
-    s[15] = MAKE31U( K[15], d[15] | (K[31] & 0x0F),           K[30],  K[29]);
+    s[14] = MAKE31U( K[14], d[14] | ((K[31] >> 4) & 0x0F), IV[16], (IV[19] & 0x3F));
+    //s[14] = MAKE31U( K[14], d[14] | (K[31] & 0xF0), IV[16], (IV[19] & 0x3F));
+    s[15] = MAKE31U( K[15], d[15] | (K[31] & 0x0F),         K[30],  K[29]);
 
     for (i=0; i<16; i++)
     {
@@ -307,7 +308,7 @@ int ZUC256_Init(ZUC256_CTX *ctx, unsigned char *key, unsigned char *iv)
             i, ctx->X[0], ctx->X[1], ctx->X[2], ctx->X[3], ctx->R1, ctx->R2, W, ctx->s[15]);
     }
 
-    /* round 33 */
+    /* round 32 */
     BitReorganization(ctx);
     W = F(ctx); /* 丢弃 W */
     LFSRWithWorkMode(ctx);
