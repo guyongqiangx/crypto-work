@@ -18,7 +18,8 @@
 #define DBG(...)
 #endif
 
-#define ZUC_MOD_NUM ((2<<31)-1)
+/* (2^31) - 1 = 2,147,483,647 = (2UL<<30) - 1 = 0x7FFFFFFF */
+#define ZUC_MOD_NUM 0x7FFFFFFFUL
 
 /* 31位循环左移: ROTate Left (circular left shift) */
 static uint32_t ROTL31(uint32_t x, uint8_t shift)
@@ -48,7 +49,7 @@ static uint32_t L2(uint32_t x)
 }
 
 /* The S-box S0 (S0=S2, S=(S0,S1,S2,S3)) */
-static uint8_t S0[256] =
+static const uint8_t S0[256] =
 {
     0x3E, 0x72, 0x5B, 0x47, 0xCA, 0xE0, 0x00, 0x33, 0x04, 0xD1, 0x54, 0x98, 0x09, 0xB9, 0x6D, 0xCB,
     0x7B, 0x1B, 0xF9, 0x32, 0xAF, 0x9D, 0x6A, 0xA5, 0xB8, 0x2D, 0xFC, 0x1D, 0x08, 0x53, 0x03, 0x90,
@@ -69,7 +70,7 @@ static uint8_t S0[256] =
 };
 
 /* The S-box S1 (S1=S3, S=(S0,S1,S2,S3)) */
-static uint8_t S1[256] =
+static const uint8_t S1[256] =
 {
     0x55, 0xC2, 0x63, 0x71, 0x3B, 0xC8, 0x47, 0x86, 0x9F, 0x3C, 0xDA, 0x5B, 0x29, 0xAA, 0xFD, 0x77,
     0x8C, 0xC5, 0x94, 0x0C, 0xA6, 0x1A, 0x13, 0x00, 0xE3, 0xA8, 0x16, 0x72, 0x40, 0xF9, 0xF8, 0x42,
@@ -123,6 +124,11 @@ static void LFSRWithInitialisationMode(ZUC256_CTX *ctx, uint32_t u)
     v = modular_add(v, ROTL31(s[ 0],  8));
     v = modular_add(v, s[ 0]);
 
+    if (0 == v)
+    {
+        v = ZUC_MOD_NUM;
+    }
+
     s16 = modular_add(v, u);
 
     if (0 == s16)
@@ -130,7 +136,23 @@ static void LFSRWithInitialisationMode(ZUC256_CTX *ctx, uint32_t u)
         s16 = ZUC_MOD_NUM;
     }
 
-    memcpy(&s[0], &s[1], 15 * sizeof(s[0]));
+    /* warning: ‘__builtin_memcpy’ accessing 60 bytes at offsets 4 and 8 overlaps 56 bytes at offset 8 [-Wrestrict] */
+    //memcpy(&s[0], &s[1], 15 * sizeof(s[0]));
+    s[ 0] = s[ 1];
+    s[ 1] = s[ 2];
+    s[ 2] = s[ 3];
+    s[ 3] = s[ 4];
+    s[ 4] = s[ 5];
+    s[ 5] = s[ 6];
+    s[ 6] = s[ 7];
+    s[ 7] = s[ 8];
+    s[ 8] = s[ 9];
+    s[ 9] = s[10];
+    s[10] = s[11];
+    s[11] = s[12];
+    s[12] = s[13];
+    s[13] = s[14];
+    s[14] = s[15];
     s[15] = s16;
 }
 
@@ -154,12 +176,28 @@ static void LFSRWithWorkMode(ZUC256_CTX *ctx)
         s16 = ZUC_MOD_NUM;
     }
 
-    memcpy(&s[0], &s[1], 15 * sizeof(s[0]));
+    /* warning: ‘__builtin_memcpy’ accessing 60 bytes at offsets 4 and 8 overlaps 56 bytes at offset 8 [-Wrestrict] */
+    //memcpy(&s[0], &s[1], 15 * sizeof(s[0]));
+    s[ 0] = s[ 1];
+    s[ 1] = s[ 2];
+    s[ 2] = s[ 3];
+    s[ 3] = s[ 4];
+    s[ 4] = s[ 5];
+    s[ 5] = s[ 6];
+    s[ 6] = s[ 7];
+    s[ 7] = s[ 8];
+    s[ 8] = s[ 9];
+    s[ 9] = s[10];
+    s[10] = s[11];
+    s[11] = s[12];
+    s[12] = s[13];
+    s[13] = s[14];
+    s[14] = s[15];
     s[15] = s16;
 }
 
 /* 比特重组 BR (Bit-Reorganization) */
-static void BitReconstruction(ZUC256_CTX *ctx)
+static void BitReorganization(ZUC256_CTX *ctx)
 {
     uint32_t *S, *X;
 
@@ -185,7 +223,7 @@ static void BitReconstruction(ZUC256_CTX *ctx)
 #define HIGH16(x)   ((x)&0xFFFF0000)
 #define  LOW16(x)   ((x)&0x0000FFFF)
 
-/* 非线性函数 F */
+/* 非线性函数 F(X0, X1, X2) */
 static uint32_t F(ZUC256_CTX *ctx)
 {
     uint32_t W, W1, W2;
@@ -200,22 +238,48 @@ static uint32_t F(ZUC256_CTX *ctx)
     return W;
 }
 
-/* 240 bits 的密钥常量 */
-static uint32_t D[16] =
+/* 16 x 7 bit 的密钥常量 */
+static const uint8_t d[16] =
 {
-    0x44D7, 0x26BC, 0x626B, 0x135E, 0x5789, 0x35E2, 0x7135, 0x09AF,
-    0x4D78, 0x2F13, 0x6BC4, 0x1AF1, 0x5E26, 0x3C4D, 0x789A, 0x47AC
+    0x22, 0x2F, 0x24, 0x2A, 0x6D, 0x40, 0x40, 0x40,
+    0x40, 0x40, 0x40, 0x40, 0x40, 0x52, 0x10, 0x30
 };
 
-static void ZUC256_LoadKey(ZUC256_CTX *ctx, uint8_t key[16], uint8_t iv[16])
+#define MAKE31U(a,b,c,d) (((a)<<23)|((b)<<16)|((c)<<8)|(d))
+
+/*
+ *  K:  K[0]~K[31], 8 bit
+ * IV: IV[0]~IV[24], 0~16: 8 bit; 17~24: 6 bit;
+ */
+static void ZUC256_LoadKey(ZUC256_CTX *ctx, uint8_t K[32], uint8_t IV[25])
 {
     uint32_t *s;
     int i;
 
     s = ctx->s;
+
+    s[ 0] = MAKE31U(  K[0], d[ 0], K[21], K[16]);
+    s[ 1] = MAKE31U(  K[1], d[ 1], K[22], K[17]);
+    s[ 2] = MAKE31U(  K[2], d[ 2], K[23], K[18]);
+    s[ 3] = MAKE31U(  K[3], d[ 3], K[24], K[19]);
+    s[ 4] = MAKE31U(  K[4], d[ 4], K[25], K[20]);
+
+    s[ 5] = MAKE31U(IV[ 0], d[ 5] | (IV[17] & 0x06),  K[ 5],  K[26]);
+    s[ 6] = MAKE31U(IV[ 1], d[ 6] | (IV[18] & 0x06),  K[ 6],  K[27]);
+    s[ 7] = MAKE31U(IV[10], d[ 7] | (IV[19] & 0x06),  K[ 7], IV[ 2]);
+    s[ 8] = MAKE31U( K[ 8], d[ 8] | (IV[20] & 0x06), IV[ 3], IV[11]);
+    s[ 9] = MAKE31U( K[ 9], d[ 9] | (IV[21] & 0x06), IV[12], IV[ 4]);
+
+    s[10] = MAKE31U(IV[ 5], d[10] | (IV[22] & 0x06),  K[10],  K[28]);
+    s[11] = MAKE31U( K[11], d[11] | (IV[23] & 0x06), IV[ 6], IV[13]);
+    s[12] = MAKE31U( K[12], d[12] | (IV[24] & 0x06), IV[ 7], IV[14]);
+    s[13] = MAKE31U( K[13], d[13],                   IV[15], IV[ 8]);
+
+    s[14] = MAKE31U( K[14], d[14] | ((K[31] >> 27) && 0x0F), IV[16], IV[19]);
+    s[15] = MAKE31U( K[15], d[15] | (K[31] & 0x0F),           K[30],  K[29]);
+
     for (i=0; i<16; i++)
     {
-        s[i] = (key[i] << 23) | (D[i] << 8) | iv[i];
         DBG("s[%2d]=0x%08x\n", i, s[i]);
     }
 }
@@ -232,15 +296,21 @@ int ZUC256_Init(ZUC256_CTX *ctx, unsigned char *key, unsigned char *iv)
     ctx->R1 = 0;
     ctx->R2 = 0;
 
+    /* round 0~31 */
     for (i=0; i<32; i++)
     {
-        BitReconstruction(ctx);
+        BitReorganization(ctx);
         W = F(ctx);
         LFSRWithInitialisationMode(ctx, W>>1);
 
         DBG("%2d: X0=0x%08x, X1=0x%08x, X2=0x%08x, X3=0x%08x, R1=0x%08x, R2=0x%08x, W=0x%08x, S15=0x%08x\n",
             i, ctx->X[0], ctx->X[1], ctx->X[2], ctx->X[3], ctx->R1, ctx->R2, W, ctx->s[15]);
     }
+
+    /* round 33 */
+    BitReorganization(ctx);
+    W = F(ctx); /* 丢弃 W */
+    LFSRWithWorkMode(ctx);
 
     ctx->state = ZUC_STATE_INITIALIZED;
 
@@ -259,19 +329,12 @@ int ZUC256_GenerateKeyStream(ZUC256_CTX *ctx, unsigned int *out, unsigned int le
 
     if (ctx->state == ZUC_STATE_INITIALIZED)
     {
-        BitReconstruction(ctx);
-        // F(ctx);
-        Z=F(ctx) ^ ctx->X[3]; /* 调试需要, 保存 F 函数结果 */
-        LFSRWithWorkMode(ctx);
-        DBG("    X0=0x%08x, X1=0x%08x, X2=0x%08x, X3=0x%08x, R1=0x%08x, R2=0x%08x, z=0x%08x, S15=0x%08x\n",
-            ctx->X[0], ctx->X[1], ctx->X[2], ctx->X[3], ctx->R1, ctx->R2, Z, ctx->s[15]);
-
         ctx->state = ZUC_STATE_WORKING;
     }
 
     while (len > 0)
     {
-        BitReconstruction(ctx);
+        BitReorganization(ctx);
         Z = F(ctx) ^ ctx->X[3];
         LFSRWithWorkMode(ctx);
 
