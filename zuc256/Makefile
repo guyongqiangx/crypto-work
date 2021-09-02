@@ -14,7 +14,7 @@ LIBS    =
 INCLUDE =
 CFLAGS  = -Wall -g -O2
 
-SRCS    = utils.c zuc256.c eea3-256.c eia3-256.c zuc256test.c
+SRCS    = utils.c zuc256.c zuc256_mac.c zuc256test.c
 TARGET  = zuc256
 
 OBJS 	= $(SRCS:.c=.o)

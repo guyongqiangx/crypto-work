@@ -52,6 +52,13 @@ int ZUC256_GenerateKeyStream(ZUC256_CTX *ctx, unsigned int *out, unsigned int le
 
 int ZUC256(unsigned char *key, unsigned char *iv, unsigned int length, unsigned int *ibs, unsigned int *obs);
 
-int EEA3(unsigned char *CK, unsigned int COUNT, unsigned int BEARER, unsigned int DIRECTION, unsigned int LENGTH, unsigned int *IBS, unsigned int *OBS);
-int EIA3(unsigned char *IK, unsigned int COUNT, unsigned int BEARER, unsigned int DIRECTION, unsigned int LENGTH, unsigned int *M, unsigned int *MAC);
+typedef struct zuc256_mac_context {
+    ZUC256_CTX ctx;
+    ZUC256_TYPE type;
+}ZUC256_MAC_CTX;
+
+int ZUC256_MAC_Init(ZUC256_MAC_CTX *c, ZUC256_TYPE type, unsigned char *key, unsigned char *iv);
+int ZUC256_MAC_Update(ZUC256_MAC_CTX *c, const void *data, size_t len);
+int ZUC256_MAC_Final(unsigned char *md, ZUC256_MAC_CTX *c);
+unsigned char *ZUC256_MAC(ZUC256_TYPE type, const unsigned char *d, size_t n, unsigned char *md);
 #endif

@@ -1,6 +1,6 @@
 /*
  * @        file: zuc.c
- * @ description: implementation for the zuc
+ * @ description: implementation for the ZUC-256 MAC
  * @      author: Gu Yongqiang
  * @        blog: https://blog.csdn.net/guyongqiangx
  */
@@ -18,6 +18,24 @@
 #define DBG(...)
 #endif
 
+int ZUC256_MAC_Init(ZUC256_MAC_CTX *c, ZUC256_TYPE type, unsigned char *key, unsigned char *iv)
+{
+    return ERR_OK;
+}
+int ZUC256_MAC_Update(ZUC256_MAC_CTX *c, const void *data, size_t len)
+{
+    return ERR_OK;
+}
+int ZUC256_MAC_Final(unsigned char *md, ZUC256_MAC_CTX *c)
+{
+    return ERR_OK;
+}
+unsigned char *ZUC256_MAC(ZUC256_TYPE type, const unsigned char *d, size_t n, unsigned char *md)
+{
+    return ERR_OK;
+}
+
+#if 0
 #include <malloc.h>
 
 /* 取 offset 开始开始的 32 bit */
@@ -132,3 +150,5 @@ int EIA3(unsigned char *IK, unsigned int COUNT, unsigned int BEARER, unsigned in
 
     return ERR_OK;
 }
+
+#endif
