@@ -239,10 +239,28 @@ static uint32_t F(ZUC256_CTX *ctx)
 }
 
 /* 16 x 7 bit 的密钥常量 */
-static const uint8_t d[16] =
+static const uint8_t D[4][16] =
 {
-    0x22, 0x2F, 0x24, 0x2A, 0x6D, 0x40, 0x40, 0x40,
-    0x40, 0x40, 0x40, 0x40, 0x40, 0x52, 0x10, 0x30
+    /* 0: constants for key stream */
+    {
+        0x22, 0x2F, 0x24, 0x2A, 0x6D, 0x40, 0x40, 0x40,
+        0x40, 0x40, 0x40, 0x40, 0x40, 0x52, 0x10, 0x30
+    },
+    /* 1: constants for   32-bit MAC */
+    {
+        0x22, 0x2F, 0x25, 0x2A, 0x6D, 0x40, 0x40, 0x40,
+        0x40, 0x40, 0x40, 0x40, 0x40, 0x52, 0x10, 0x30
+    },
+    /* 2: constants for  64-bit MAC */
+    {
+        0x23, 0x2F, 0x24, 0x2A, 0x6D, 0x40, 0x40, 0x40,
+        0x40, 0x40, 0x40, 0x40, 0x40, 0x52, 0x10, 0x30
+    },
+    /* 3: constants for 128-bit MAC */
+    {
+        0x23, 0x2F, 0x25, 0x2A, 0x6D, 0x40, 0x40, 0x40,
+        0x40, 0x40, 0x40, 0x40, 0x40, 0x52, 0x10, 0x30
+    },
 };
 
 #define MAKE31U(a,b,c,d) ((((a)<<23)|((b)<<16)|((c)<<8)|(d))&0x7FFFFFFF)
@@ -251,11 +269,18 @@ static const uint8_t d[16] =
  *  K:  K[0]~K[31], 8 bit
  * IV: IV[0]~IV[24], 0~16: 8 bit; 17~24: 6 bit;
  */
-static void ZUC256_LoadKey(ZUC256_CTX *ctx, uint8_t K[32], uint8_t IV[25])
+static int ZUC256_LoadKey(ZUC256_CTX *ctx, ZUC256_TYPE type, uint8_t K[32], uint8_t IV[25])
 {
+    uint8_t const *d;
     uint32_t *s;
     int i;
 
+    if ((NULL == ctx) || (NULL == K) || (NULL == IV) || (type > ZUC256_TYPE_MAX))
+    {
+        return ERR_INV_PARAM;
+    }
+
+    d = D[type];
     s = ctx->s;
 
     s[ 0] = MAKE31U(  K[0], d[ 0], K[21], K[16]);
@@ -282,6 +307,8 @@ static void ZUC256_LoadKey(ZUC256_CTX *ctx, uint8_t K[32], uint8_t IV[25])
     {
         DBG("s[%2d]=0x%08x\n", i, s[i]);
     }
+
+    return ERR_OK;
 }
 
 /* 算法初始化阶段 */
@@ -292,7 +319,7 @@ int ZUC256_Init(ZUC256_CTX *ctx, unsigned char *key, unsigned char *iv)
 
     ctx->state = ZUC_STATE_INVALID;
 
-    ZUC256_LoadKey(ctx, key, iv);
+    ZUC256_LoadKey(ctx, ZUC256_TYPE_KEYSTREAM, key, iv);
     ctx->R1 = 0;
     ctx->R2 = 0;
 

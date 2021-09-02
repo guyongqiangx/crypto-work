@@ -25,7 +25,15 @@ typedef enum {
     ZUC_STATE_MAX = ZUC_STATE_WORKING
 } ZUC_STATE;
 
-typedef struct zuc_context {
+typedef enum {
+    ZUC256_TYPE_KEYSTREAM = 0,
+    ZUC256_TYPE_MAC32,
+    ZUC256_TYPE_MAC64,
+    ZUC256_TYPE_MAC128,
+    ZUC256_TYPE_MAX = ZUC256_TYPE_MAC128
+} ZUC256_TYPE;
+
+typedef struct zuc256_context {
     ZUC_STATE state;
 
     /* 16 个 31 bit 变量 */
