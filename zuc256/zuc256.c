@@ -322,8 +322,6 @@ int ZUC256_Init(ZUC256_CTX *ctx, ZUC256_TYPE type, unsigned char *key, unsigned 
         return ERR_INV_PARAM;
     }
 
-    ctx->state = ZUC_STATE_INVALID;
-
     ZUC256_LoadKey(ctx, type, key, iv);
     ctx->R1 = 0;
     ctx->R2 = 0;
@@ -344,8 +342,6 @@ int ZUC256_Init(ZUC256_CTX *ctx, ZUC256_TYPE type, unsigned char *key, unsigned 
     W = F(ctx); /* 丢弃 W */
     LFSRWithWorkMode(ctx);
 
-    ctx->state = ZUC_STATE_INITIALIZED;
-
     return ERR_OK;
 }
 
@@ -354,14 +350,9 @@ int ZUC256_GenerateKeyStream(ZUC256_CTX *ctx, unsigned int *out, unsigned int le
 {
     uint32_t Z;
 
-    if ((NULL == ctx) || (NULL == out) || (ctx->state == ZUC_STATE_INVALID))
+    if ((NULL == ctx) || (NULL == out))
     {
         return ERR_INV_PARAM;
-    }
-
-    if (ctx->state == ZUC_STATE_INITIALIZED)
-    {
-        ctx->state = ZUC_STATE_WORKING;
     }
 
     while (len > 0)

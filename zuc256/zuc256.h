@@ -19,13 +19,6 @@ typedef unsigned int       uint32_t;
 typedef unsigned long long uint64_t;
 
 typedef enum {
-    ZUC_STATE_INVALID = 0,
-    ZUC_STATE_INITIALIZED,
-    ZUC_STATE_WORKING,
-    ZUC_STATE_MAX = ZUC_STATE_WORKING
-} ZUC_STATE;
-
-typedef enum {
     ZUC256_TYPE_KEYSTREAM = 0,
     ZUC256_TYPE_MAC32,
     ZUC256_TYPE_MAC64,
@@ -34,7 +27,6 @@ typedef enum {
 } ZUC256_TYPE;
 
 typedef struct zuc256_context {
-    ZUC_STATE state;
 
     /* 16 个 31 bit 变量 */
     uint32_t s[16];
