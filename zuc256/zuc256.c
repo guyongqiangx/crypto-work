@@ -275,8 +275,7 @@ static void ZUC256_LoadKey(ZUC256_CTX *ctx, uint8_t K[32], uint8_t IV[25])
     s[12] = MAKE31U( K[12], d[12] | (IV[24] & 0x3F), IV[ 7], IV[14]);
     s[13] = MAKE31U( K[13], d[13],                   IV[15], IV[ 8]);
 
-    s[14] = MAKE31U( K[14], d[14] | ((K[31] >> 4) & 0x0F), IV[16], (IV[19] & 0x3F));
-    //s[14] = MAKE31U( K[14], d[14] | (K[31] & 0xF0), IV[16], (IV[19] & 0x3F));
+    s[14] = MAKE31U( K[14], d[14] | ((K[31] >> 4) & 0x0F), IV[16], IV[ 9]);
     s[15] = MAKE31U( K[15], d[15] | (K[31] & 0x0F),         K[30],  K[29]);
 
     for (i=0; i<16; i++)
