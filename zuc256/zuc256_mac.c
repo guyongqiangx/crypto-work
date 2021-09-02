@@ -18,137 +18,157 @@
 #define DBG(...)
 #endif
 
-int ZUC256_MAC_Init(ZUC256_MAC_CTX *c, ZUC256_TYPE type, unsigned char *key, unsigned char *iv)
+static int GetBit(const uint32_t *ibs, uint32_t offset)
 {
-    return ERR_OK;
-}
-int ZUC256_MAC_Update(ZUC256_MAC_CTX *c, const void *data, size_t len)
-{
-    return ERR_OK;
-}
-int ZUC256_MAC_Final(unsigned char *md, ZUC256_MAC_CTX *c)
-{
-    return ERR_OK;
-}
-unsigned char *ZUC256_MAC(ZUC256_TYPE type, const unsigned char *d, size_t n, unsigned char *md)
-{
-    return ERR_OK;
+    /* word 偏移地址 */
+    ibs = ibs + offset / 32;
+    /* word 内 bit 偏移位置 */
+    offset = offset % 32;
+
+    return (*ibs >> (31-offset)) & 0x01;
 }
 
-#if 0
-#include <malloc.h>
-
-/* 取 offset 开始开始的 32 bit */
-static uint32_t GetWord(uint32_t S[2], uint32_t offset)
+static uint32_t GetWord(const uint32_t *ibs, uint32_t offset)
 {
     uint32_t temp;
 
-    /*
-     * 根据《C陷阱与缺陷》第 7.5 节:
-     * 2. 移位计数(即移位操作的位数)允许的取值范围是什么？
-     *    如果被移位对象的长度是 n 位，那么移位计数必须大于或等于0，而严格小于 n.
-     *    因此，不可能做到在单次操作中将某个数值的所有位都移出。
-     * 所以，如果这里只是单纯使用: (offset = 0 或 32 时就会出错)
-     *    temp = (S[0] << offset) | (S[1] >> (32-offset));
-     */
+    /* word 偏移地址 */
+    ibs = ibs + offset / 32;
+    /* word 内 bit 偏移位置 */
+    offset = offset % 32;
 
-    if (0 == offset)
+    if (offset == 0)
     {
-        temp = S[0];
-    }
-    else if (32 == offset)
-    {
-        temp = S[1];
+        temp = ibs[0];
     }
     else
     {
-        temp = (S[0] << offset) | (S[1] >> (32-offset));
+        temp = (ibs[0] << offset) | (ibs[1] >> (32-offset));
     }
 
     return temp;
 }
-/*
- * 128-EIA3: EPS Integrity Algorithm 3, 完整性算法(Integrity)
- *        IK: 128-bit integrity key
- *     COUNT: 32-bit counter
- *    BEARER: 5-bit bearer identity
- * DIRECTION: 1-bit input indicating the direction of transmission
- *    LENGTH: bits of message
- *         M: message
- *       MAC: message authentication code
- */
-int EIA3(unsigned char *IK, unsigned int COUNT, unsigned int BEARER, unsigned int DIRECTION, unsigned int LENGTH, unsigned int *M, unsigned int *MAC)
-{
-    ZUC256_CTX ctx;
-    int i, j;
-    uint8_t iv[16];
-    uint32_t L, T;
-    uint32_t quotient, remainder;
-    uint32_t *obs;
 
-    if ((NULL == IK) || (NULL == M) || (NULL == MAC) || (0 == LENGTH))
+static uint32_t *GetTag(const uint32_t *ibs, uint32_t offset, uint32_t *tag, uint32_t len)
+{
+    int i;
+    uint32_t *temp;
+
+    temp = tag;
+    for (i=0; i<len/32; i++)
+    {
+        *temp ++ = GetWord(ibs, offset);
+        offset += 32;
+    }
+
+    return tag;
+}
+
+static void XorTag(uint32_t *tag, uint32_t *w, uint32_t size)
+{
+    uint32_t i;
+    for (i=0; i<size; i++)
+    {
+        *tag++ ^= *w++;
+    }
+}
+
+
+/* 单次处理字(word)数量 */
+#define MAC_BUFFER_SIZE 128
+#define BUF_WORD_COUNT 128
+
+/*
+ * 使用已经初始化好的上下文计算 n bit 的 MAC 值, 每次处理不多于 32 * BUF_WORD_COUNT 比特
+ */
+static void zuc256_mac_internal(ZUC256_CTX *ctx, int mode, const unsigned char *data, size_t n)
+{
+    int i;
+    uint32_t L, size;
+    uint32_t *Tag, W[4];
+    uint32_t obs[BUF_WORD_COUNT+8];
+
+    Tag = ctx->Tag;
+    size = 2 << ctx->type;
+
+    L = (n + 31) / 32 + (1 << ctx->type);
+    ZUC256_GenerateKeyStream(ctx, obs, L);
+
+    if (ctx->Tag[0] == 0) /* 第一次 */
+    {
+        GetTag(obs, 0, Tag, size);
+    }
+
+    for (i=0; i<n; i++)
+    {
+        if (1 == GetBit(data, i))
+        {
+            GetTag(obs, i, W, size);
+            XorTag(Tag, W, size);
+        }
+    }
+
+    if (mode == 1) /* 最后一次 */
+    {
+        GetTag(obs, L, W, size);
+        XorTag(Tag, W, size);
+    }
+}
+
+int ZUC256_MAC_Init(ZUC256_CTX *ctx, ZUC256_TYPE type, unsigned char *key, unsigned char *iv)
+{
+    if ((NULL==ctx) || (NULL==key) || (NULL==iv))
     {
         return ERR_INV_PARAM;
     }
 
-    iv[ 0] = (COUNT >> 24) & 0xFF;
-    iv[ 1] = (COUNT >> 16) & 0xFF;
-    iv[ 2] = (COUNT >>  8) & 0xFF;
-    iv[ 3] = COUNT & 0xFF;
-    iv[ 4] = ((BEARER & 0x1F) << 3);
-    iv[ 5] = 0x00;
-    iv[ 6] = 0x00;
-    iv[ 7] = 0x00;
-
-    memcpy(&iv[8], &iv[0], 8);
-    iv[ 8] ^= (DIRECTION & 0x01) << 7;
-    iv[14] ^= (DIRECTION & 0x01) << 7;
-
-    ZUC256_Init(&ctx, IK, iv);
-
-    L = (LENGTH + 31) / 32 + 2;
-    obs = (uint32_t *)malloc(L * sizeof(uint32_t));
-    ZUC256_GenerateKeyStream(&ctx, obs, L);
-
-    T = 0;
-
-    quotient = LENGTH / 32;
-    remainder = LENGTH % 32;
-
-    /* 逐字处理 32 bit 部分 */
-    for (i=0; i<quotient; i++)
+    if ((type==ZUC256_TYPE_KEYSTREAM) || (type>ZUC256_TYPE_MAX))
     {
-        for (j=0; j<32; j++)
-        {
-            if (M[i] & (0x01 << (31-j)))
-            {
-                T ^= GetWord(&obs[i], j);
-            }
-        }
+        return ERR_INV_PARAM;
     }
 
-    /* 处理不足 32 bit 的剩余部分 */
-    if (remainder)
-    {
-        for (j=0; j<remainder; j++)
-        {
-            if (M[quotient] & (0x01 << (31-j)))
-            {
-                T ^= GetWord(&obs[quotient], j);
-            }
-        }
-    }
-
-    /* T = T ^ Zlen */
-    T ^= GetWord(&obs[quotient], remainder);
-    T ^= obs[L-1];
-
-    free(obs);
-    obs = NULL;
-
-    *MAC = T;
+    ZUC256_Init(ctx, type, key, iv);
 
     return ERR_OK;
 }
 
-#endif
+int ZUC256_MAC_Update(ZUC256_CTX *ctx, const void *data, size_t len)
+{
+    return ERR_OK;
+}
+
+int ZUC256_MAC_Final(unsigned char *md, ZUC256_CTX *ctx)
+{
+    return ERR_OK;
+}
+
+/*
+ * n: 计算 MAC 的比特流长度(bit)
+ */
+unsigned char *ZUC256_MAC(ZUC256_TYPE type, unsigned char *key, unsigned char *iv, const unsigned char *d, size_t n, unsigned char *md)
+{
+    ZUC256_CTX ctx;
+    uint32_t *temp;
+
+    ZUC256_MAC_Init(&ctx, type, key, iv);
+
+    if (n <= BUF_WORD_COUNT * 32)
+    {
+        zuc256_mac_internal(&ctx, 1, d, n);
+    }
+    else
+    {
+        while (n > BUF_WORD_COUNT * 32)
+        {
+            zuc256_mac_internal(&ctx, 0, d, BUF_WORD_COUNT * 32);
+            n -= BUF_WORD_COUNT * 32;
+            d += BUF_WORD_COUNT;
+        }
+
+        zuc256_mac_internal(&ctx, 1, d, n);
+    }
+
+    /* TODO: copy MAC */
+
+    return md;
+}
