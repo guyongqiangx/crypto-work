@@ -269,18 +269,18 @@ static const uint8_t D[4][16] =
  *  K:  K[0]~K[31], 8 bit
  * IV: IV[0]~IV[24], 0~16: 8 bit; 17~24: 6 bit;
  */
-static int ZUC256_LoadKey(ZUC256_CTX *ctx, ZUC256_TYPE type, uint8_t K[32], uint8_t IV[25])
+static int ZUC256_LoadKey(ZUC256_CTX *ctx, uint8_t K[32], uint8_t IV[25])
 {
     uint8_t const *d;
     uint32_t *s;
     int i;
 
-    if ((NULL == ctx) || (NULL == K) || (NULL == IV) || (type > ZUC256_TYPE_MAX))
+    if ((NULL == ctx) || (NULL == K) || (NULL == IV))
     {
         return ERR_INV_PARAM;
     }
 
-    d = D[type];
+    d = D[ctx->type];
     s = ctx->s;
 
     s[ 0] = MAKE31U(  K[0], d[ 0], K[21], K[16]);
@@ -322,7 +322,10 @@ int ZUC256_Init(ZUC256_CTX *ctx, ZUC256_TYPE type, unsigned char *key, unsigned 
         return ERR_INV_PARAM;
     }
 
-    ZUC256_LoadKey(ctx, type, key, iv);
+    memset(ctx, 0, sizeof(ZUC256_CTX));
+    ctx->type = type;
+
+    ZUC256_LoadKey(ctx, key, iv);
     ctx->R1 = 0;
     ctx->R2 = 0;
 
@@ -338,9 +341,11 @@ int ZUC256_Init(ZUC256_CTX *ctx, ZUC256_TYPE type, unsigned char *key, unsigned 
     }
 
     /* round 32 */
-    BitReorganization(ctx);
-    W = F(ctx); /* 丢弃 W */
-    LFSRWithWorkMode(ctx);
+    {
+        BitReorganization(ctx);
+        W = F(ctx); /* 丢弃 W */
+        LFSRWithWorkMode(ctx);
+    }
 
     return ERR_OK;
 }
