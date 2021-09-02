@@ -312,14 +312,19 @@ static int ZUC256_LoadKey(ZUC256_CTX *ctx, ZUC256_TYPE type, uint8_t K[32], uint
 }
 
 /* 算法初始化阶段 */
-int ZUC256_Init(ZUC256_CTX *ctx, unsigned char *key, unsigned char *iv)
+int ZUC256_Init(ZUC256_CTX *ctx, ZUC256_TYPE type, unsigned char *key, unsigned char *iv)
 {
     int i;
     uint32_t W;
 
+    if ((NULL==ctx) || (NULL==key) || (NULL==iv) || (type>ZUC256_TYPE_MAX))
+    {
+        return ERR_INV_PARAM;
+    }
+
     ctx->state = ZUC_STATE_INVALID;
 
-    ZUC256_LoadKey(ctx, ZUC256_TYPE_KEYSTREAM, key, iv);
+    ZUC256_LoadKey(ctx, type, key, iv);
     ctx->R1 = 0;
     ctx->R2 = 0;
 
@@ -390,7 +395,7 @@ int ZUC256(unsigned char *key, unsigned char *iv, unsigned int length, unsigned 
     quotient = length / 32;
     remainder = length % 32;
 
-    ZUC256_Init(&ctx, key, iv);
+    ZUC256_Init(&ctx, ZUC256_TYPE_KEYSTREAM, key, iv);
 
     ZUC256_GenerateKeyStream(&ctx, obs, len);
 

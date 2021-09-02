@@ -20,7 +20,7 @@ static void TestingZUC(uint8_t *key, uint8_t *iv, uint32_t len)
 
     z = (uint32_t *)malloc(len * sizeof(uint32_t));
 
-    ZUC256_Init(&ctx, key, iv);
+    ZUC256_Init(&ctx, ZUC256_TYPE_KEYSTREAM, key, iv);
     printf("R1=0x%08x, R2=0x%08x\n", ctx.R1, ctx.R2);
     for (i=0; i<16; i++)
     {

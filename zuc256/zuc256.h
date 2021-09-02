@@ -47,7 +47,7 @@ typedef struct zuc256_context {
     uint32_t R2;
 }ZUC256_CTX;
 
-int ZUC256_Init(ZUC256_CTX *ctx, unsigned char *key, unsigned char *iv);
+int ZUC256_Init(ZUC256_CTX *ctx, ZUC256_TYPE type, unsigned char *key, unsigned char *iv);
 int ZUC256_GenerateKeyStream(ZUC256_CTX *ctx, unsigned int *out, unsigned int len);
 
 int ZUC256(unsigned char *key, unsigned char *iv, unsigned int length, unsigned int *ibs, unsigned int *obs);
