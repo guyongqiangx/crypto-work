@@ -18,8 +18,12 @@
 #define DBG(...)
 #endif
 
-static int GetBit(const uint32_t *ibs, uint32_t offset)
+static int GetBit(const unsigned char *data, uint32_t offset)
 {
+    uint32_t *ibs;
+
+    ibs = (uint32_t *)data;
+
     /* word 偏移地址 */
     ibs = ibs + offset / 32;
     /* word 内 bit 偏移位置 */
@@ -73,7 +77,7 @@ static void XorTag(uint32_t *tag, uint32_t *w, uint32_t size)
     }
 }
 
-
+#if 0
 /* 单次处理字(word)数量 */
 #define MAC_BUFFER_SIZE 128
 #define BUF_WORD_COUNT 128
@@ -89,9 +93,9 @@ static void zuc256_mac_internal(ZUC256_CTX *ctx, int mode, const unsigned char *
     uint32_t obs[BUF_WORD_COUNT+8];
 
     Tag = ctx->Tag;
-    size = 2 << ctx->type;
+    size = ctx->mac_size;
 
-    L = (n + 31) / 32 + (1 << ctx->type);
+    L = (n + 31) / 32 + 2 * size / 32;
     ZUC256_GenerateKeyStream(ctx, obs, L);
 
     if (ctx->Tag[0] == 0) /* 第一次 */
@@ -141,34 +145,53 @@ int ZUC256_MAC_Final(unsigned char *md, ZUC256_CTX *ctx)
 {
     return ERR_OK;
 }
+#endif
 
 /*
  * n: 计算 MAC 的比特流长度(bit)
  */
-unsigned char *ZUC256_MAC(ZUC256_TYPE type, unsigned char *key, unsigned char *iv, const unsigned char *d, size_t n, unsigned char *md)
+unsigned char *ZUC256_MAC(ZUC256_TYPE type, unsigned char *key, unsigned char *iv, const unsigned char *data, size_t l, unsigned char *md)
 {
     ZUC256_CTX ctx;
+
+    uint32_t L, t;
+    uint32_t *z;
+    uint32_t *Tag, W[4];
+
+    int i;
     uint32_t *temp;
 
-    ZUC256_MAC_Init(&ctx, type, key, iv);
+    ZUC256_Init(&ctx, type, key, iv);
 
-    if (n <= BUF_WORD_COUNT * 32)
+    t = ctx.mac_size;
+    Tag = ctx.Tag;
+
+    L = (l + 31) / 32 + 2 * (t / 32);
+
+    z = (uint32_t *)malloc(L * sizeof(uint32_t));
+    ZUC256_GenerateKeyStream(&ctx, z, L);
+
+    GetTag(z, 0, Tag, t);
+    for (i=0; i<l; i++)
     {
-        zuc256_mac_internal(&ctx, 1, d, n);
-    }
-    else
-    {
-        while (n > BUF_WORD_COUNT * 32)
+        if (1 == GetBit(data, i))
         {
-            zuc256_mac_internal(&ctx, 0, d, BUF_WORD_COUNT * 32);
-            n -= BUF_WORD_COUNT * 32;
-            d += BUF_WORD_COUNT;
+            GetTag(z, t + i, W, t);
+            XorTag(Tag, W, t/32);
         }
-
-        zuc256_mac_internal(&ctx, 1, d, n);
     }
 
-    /* TODO: copy MAC */
+    GetTag(z, l + t, W, t);
+    XorTag(Tag, W, t/32);
+
+    free(z);
+    z = NULL;
+
+    temp = (uint32_t *)md;
+    for (i=0; i<t/32; i++)
+    {
+        *temp ++ = htobe32(Tag[i]);
+    }
 
     return md;
 }

@@ -27,10 +27,6 @@ typedef enum {
 } ZUC256_TYPE;
 
 typedef struct zuc256_context {
-    /*
-     * ZUC256 成员
-     */
-
     ZUC256_TYPE type;
 
     /* 16 个 31 bit 变量 */
@@ -43,9 +39,8 @@ typedef struct zuc256_context {
     uint32_t R1;
     uint32_t R2;
 
-    /*
-     * ZUC256 MAC 成员
-     */
+    /* 中间 MAC 值 */
+    uint32_t mac_size;
     uint32_t Tag[4];
 }ZUC256_CTX;
 
@@ -54,8 +49,10 @@ int ZUC256_GenerateKeyStream(ZUC256_CTX *ctx, unsigned int *out, unsigned int le
 
 int ZUC256(unsigned char *key, unsigned char *iv, unsigned int length, unsigned int *ibs, unsigned int *obs);
 
+#if 0
 int ZUC256_MAC_Init(ZUC256_CTX *c, ZUC256_TYPE type, unsigned char *key, unsigned char *iv);
 int ZUC256_MAC_Update(ZUC256_CTX *c, const void *data, size_t len);
 int ZUC256_MAC_Final(unsigned char *md, ZUC256_CTX *c);
-unsigned char *ZUC256_MAC(ZUC256_TYPE type, unsigned char *key, unsigned char *iv, const unsigned char *d, size_t n, unsigned char *md);
+#endif
+unsigned char *ZUC256_MAC(ZUC256_TYPE type, unsigned char *key, unsigned char *iv, const unsigned char *data, size_t l, unsigned char *md);
 #endif

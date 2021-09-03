@@ -324,6 +324,22 @@ int ZUC256_Init(ZUC256_CTX *ctx, ZUC256_TYPE type, unsigned char *key, unsigned 
 
     memset(ctx, 0, sizeof(ZUC256_CTX));
     ctx->type = type;
+    switch(ctx->type)
+    {
+    case ZUC256_TYPE_MAC32:
+        ctx->mac_size = 32;
+        break;
+    case ZUC256_TYPE_MAC64:
+        ctx->mac_size = 64;
+        break;
+    case ZUC256_TYPE_MAC128:
+        ctx->mac_size = 128;
+        break;
+    case ZUC256_TYPE_KEYSTREAM:
+    default:
+        ctx->mac_size = 0;
+        break;
+    }
 
     ZUC256_LoadKey(ctx, key, iv);
     ctx->R1 = 0;
