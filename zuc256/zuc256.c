@@ -19,7 +19,7 @@
 #endif
 
 /* (2^31) - 1 = 2,147,483,647 = (2UL<<30) - 1 = 0x7FFFFFFF */
-#define ZUC_MOD_NUM 0x7FFFFFFFUL
+#define ZUC_MAX31U 0x7FFFFFFFUL
 
 /* 31位循环左移: ROTate Left (circular left shift) */
 static uint32_t ROTL31(uint32_t x, uint8_t shift)
@@ -27,7 +27,7 @@ static uint32_t ROTL31(uint32_t x, uint8_t shift)
     /* Example: 0x7F00000F << 5 = 0x600001FF
      * 0111 1111 0000 0000 0000 0000 0000 1111 << 5 ---> 0110 0000 0000 0000 0000 0001 1111 1111
      */
-    return ((x << shift) & 0x7FFFFFFF) | (x >> (31 - shift));
+    return ((x << shift) & ZUC_MAX31U) | (x >> (31 - shift));
 }
 
 /* 32位循环左移: ROTate Left (circular left shift) */
@@ -103,7 +103,7 @@ static uint32_t modular_add(uint32_t a, uint32_t b)
 
     /* 附录B. 模 2^31-1 加法的实现 */
     c = a + b;
-    c = (c & 0x7FFFFFFF) + (c >> 31);
+    c = (c & ZUC_MAX31U) + (c >> 31);
 
     return c;
 }
@@ -126,14 +126,14 @@ static void LFSRWithInitialisationMode(ZUC256_CTX *ctx, uint32_t u)
 
     if (0 == v)
     {
-        v = ZUC_MOD_NUM;
+        v = ZUC_MAX31U;
     }
 
     s16 = modular_add(v, u);
 
     if (0 == s16)
     {
-        s16 = ZUC_MOD_NUM;
+        s16 = ZUC_MAX31U;
     }
 
     /* warning: ‘__builtin_memcpy’ accessing 60 bytes at offsets 4 and 8 overlaps 56 bytes at offset 8 [-Wrestrict] */
@@ -173,7 +173,7 @@ static void LFSRWithWorkMode(ZUC256_CTX *ctx)
 
     if (0 == s16)
     {
-        s16 = ZUC_MOD_NUM;
+        s16 = ZUC_MAX31U;
     }
 
     /* warning: ‘__builtin_memcpy’ accessing 60 bytes at offsets 4 and 8 overlaps 56 bytes at offset 8 [-Wrestrict] */
@@ -263,7 +263,7 @@ static const uint8_t D[4][16] =
     },
 };
 
-#define MAKE31U(a,b,c,d) ((((a)<<23)|((b)<<16)|((c)<<8)|(d))&0x7FFFFFFF)
+#define MAKE31U(a,b,c,d) ((((a)<<23)|((b)<<16)|((c)<<8)|(d))&ZUC_MAX31U)
 
 /*
  *  K:  K[0]~K[31], 8 bit
