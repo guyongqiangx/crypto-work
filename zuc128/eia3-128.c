@@ -20,10 +20,24 @@
 
 #include <malloc.h>
 
-/* 取 offset 开始开始的 32 bit */
-static uint32_t GetWord(uint32_t S[2], uint32_t offset)
+static int GetBit(const uint32_t *ibs, uint32_t offset)
+{
+    /* word 偏移地址 */
+    ibs = ibs + offset / 32;
+    /* word 内 bit 偏移位置 */
+    offset = offset % 32;
+
+    return (*ibs >> (31-offset)) & 0x01;
+}
+
+static uint32_t GetWord(const uint32_t *ibs, uint32_t offset)
 {
     uint32_t temp;
+
+    /* word 偏移地址 */
+    ibs = ibs + offset / 32;
+    /* word 内 bit 偏移位置 */
+    offset = offset % 32;
 
     /*
      * 根据《C陷阱与缺陷》第 7.5 节:
@@ -33,22 +47,18 @@ static uint32_t GetWord(uint32_t S[2], uint32_t offset)
      * 所以，如果这里只是单纯使用: (offset = 0 或 32 时就会出错)
      *    temp = (S[0] << offset) | (S[1] >> (32-offset));
      */
-
-    if (0 == offset)
+    if (offset == 0)
     {
-        temp = S[0];
-    }
-    else if (32 == offset)
-    {
-        temp = S[1];
+        temp = ibs[0];
     }
     else
     {
-        temp = (S[0] << offset) | (S[1] >> (32-offset));
+        temp = (ibs[0] << offset) | (ibs[1] >> (32-offset));
     }
 
     return temp;
 }
+
 /*
  * 128-EIA3: EPS Integrity Algorithm 3, 完整性算法(Integrity)
  *        IK: 128-bit integrity key
@@ -62,11 +72,12 @@ static uint32_t GetWord(uint32_t S[2], uint32_t offset)
 int EIA3(unsigned char *IK, unsigned int COUNT, unsigned int BEARER, unsigned int DIRECTION, unsigned int LENGTH, unsigned int *M, unsigned int *MAC)
 {
     ZUC_CTX ctx;
-    int i, j;
+
     uint8_t iv[16];
-    uint32_t L, T;
-    uint32_t quotient, remainder;
+    uint32_t L, T, z;
     uint32_t *obs;
+
+    int i;
 
     if ((NULL == IK) || (NULL == M) || (NULL == MAC) || (0 == LENGTH))
     {
@@ -93,36 +104,17 @@ int EIA3(unsigned char *IK, unsigned int COUNT, unsigned int BEARER, unsigned in
     ZUC_GenerateKeyStream(&ctx, obs, L);
 
     T = 0;
-
-    quotient = LENGTH / 32;
-    remainder = LENGTH % 32;
-
-    /* 逐字处理 32 bit 部分 */
-    for (i=0; i<quotient; i++)
+    for (i=0; i<LENGTH; i++)
     {
-        for (j=0; j<32; j++)
+        if (1 == GetBit(M, i))
         {
-            if (M[i] & (0x01 << (31-j)))
-            {
-                T ^= GetWord(&obs[i], j);
-            }
+            z = GetWord(obs, i);
+            T ^= z;
         }
     }
+    z = GetWord(obs, LENGTH);
+    T ^= z;
 
-    /* 处理不足 32 bit 的剩余部分 */
-    if (remainder)
-    {
-        for (j=0; j<remainder; j++)
-        {
-            if (M[quotient] & (0x01 << (31-j)))
-            {
-                T ^= GetWord(&obs[quotient], j);
-            }
-        }
-    }
-
-    /* T = T ^ Zlen */
-    T ^= GetWord(&obs[quotient], remainder);
     T ^= obs[L-1];
 
     free(obs);
