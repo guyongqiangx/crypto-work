@@ -18,7 +18,8 @@
 #define DBG(...)
 #endif
 
-#define ZUC_MOD_NUM ((2<<31)-1)
+/* (2^31) - 1 = 2,147,483,647 = (2UL<<30) - 1 = 0x7FFFFFFF */
+#define ZUC_MAX31U 0x7FFFFFFFUL
 
 /* 31位循环左移: ROTate Left (circular left shift) */
 static uint32_t ROTL31(uint32_t x, uint8_t shift)
@@ -26,7 +27,7 @@ static uint32_t ROTL31(uint32_t x, uint8_t shift)
     /* Example: 0x7F00000F << 5 = 0x600001FF
      * 0111 1111 0000 0000 0000 0000 0000 1111 << 5 ---> 0110 0000 0000 0000 0000 0001 1111 1111
      */
-    return ((x << shift) & 0x7FFFFFFF) | (x >> (31 - shift));
+    return ((x << shift) & ZUC_MAX31U) | (x >> (31 - shift));
 }
 
 /* 32位循环左移: ROTate Left (circular left shift) */
@@ -48,7 +49,7 @@ static uint32_t L2(uint32_t x)
 }
 
 /* The S-box S0 (S0=S2, S=(S0,S1,S2,S3)) */
-static uint8_t S0[256] =
+static const uint8_t S0[256] =
 {
     0x3E, 0x72, 0x5B, 0x47, 0xCA, 0xE0, 0x00, 0x33, 0x04, 0xD1, 0x54, 0x98, 0x09, 0xB9, 0x6D, 0xCB,
     0x7B, 0x1B, 0xF9, 0x32, 0xAF, 0x9D, 0x6A, 0xA5, 0xB8, 0x2D, 0xFC, 0x1D, 0x08, 0x53, 0x03, 0x90,
@@ -69,7 +70,7 @@ static uint8_t S0[256] =
 };
 
 /* The S-box S1 (S1=S3, S=(S0,S1,S2,S3)) */
-static uint8_t S1[256] =
+static const uint8_t S1[256] =
 {
     0x55, 0xC2, 0x63, 0x71, 0x3B, 0xC8, 0x47, 0x86, 0x9F, 0x3C, 0xDA, 0x5B, 0x29, 0xAA, 0xFD, 0x77,
     0x8C, 0xC5, 0x94, 0x0C, 0xA6, 0x1A, 0x13, 0x00, 0xE3, 0xA8, 0x16, 0x72, 0x40, 0xF9, 0xF8, 0x42,
@@ -102,7 +103,7 @@ static uint32_t modular_add(uint32_t a, uint32_t b)
 
     /* 附录B. 模 2^31-1 加法的实现 */
     c = a + b;
-    c = (c & 0x7FFFFFFF) + (c >> 31);
+    c = (c & ZUC_MAX31U) + (c >> 31);
 
     return c;
 }
@@ -127,10 +128,26 @@ static void LFSRWithInitialisationMode(ZUC_CTX *ctx, uint32_t u)
 
     if (0 == s16)
     {
-        s16 = ZUC_MOD_NUM;
+        s16 = ZUC_MAX31U;
     }
 
-    memcpy(&s[0], &s[1], 15 * sizeof(s[0]));
+    /* warning: ‘__builtin_memcpy’ accessing 60 bytes at offsets 4 and 8 overlaps 56 bytes at offset 8 [-Wrestrict] */
+    //memcpy(&s[0], &s[1], 15 * sizeof(s[0]));
+    s[ 0] = s[ 1];
+    s[ 1] = s[ 2];
+    s[ 2] = s[ 3];
+    s[ 3] = s[ 4];
+    s[ 4] = s[ 5];
+    s[ 5] = s[ 6];
+    s[ 6] = s[ 7];
+    s[ 7] = s[ 8];
+    s[ 8] = s[ 9];
+    s[ 9] = s[10];
+    s[10] = s[11];
+    s[11] = s[12];
+    s[12] = s[13];
+    s[13] = s[14];
+    s[14] = s[15];
     s[15] = s16;
 }
 
@@ -151,10 +168,26 @@ static void LFSRWithWorkMode(ZUC_CTX *ctx)
 
     if (0 == s16)
     {
-        s16 = ZUC_MOD_NUM;
+        s16 = ZUC_MAX31U;
     }
 
-    memcpy(&s[0], &s[1], 15 * sizeof(s[0]));
+    /* warning: ‘__builtin_memcpy’ accessing 60 bytes at offsets 4 and 8 overlaps 56 bytes at offset 8 [-Wrestrict] */
+    //memcpy(&s[0], &s[1], 15 * sizeof(s[0]));
+    s[ 0] = s[ 1];
+    s[ 1] = s[ 2];
+    s[ 2] = s[ 3];
+    s[ 3] = s[ 4];
+    s[ 4] = s[ 5];
+    s[ 5] = s[ 6];
+    s[ 6] = s[ 7];
+    s[ 7] = s[ 8];
+    s[ 8] = s[ 9];
+    s[ 9] = s[10];
+    s[10] = s[11];
+    s[11] = s[12];
+    s[12] = s[13];
+    s[13] = s[14];
+    s[14] = s[15];
     s[15] = s16;
 }
 
@@ -201,11 +234,13 @@ static uint32_t F(ZUC_CTX *ctx)
 }
 
 /* 240 bits 的密钥常量 */
-static uint32_t D[16] =
+static const uint32_t D[16] =
 {
     0x44D7, 0x26BC, 0x626B, 0x135E, 0x5789, 0x35E2, 0x7135, 0x09AF,
     0x4D78, 0x2F13, 0x6BC4, 0x1AF1, 0x5E26, 0x3C4D, 0x789A, 0x47AC
 };
+
+#define MAKE31U(a,b,c) ((((a)<<23)|((b)<<8)|(c))&ZUC_MAX31U)
 
 static void ZUC_LoadKey(ZUC_CTX *ctx, uint8_t key[16], uint8_t iv[16])
 {
@@ -215,7 +250,8 @@ static void ZUC_LoadKey(ZUC_CTX *ctx, uint8_t key[16], uint8_t iv[16])
     s = ctx->s;
     for (i=0; i<16; i++)
     {
-        s[i] = (key[i] << 23) | (D[i] << 8) | iv[i];
+        //s[i] = (key[i] << 23) | (D[i] << 8) | iv[i];
+        s[i] = MAKE31U(key[i], D[i], iv[i]);
         DBG("s[%2d]=0x%08x\n", i, s[i]);
     }
 }
@@ -247,7 +283,10 @@ int ZUC_Init(ZUC_CTX *ctx, unsigned char *key, unsigned char *iv)
     return ERR_OK;
 }
 
-/* 算法工作阶段 */
+/*
+ * 算法工作阶段
+ * 生成 len 个 32-bit 字的 KeyStream
+ */
 int ZUC_GenerateKeyStream(ZUC_CTX *ctx, unsigned int *out, unsigned int len)
 {
     uint32_t Z;
