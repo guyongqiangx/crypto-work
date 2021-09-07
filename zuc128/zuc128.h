@@ -18,16 +18,7 @@ typedef unsigned short     uint16_t;
 typedef unsigned int       uint32_t;
 typedef unsigned long long uint64_t;
 
-typedef enum {
-    ZUC_STATE_INVALID = 0,
-    ZUC_STATE_INITIALIZED,
-    ZUC_STATE_WORKING,
-    ZUC_STATE_MAX = ZUC_STATE_WORKING
-} ZUC_STATE;
-
 typedef struct zuc_context {
-    ZUC_STATE state;
-
     /* 16 个 31 bit 变量 */
     uint32_t s[16];
 

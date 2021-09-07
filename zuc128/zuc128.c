@@ -262,8 +262,6 @@ int ZUC_Init(ZUC_CTX *ctx, unsigned char *key, unsigned char *iv)
     int i;
     uint32_t W;
 
-    ctx->state = ZUC_STATE_INVALID;
-
     ZUC_LoadKey(ctx, key, iv);
     ctx->R1 = 0;
     ctx->R2 = 0;
@@ -278,7 +276,15 @@ int ZUC_Init(ZUC_CTX *ctx, unsigned char *key, unsigned char *iv)
             i, ctx->X[0], ctx->X[1], ctx->X[2], ctx->X[3], ctx->R1, ctx->R2, W, ctx->s[15]);
     }
 
-    ctx->state = ZUC_STATE_INITIALIZED;
+    /* 工作阶段的第一步，执行下列操作一次，并将F的输出W舍弃 */
+    {
+        BitReconstruction(ctx);
+        F(ctx);
+        // Z=F(ctx) ^ ctx->X[3]; /* 调试需要, 保存 F 函数结果 */
+        LFSRWithWorkMode(ctx);
+        // DBG("    X0=0x%08x, X1=0x%08x, X2=0x%08x, X3=0x%08x, R1=0x%08x, R2=0x%08x, z=0x%08x, S15=0x%08x\n",
+        //    ctx->X[0], ctx->X[1], ctx->X[2], ctx->X[3], ctx->R1, ctx->R2, Z, ctx->s[15]);
+    }
 
     return ERR_OK;
 }
@@ -291,23 +297,12 @@ int ZUC_GenerateKeyStream(ZUC_CTX *ctx, unsigned int *out, unsigned int len)
 {
     uint32_t Z;
 
-    if ((NULL == ctx) || (NULL == out) || (ctx->state == ZUC_STATE_INVALID))
+    if ((NULL == ctx) || (NULL == out))
     {
         return ERR_INV_PARAM;
     }
 
-    if (ctx->state == ZUC_STATE_INITIALIZED)
-    {
-        BitReconstruction(ctx);
-        // F(ctx);
-        Z=F(ctx) ^ ctx->X[3]; /* 调试需要, 保存 F 函数结果 */
-        LFSRWithWorkMode(ctx);
-        DBG("    X0=0x%08x, X1=0x%08x, X2=0x%08x, X3=0x%08x, R1=0x%08x, R2=0x%08x, z=0x%08x, S15=0x%08x\n",
-            ctx->X[0], ctx->X[1], ctx->X[2], ctx->X[3], ctx->R1, ctx->R2, Z, ctx->s[15]);
-
-        ctx->state = ZUC_STATE_WORKING;
-    }
-
+    /* 工作阶段的第二步, 第一步移动到初始化函数中 */
     while (len > 0)
     {
         BitReconstruction(ctx);
