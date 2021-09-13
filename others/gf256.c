@@ -31,6 +31,29 @@ unsigned int gf256_multi(unsigned int a, unsigned int b)
 }
 
 /*
+ * 获取最高位为 1 的位置(从 0 开始)
+ */
+int get_msb1_pos(unsigned int x)
+{
+    int i;
+    
+    if (x == 0)
+    {
+        return -1;
+    }
+
+    x >>= 1;
+    i = 0;
+    while (x)
+    {
+        x >>= 1;
+        i ++;
+    }
+
+    return i;
+}
+
+/*
  * GF(2^8) 内的多项式求余
  * a = 0x0d94: x^11 + x^10 + x^8  + x^7  + x^4  + x^2
  * b = 0x011b: x^8  + x^4  + x^3  + x^1  + 1
@@ -38,31 +61,18 @@ unsigned int gf256_multi(unsigned int a, unsigned int b)
  */
 unsigned int gf256_mod(unsigned int a, unsigned int b)
 {
-    unsigned int i, j, t, x;
-    
-    if (a < 0x100)
+    unsigned int i, j;
+
+    // 找到 b 的最高位
+    j = get_msb1_pos(b);
+    if (a < (0x1 << j))
     {
         //show_polynomial(a);
         return a;
     }
 
     // 找到 a 的最高位
-    t = a;
-    i = 0;
-    while (t != 0)
-    {
-        i ++;
-        t >>= 1;
-    }
-
-    // 找到 b 的最高位
-    t = b;
-    j = 0;
-    while (t != 0)
-    {
-        j ++;
-        t >>= 1;
-    }
+    i = get_msb1_pos(a);
 
     return gf256_mod(a ^ (b << (i-j)), b);
 }
@@ -117,6 +127,28 @@ void show_polynomial(unsigned int x)
     printf("\n");
 }
 
+/*
+ * 查表法, 在GF(2^8)内求 a 的逆元素
+ * AES不可约多项式: p(x) = x^8 + x^4 + x^3 + x + 1
+ *
+ *    0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+ * 0  00 01 8D F6 CB 52 7B D1 E8 4F 29 C0 B0 E1 E5 C7
+ * 1  74 B4 AA 4B 99 2B 60 5F 58 3F FD CC FF 40 EE B2
+ * 2  3A 6E 5A F1 55 4D A8 C9 C1 0A 98 15 30 44 A2 C2
+ * 3  2C 45 92 6C F3 39 66 42 F2 35 20 6F 77 BB 59 19
+ * 4  1D FE 37 67 2D 31 F5 69 A7 64 AB 13 54 25 E9 09
+ * 5  ED 5C 05 CA 4C 24 87 BF 18 3E 22 F0 51 EC 61 17
+ * 6  16 5E AF D3 49 A6 36 43 F4 47 91 DF 33 93 21 3B
+ * 7  79 B7 97 85 10 B5 BA 3C B6 70 D0 06 A1 FA 81 82
+ * 8  83 7E 7F 80 96 73 BE 56 9B 9E 95 D9 F7 02 B9 A4
+ * 9  DE 6A 32 6D D8 8A 84 72 2A 14 9F 88 F9 DC 89 9A
+ * A  FB 7C 2E C3 8F B8 65 48 26 C8 12 4A CE E7 D2 62
+ * B  0C E0 1F EF 11 75 78 71 A5 8E 76 3D BD BC 86 57
+ * C  0B 28 2F A3 DA D4 E4 0F A9 27 53 04 1B FC AC E6
+ * D  7A 07 AE 63 C5 DB E2 EA 94 8B C4 D5 9D F8 90 6B
+ * E  B1 0D D6 EB C6 0E CF AD 08 4E D7 E3 5D 50 1E B3
+ * F  5B 23 38 34 68 46 03 8C DD 9C 7D A0 CD 1A 41 1C
+ */
 unsigned int get_gf256_reverse(unsigned int a, unsigned int p)
 {
     unsigned int i, x;
@@ -165,6 +197,30 @@ void generate_gf256_reverse_matrix(void)
     }
 }
 
+void generate_gf8_table(void)
+{
+    int i, j;
+    unsigned int arr[64];
+
+    printf("  ");
+    for (i=0; i<8; i++)
+    {
+        printf(" %d", i);
+    }
+    printf("\n");
+
+    for (i=0; i<8; i++)
+    {
+        printf(" %d", i);
+        for (j=0; j<8; j++)
+        {
+            arr[8*i + j] = gf256_mod(gf256_multi(i, j), 0x0b);
+            printf(" %d", arr[8*i+j]);
+        }
+        printf("\n");
+    }
+}
+
 int main(int argc, char *argv)
 {
     unsigned int x;
@@ -179,5 +235,29 @@ int main(int argc, char *argv)
     printf("res: 0x%02x\n", x);
 
     generate_gf256_reverse_matrix();
+
+    show_polynomial(0x57);
+    show_polynomial(0x83);
+    x = gf256_mod(gf256_multi(0x57, 0x83), 0x11b);
+    show_polynomial(x);
+
+    x = get_gf256_reverse(0x83, 0x11b);
+    show_polynomial(x);
+
+    x = get_msb1_pos(0x11);
+    printf("highest bit: %d\n", x);
+
+    x = get_msb1_pos(0x03);
+    printf("highest bit: %d\n", x);
+
+    x = get_msb1_pos(0xff);
+    printf("highest bit: %d\n", x);
+
+    x = get_msb1_pos(0xffffffff);
+    printf("highest bit: %d\n", x);
+
+    printf("GF(2^3): \n");
+    generate_gf8_table();
+
     return 0;
 }
