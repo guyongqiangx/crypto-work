@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 void show_polynomial(unsigned int x);
 
@@ -127,6 +128,93 @@ void show_polynomial(unsigned int x)
     printf("\n");
 }
 
+static char *get_polynomial(unsigned int x)
+{
+    int z[32], i, pos;
+    /* buf = "x^31+x^30+x^29+...+x^2+x+1" */
+    static unsigned char buf[256];
+
+    if (x == 0)
+    {
+        buf[0] = '0';
+        buf[1] = '\0';
+        return buf;
+    }
+
+    // 从最高位开始, 逐位检查多项式系数
+    for (i=0; i<32; i++)
+    {
+        if (x & (1<<(31-i)))
+        {
+            z[i] = 1;
+        }
+        else
+        {
+            z[i] = 0;
+        }
+    }
+
+    pos = 0;
+
+    // 找到最高次项
+    i = 0;
+    while (z[i] == 0)
+    {
+        i++;
+    }
+
+    if (i<30)
+    {
+        pos += sprintf(buf+pos, "x^%d", 31-i);
+
+        // 打印中间次项(除 x 和 1)
+        while (++i < 30)
+        {
+            if (z[i])
+            {
+                pos += sprintf(buf+pos, "+x^%d", 31-i);
+            }
+        }
+
+        // 打印倒数第二项 "x"
+        if (z[30])
+        {
+            pos += sprintf(buf+pos, "+x");
+        }
+
+        // 打印最后一项 "1"
+        if (z[31])
+        {
+            pos += sprintf(buf+pos, "+1");
+        }
+    }
+    else if (i==30)
+    {
+        if (z[30])
+        {
+            pos += sprintf(buf+pos, "x");
+        }
+
+        // 打印最后一项 "1"
+        if (z[31])
+        {
+            pos += sprintf(buf+pos, "+1");
+        }
+    }
+    else if (i==31)
+    {
+        // 打印最后一项 "1"
+        if (z[31])
+        {
+            pos += sprintf(buf+pos, "1");
+        }
+    }
+
+    buf[pos] = '\0';
+
+    return buf;
+}
+
 /*
  * 查表法, 在GF(2^8)内求 a 的逆元素
  * AES不可约多项式: p(x) = x^8 + x^4 + x^3 + x + 1
@@ -221,6 +309,30 @@ void generate_gf8_table(void)
     }
 }
 
+void generate_gf8_polynomial_table(void)
+{
+    int i, j;
+    unsigned int arr[64];
+
+    printf("  ");
+    for (i=0; i<8; i++)
+    {
+        printf(" %8d", i);
+    }
+    printf("\n");
+
+    for (i=0; i<8; i++)
+    {
+        printf(" %d", i);
+        for (j=0; j<8; j++)
+        {
+            arr[8*i + j] = gf256_mod(gf256_multi(i, j), 0x0b);
+            printf(" %8s", get_polynomial(arr[8*i+j]));
+        }
+        printf("\n");
+    }
+}
+
 int main(int argc, char *argv)
 {
     unsigned int x;
@@ -258,6 +370,11 @@ int main(int argc, char *argv)
 
     printf("GF(2^3): \n");
     generate_gf8_table();
+
+    printf("GF(2^3) polynomial: \n");
+    generate_gf8_polynomial_table();
+
+    printf("%s\n", get_polynomial(0xff));
 
     return 0;
 }
