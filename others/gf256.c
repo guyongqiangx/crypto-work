@@ -38,13 +38,7 @@ int get_msb1_pos(unsigned int x)
 {
     int i;
     
-    if (x == 0)
-    {
-        return -1;
-    }
-
-    x >>= 1;
-    i = 0;
+    i = -1;
     while (x)
     {
         x >>= 1;
