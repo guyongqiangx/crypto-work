@@ -7,23 +7,23 @@ void show_polynomial(unsigned int x);
  * GF(2^8) 内的多项式乘法
  * 0x13 x 0xcc = 0xd94
  */
-unsigned int gf256_multi(unsigned int a, unsigned int b)
+unsigned int gf256_multi(unsigned int p1, unsigned int p2)
 {
     unsigned int i, x;
 
-    //show_polynomial(a);
+    //show_polynomial(p1);
     //show_polynomial(b);
     
     x = 0;
     i = 0;
-    while (b != 0)
+    while (p2 != 0)
     {
-        if (b & 0x01)
+        if (p2 & 0x01)
         {
-            x ^= a << i;
+            x ^= p1 << i;
         }
         i ++;
-        b >>= 1;
+        p2 >>= 1;
     }
 
     //show_polynomial(x);
@@ -54,22 +54,22 @@ int get_msb1_pos(unsigned int x)
  * b = 0x011b: x^8  + x^4  + x^3  + x^1  + 1
  * a mod b = 0xd98 mod 0x11b = 0x3d: x^5  + x^4  + x^3  + x^1  + 1
  */
-unsigned int gf256_mod(unsigned int a, unsigned int b)
+unsigned int gf256_mod(unsigned int p1, unsigned int p2)
 {
     unsigned int i, j;
 
-    // 找到 b 的最高位
-    j = get_msb1_pos(b);
-    if (a < (0x1 << j))
+    // 找到 p2 的最高位
+    j = get_msb1_pos(p2);
+    if (p1 < (0x1 << j))
     {
-        //show_polynomial(a);
-        return a;
+        //show_polynomial(p1);
+        return p1;
     }
 
-    // 找到 a 的最高位
-    i = get_msb1_pos(a);
+    // 找到 p1 的最高位
+    i = get_msb1_pos(p1);
 
-    return gf256_mod(a ^ (b << (i-j)), b);
+    return gf256_mod(p1 ^ (p2 << (i-j)), p2);
 }
 
 /*
