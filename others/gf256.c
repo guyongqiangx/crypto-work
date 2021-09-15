@@ -251,15 +251,62 @@ unsigned int get_gf256_reverse(unsigned int a, unsigned int p)
     }
 }
 
-void generate_gf256_reverse_matrix(void)
+static unsigned char SBOX_PATTERN[8] =
+{
+    0xF1, /* 1111 0001 */
+    0xE3, /* 1110 0011 */
+    0xC7, /* 1100 0111 */
+    0x8F, /* 1000 1111 */
+    0x1F, /* 0001 1111 */
+    0x3E, /* 0011 1110 */
+    0x7C, /* 0111 1100 */
+    0xF8, /* 1111 1000 */
+};
+
+#define SBOX_CONST 0x63
+
+static unsigned char SBOX_INV_PATTERN[8] =
+{
+    0xA4, /* 1010 0100 */
+    0x49, /* 0100 1001 */
+    0x92, /* 1001 0010 */
+    0x25, /* 0010 0101 */
+    0x4A, /* 0100 1010 */
+    0x94, /* 1001 0100 */
+    0x29, /* 0010 1001 */
+    0x52, /* 0101 0010 */
+};
+
+#define SBOX_INV_CONST 0x05
+
+#define GET_BIT(data,i) (((data) >> (i)) & 0x01)
+
+static unsigned char affine_transformation(unsigned char pat[8], unsigned char data, unsigned char C)
+{
+    int i, j;
+    unsigned char x, y;
+
+    x = 0;
+    for (i=0; i<8; i++)
+    {
+        y = 0;
+        for (j=0; j<8; j++)
+        {
+            // 1. get inner bit j and xor with previous inner bit
+            y ^= GET_BIT(pat[i], j) & GET_BIT(data, j);
+        }
+        // 2. save outer bit i
+        x |= y << i;
+    }
+
+    x ^= C;
+
+    return x;
+}
+
+void show_sbox(unsigned int arr[256])
 {
     unsigned int x, y;
-    unsigned int arr[256];
-
-    for (x=0; x<256; x++)
-    {
-        arr[x] = get_gf256_reverse(x, 0x11b);
-    }
 
     printf("  ");
     for (x=0; x<16; x++)
@@ -277,6 +324,31 @@ void generate_gf256_reverse_matrix(void)
         }
         printf("\n");
     }
+}
+
+void generate_gf256_reverse_matrix(void)
+{
+    unsigned int x, y;
+    unsigned int arr[256], out[256];
+
+    // 生成 0~255 逆元
+    for (x=0; x<256; x++)
+    {
+        arr[x] = get_gf256_reverse(x, 0x11b);
+    }
+
+    printf("GF(2^8) Inverse Table:\n");
+    show_sbox(arr);
+
+    // 对 0~255 逆元进行仿射变换
+    for (x=0; x<256; x++)
+    {
+        out[x] = affine_transformation(SBOX_PATTERN, arr[x], SBOX_CONST);
+    }
+
+    printf("After Transform:\n");
+    show_sbox(out);
+
 }
 
 void generate_gf8_table(void)
