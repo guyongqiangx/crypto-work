@@ -10,9 +10,6 @@ void show_polynomial(unsigned int x);
 unsigned int gf256_multi(unsigned int p1, unsigned int p2)
 {
     unsigned int i, x;
-
-    //show_polynomial(p1);
-    //show_polynomial(b);
     
     x = 0;
     i = 0;
@@ -25,8 +22,6 @@ unsigned int gf256_multi(unsigned int p1, unsigned int p2)
         i ++;
         p2 >>= 1;
     }
-
-    //show_polynomial(x);
 
     return x;
 }
@@ -50,9 +45,9 @@ int get_msb1_pos(unsigned int x)
 
 /*
  * GF(2^8) 内的多项式求余
- * a = 0x0d94: x^11 + x^10 + x^8  + x^7  + x^4  + x^2
- * b = 0x011b: x^8  + x^4  + x^3  + x^1  + 1
- * a mod b = 0xd98 mod 0x11b = 0x3d: x^5  + x^4  + x^3  + x^1  + 1
+ * p1 = 0x0d94: x^11 + x^10 + x^8  + x^7  + x^4  + x^2
+ * p2 = 0x011b: x^8  + x^4  + x^3  + x^1  + 1
+ * p1 mod p2 = 0xd98 mod 0x11b = 0x3d: x^5  + x^4  + x^3  + x^1  + 1
  */
 unsigned int gf256_mod(unsigned int p1, unsigned int p2)
 {
@@ -62,7 +57,6 @@ unsigned int gf256_mod(unsigned int p1, unsigned int p2)
     j = get_msb1_pos(p2);
     if (p1 < (0x1 << j))
     {
-        //show_polynomial(p1);
         return p1;
     }
 
@@ -73,19 +67,24 @@ unsigned int gf256_mod(unsigned int p1, unsigned int p2)
 }
 
 /*
- * 格式化打印值 x 代表的多项式:
+ * 格式化打印值 p 代表的多项式:
+ * 0x0000: 0
+ * 0x0001: 1
+ * 0x0002: x^1
+ * 0x0003: x^1  + 1
+ * 0x0004: x^2
  * 0x0013: x^4  + x^1  + 1
  * 0x00cc: x^7  + x^6  + x^3  + x^2 
  * 0x0d94: x^11 + x^10 + x^8  + x^7  + x^4  + x^2
  */
-void show_polynomial(unsigned int x)
+static void show_polynomial(unsigned int p)
 {
     int z[32], i;
 
     // 从最高位开始, 逐位检查多项式系数
     for (i=0; i<32; i++)
     {
-        if (x & (1<<(31-i)))
+        if (p & (1<<(31-i)))
         {
             z[i] = 1;
         }
@@ -95,7 +94,7 @@ void show_polynomial(unsigned int x)
         }
     }
 
-    printf("0x%04x: ", x);
+    printf("0x%04x: ", p);
 
     // 找到最高次项
     i = 0;
@@ -103,26 +102,39 @@ void show_polynomial(unsigned int x)
     {
         i++;
     }
-    printf("x^%-2d", 31-i);
 
-    // 打印中间次项
-    while (++i < 31)
+    if (i < 31)
     {
+        printf("x^%-2d", 31-i);
+
+        // 打印中间次项
+        while (++i < 31)
+        {
+            if (z[i])
+            {
+                printf(" + x^%-2d", 31-i);
+            }
+        }
+
+        // 打印最后一项 "+ 1"
         if (z[i])
         {
-            printf(" + x^%-2d", 31-i);
+            printf(" + 1");
         }
     }
-
-    // 打印最后一项 "+ 1"
-    if (z[i])
+    else if (i == 31)
     {
-        printf(" + 1");
+        printf("1");
     }
+    else /* i == 32, p = 0 */
+    {
+        printf("0");
+    }
+
     printf("\n");
 }
 
-static char *get_polynomial(unsigned int x)
+static char *get_polynomial(unsigned int p)
 {
     int z[32], i, pos;
     /* buf = "x^31+x^30+x^29+...+x^2+x+1" */
@@ -138,7 +150,7 @@ static char *get_polynomial(unsigned int x)
     // 从最高位开始, 逐位检查多项式系数
     for (i=0; i<32; i++)
     {
-        if (x & (1<<(31-i)))
+        if (p & (1<<(31-i)))
         {
             z[i] = 1;
         }
@@ -182,7 +194,7 @@ static char *get_polynomial(unsigned int x)
             pos += sprintf(buf+pos, "+1");
         }
     }
-    else if (i==30)
+    else if (i==30) /* p=x, p=x+1 */
     {
         if (z[30])
         {
@@ -195,13 +207,17 @@ static char *get_polynomial(unsigned int x)
             pos += sprintf(buf+pos, "+1");
         }
     }
-    else if (i==31)
+    else if (i==31) /* p=1 */
     {
         // 打印最后一项 "1"
         if (z[31])
         {
             pos += sprintf(buf+pos, "1");
         }
+    }
+    else /* i==32, p=0 */
+    {
+        pos += sprintf(buf+pos, "0");
     }
 
     buf[pos] = '\0';
