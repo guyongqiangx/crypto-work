@@ -7,7 +7,7 @@ static void show_sbox(unsigned int arr[256]);
  * GF(2^8) 内的多项式乘法
  * 0x13 x 0xcc = 0xd94
  */
-unsigned int gf2n_multi(unsigned int p1, unsigned int p2)
+unsigned int gf2n_mul(unsigned int p1, unsigned int p2)
 {
     unsigned int i, x;
 
@@ -89,7 +89,7 @@ unsigned int gf2n_div(unsigned int p1, unsigned int p2)
     return (0x1 << (i-j)) | gf2n_div(p1 ^ (p2 << (i-j)), p2);
 }
 
-unsigned int gcd(unsigned int p1, unsigned int p2)
+unsigned int gf2n_gcd(unsigned int p1, unsigned int p2)
 {
     if (p2 == 0)
     {
@@ -97,7 +97,7 @@ unsigned int gcd(unsigned int p1, unsigned int p2)
     }
     else
     {
-        return gcd(p2, gf2n_mod(p1, p2));
+        return gf2n_gcd(p2, gf2n_mod(p1, p2));
     }
 }
 
@@ -107,7 +107,7 @@ unsigned int gcd(unsigned int p1, unsigned int p2)
  * --> ax mod b + by mod b = 1 mod b
  * --> ax mod b = 1 mod b
  */
-int ext_euclidean(int a, int b, int *ia, int *ib)
+int gf2n_ext_euclidean(int a, int b, int *ia, int *ib)
 {
     int x, y, x0, y0, x1, y1;
     int q, r;
@@ -121,8 +121,8 @@ int ext_euclidean(int a, int b, int *ia, int *ib)
     while (r != 0)
     {
         /* 计算当前项 x/y */
-        x = x0 ^ gf2n_multi(q, x1); // x = x0 - q * x1;
-        y = y0 ^ gf2n_multi(q, y1); // y = y0 - q * y1;
+        x = x0 ^ gf2n_mul(q, x1); // x = x0 - q * x1;
+        y = y0 ^ gf2n_mul(q, y1); // y = y0 - q * y1;
 
         /* 依次保存前两项到 x0/y0, x1/y1 */
         x0 = x1; x1 = x;
@@ -145,11 +145,11 @@ int ext_euclidean(int a, int b, int *ia, int *ib)
  * 返回多项式 a 对于多项式 b 的逆元
  * ax + by = 1 mod b
  */
-int gf2n_inverse(int a, int b)
+int gf2n_inv(int a, int b)
 {
     int ia, ib;
 
-    ext_euclidean(a, b, &ia, &ib);
+    gf2n_ext_euclidean(a, b, &ia, &ib);
 
     return ia;
 }
@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
     p = gf2n_div(p1, p2);
     show_polynomial(p);
 
-    p = gcd(p1, p2);
+    p = gf2n_gcd(p1, p2);
     show_polynomial(p);
 
     p1 = 0x83;  // x^7 + x + 1
@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
 
     show_polynomial(p1);
     show_polynomial(p2);
-    ext_euclidean(p1, p2, &p, &t);
+    gf2n_ext_euclidean(p1, p2, &p, &t);
     show_polynomial(p);
 
     p1 = 0x57;  // x^6 + x^4 + x^2 + x + 1
@@ -188,14 +188,14 @@ int main(int argc, char *argv[])
 
     show_polynomial(p1);
     show_polynomial(p2);
-    t = gf2n_multi(p1, p2);
+    t = gf2n_mul(p1, p2);
     show_polynomial(t);
     t = gf2n_mod(t, p);
     show_polynomial(t);
 
     for (i=0; i<256; i++)
     {
-        sbox[i] = gf2n_inverse(i, 0x11b);
+        sbox[i] = gf2n_inv(i, 0x11b);
     }
     show_sbox(sbox);
 
