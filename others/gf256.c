@@ -326,10 +326,86 @@ void show_sbox(unsigned int arr[256])
     }
 }
 
+/*
+ * 生成 AES S 盒
+ */
+void generate_aes_sbox(unsigned int *sbox)
+{
+    unsigned int i;
+
+    /* 顺序填入 0~255 */
+    for (i=0; i<256; i++)
+    {
+        sbox[i] = i;
+    }
+
+    /* 对 0~255 代表的多项式计算 GF(2^8) 的逆多项式 */
+    for (i=0; i<256; i++)
+    {
+        sbox[i] = get_gf256_reverse(sbox[i], 0x11b);
+    }
+
+    /* 依次对所有逆元素执行仿射变换 */
+    for (i=0; i<256; i++)
+    {
+        sbox[i] = affine_transformation(SBOX_PATTERN, sbox[i], SBOX_CONST);
+    }
+}
+
+/*
+ * 生成 AES 逆 S 盒
+ */
+void generate_aes_inv_sbox(unsigned int *inv_sbox)
+{
+    unsigned int i;
+
+    /* 顺序填入 0~255 */
+    for (i=0; i<256; i++)
+    {
+        inv_sbox[i] = i;
+    }
+
+    /* 依次对 0~255 执行逆仿射变换 */
+    for (i=0; i<256; i++)
+    {
+        inv_sbox[i] = affine_transformation(SBOX_INV_PATTERN, inv_sbox[i], SBOX_INV_CONST);
+    }
+
+    /* 对逆仿射结果代表的多项式计算 GF(2^8) 的逆多项式 */
+    for (i=0; i<256; i++)
+    {
+        inv_sbox[i] = get_gf256_reverse(inv_sbox[i], 0x11b);
+    }
+}
+
+#if 1
+void generate_gf256_reverse_matrix(void)
+{
+    unsigned int sbox[256];
+
+    generate_aes_sbox(sbox);
+    printf("SBox:\n");
+    show_sbox(sbox);
+
+    generate_aes_inv_sbox(sbox);
+    printf("Inverse SBox:\n");
+    show_sbox(sbox);
+}
+#else
 void generate_gf256_reverse_matrix(void)
 {
     unsigned int x, y;
-    unsigned int arr[256], out[256];
+    unsigned int arr[256], out[256], inv[256];
+
+    /*
+     * 生成 S 盒
+     */
+    for (x=0; x<256; x++)
+    {
+        arr[x] = x;
+    }
+    printf("Origin Table:\n");
+    show_sbox(arr);
 
     // 生成 0~255 逆元
     for (x=0; x<256; x++)
@@ -346,10 +422,54 @@ void generate_gf256_reverse_matrix(void)
         out[x] = affine_transformation(SBOX_PATTERN, arr[x], SBOX_CONST);
     }
 
-    printf("After Transform:\n");
+    printf("SBox:\n");
     show_sbox(out);
 
+    /*
+     * S 盒逆操作
+     */
+    // 对 S 盒进行逆仿射变换
+    for (x=0; x<256; x++)
+    {
+        arr[x] = affine_transformation(SBOX_INV_PATTERN, out[x], SBOX_INV_CONST);
+    }
+
+    printf("After Inverse Transform:\n");
+    show_sbox(arr);
+
+    // 生成 0~255 逆元
+    for (x=0; x<256; x++)
+    {
+        inv[x] = get_gf256_reverse(arr[x], 0x11b);
+    }
+
+    printf("GF(2^8) Origin Table:\n");
+    show_sbox(inv);
+
+    /*
+     * 生成逆 S 盒
+     */
+    for (x=0; x<256; x++)
+    {
+        arr[x] = x;
+    }
+
+    // 对 S 盒进行逆仿射变换
+    for (x=0; x<256; x++)
+    {
+        arr[x] = affine_transformation(SBOX_INV_PATTERN, arr[x], SBOX_INV_CONST);
+    }
+
+    // 生成 0~255 逆元
+    for (x=0; x<256; x++)
+    {
+        arr[x] = get_gf256_reverse(arr[x], 0x11b);
+    }
+
+    printf("Inverse SBox:\n");
+    show_sbox(arr);
 }
+#endif
 
 void generate_gf8_table(void)
 {
