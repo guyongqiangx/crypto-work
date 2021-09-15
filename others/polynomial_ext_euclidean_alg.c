@@ -1,12 +1,13 @@
 #include <stdio.h>
 
 static void show_polynomial(unsigned int x);
+static void show_sbox(unsigned int arr[256]);
 
 /*
  * GF(2^8) 内的多项式乘法
  * 0x13 x 0xcc = 0xd94
  */
-unsigned int gf256_multi(unsigned int p1, unsigned int p2)
+unsigned int gf2n_multi(unsigned int p1, unsigned int p2)
 {
     unsigned int i, x;
 
@@ -101,11 +102,12 @@ unsigned int gcd(unsigned int p1, unsigned int p2)
 }
 
 /*
-* ax + by = 1 = gcd(a, b)
-* --> ax mod b + by mod b = 1 mod b
-* --> ax mod b = 1 mod b
-*/
-int ext_euclidian(int a, int b, int *ia, int *ib)
+ * 扩展欧几里得算法求多项式 a 和 b 互相的逆元
+ * ax + by = 1 = gcd(a, b)
+ * --> ax mod b + by mod b = 1 mod b
+ * --> ax mod b = 1 mod b
+ */
+int ext_euclidean(int a, int b, int *ia, int *ib)
 {
     int x, y, x0, y0, x1, y1;
     int q, r;
@@ -119,8 +121,8 @@ int ext_euclidian(int a, int b, int *ia, int *ib)
     while (r != 0)
     {
         /* 计算当前项 x/y */
-        x = x0 ^ gf256_multi(q, x1); // x = x0 - q * x1;
-        y = y0 ^ gf256_multi(q, y1); // y = y0 - q * y1;
+        x = x0 ^ gf2n_multi(q, x1); // x = x0 - q * x1;
+        y = y0 ^ gf2n_multi(q, y1); // y = y0 - q * y1;
 
         /* 依次保存前两项到 x0/y0, x1/y1 */
         x0 = x1; x1 = x;
@@ -139,8 +141,22 @@ int ext_euclidian(int a, int b, int *ia, int *ib)
     return x;
 }
 
+/*
+ * 返回多项式 a 对于多项式 b 的逆元
+ * ax + by = 1 mod b
+ */
+int gf2n_inverse(int a, int b)
+{
+    int ia, ib;
+
+    ext_euclidean(a, b, &ia, &ib);
+
+    return ia;
+}
+
 int main(int argc, char *argv[])
 {
+    int i, sbox[256];
     unsigned int p, p1, p2, t;
 
     p1 = 0x7f;
@@ -163,8 +179,25 @@ int main(int argc, char *argv[])
 
     show_polynomial(p1);
     show_polynomial(p2);
-    ext_euclidian(p1, p2, &p, &t);
+    ext_euclidean(p1, p2, &p, &t);
     show_polynomial(p);
+
+    p1 = 0x57;  // x^6 + x^4 + x^2 + x + 1
+    p2 = 0x83;  // x^7 + x + 1
+    p  = 0x11b; // x^8 + x^4 + x^3 + x + 1
+
+    show_polynomial(p1);
+    show_polynomial(p2);
+    t = gf2n_multi(p1, p2);
+    show_polynomial(t);
+    t = gf2n_mod(t, p);
+    show_polynomial(t);
+
+    for (i=0; i<256; i++)
+    {
+        sbox[i] = gf2n_inverse(i, 0x11b);
+    }
+    show_sbox(sbox);
 
     return 0;
 }
@@ -235,4 +268,26 @@ static void show_polynomial(unsigned int p)
     }
 
     printf("\n");
+}
+
+static void show_sbox(unsigned int arr[256])
+{
+    unsigned int x, y;
+
+    printf("  ");
+    for (x=0; x<16; x++)
+    {
+        printf(" %2X", x);
+    }
+    printf("\n");
+
+    for (x=0; x<16; x++)
+    {
+        printf("%2X ", x);
+        for (y=0; y<16; y++)
+        {
+            printf(" %02X", arr[16 * x + y]);
+        }
+        printf("\n");
+    }
 }
