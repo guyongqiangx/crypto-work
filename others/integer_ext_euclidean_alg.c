@@ -19,7 +19,25 @@ int gcd(int a, int b)
     }
 }
 
-/* ax + by = 1 mod b */
+int gcdx(int a, int b)
+{
+    int t;
+
+    while (b != 0)
+    {
+        t = a % b;
+        a = b;
+        b = t;
+    }
+
+    return a;
+}
+
+/*
+* ax + by = 1 = gcd(a, b)
+* --> ax mod b + by mod b = 1 mod b
+* --> ax mod b = 1 mod b
+*/
 int ext_euclidian(int a, int b, int *ia, int *ib)
 {
     int x, y, x0, y0, x1, y1;
@@ -51,7 +69,7 @@ int ext_euclidian(int a, int b, int *ia, int *ib)
     *ia = x;
     *ib = y;
 
-    return 0;
+    return x;
 }
 
 /* ax + by = 1 mod b */
@@ -78,6 +96,24 @@ int main(int argc, char *argv[])
 
     x = gcd(100, 29);
     printf("gcd(100,29)=%d\n", x);
+
+    x = gcdx(33, 18);
+    printf("gcdx(33,18)=%d\n", x);
+
+    x = gcdx(18, 33);
+    printf("gcdx(18,33)=%d\n", x);
+
+    x = gcdx(100, 29);
+    printf("gcdx(100,29)=%d\n", x);
+
+    x = gcdx(29, 100);
+    printf("gcdx(29,100)=%d\n", x);
+
+    x = gcdx(50, 30);
+    printf("gcdx(50,30)=%d\n", x);
+
+    x = gcdx(1759, 550);
+    printf("gcdx(1759,550)=%d\n", x);
 
     ext_euclidian(1759, 550, &ia, &ib);
     printf("ext_euclidian(1759, 550) = (%d, %d)\n", ia, ib);
