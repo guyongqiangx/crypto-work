@@ -38,7 +38,7 @@ int gcdx(int a, int b)
 * --> ax mod b + by mod b = 1 mod b
 * --> ax mod b = 1 mod b
 */
-int ext_euclidian(int a, int b, int *ia, int *ib)
+int ext_euclidean(int a, int b, int *ia, int *ib)
 {
     int x, y, x0, y0, x1, y1;
     int q, r;
@@ -77,7 +77,7 @@ int multi_inverse(int a, int b)
 {
     int ia, ib;
 
-    ext_euclidian(a, b, &ia, &ib);
+    ext_euclidean(a, b, &ia, &ib);
     if (ia < 0)
     {
         ia += b;
@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
     x = gcdx(1759, 550);
     printf("gcdx(1759,550)=%d\n", x);
 
-    ext_euclidian(1759, 550, &ia, &ib);
+    ext_euclidean(1759, 550, &ia, &ib);
     printf("ext_euclidian(1759, 550) = (%d, %d)\n", ia, ib);
     printf("%d x (%d) + %d x (%d) = %d\n", 1759,  ia, 550, ib, 1759 * ia + 550 * ib);
 
