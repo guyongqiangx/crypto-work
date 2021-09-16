@@ -1,8 +1,10 @@
 #include <stdio.h>
+#include "gf2n.h"
 
 static void show_polynomial(unsigned int x);
 static void show_sbox(unsigned int arr[256]);
 
+#if 0
 /*
  * GF(2^8) 内的多项式乘法
  * 0x13 x 0xcc = 0xd94
@@ -153,6 +155,7 @@ int gf2n_inv(int a, int b)
 
     return ia;
 }
+#endif
 
 int main(int argc, char *argv[])
 {
