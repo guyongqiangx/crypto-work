@@ -11,3 +11,17 @@ int gcd(int a, int b)
         return gcd(b, a % b);
     }
 }
+
+int Factorial(int n)
+{
+    int i;
+    int res;
+
+    res = 1;
+    for (i=n; i>0; i--)
+    {
+        res *= i;
+    }
+
+    return res;
+}

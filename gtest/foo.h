@@ -6,6 +6,7 @@ extern "C"
 #endif
 
 int gcd(int a, int b);
+int Factorial(int n);  // Returns the factorial of n
 
 #ifdef __cplusplus
 }
