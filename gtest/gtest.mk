@@ -64,5 +64,7 @@ $(TARGET):
 clean:
 	if [ -e $(GTEST_MAKEFILE) ]; then \
 		$(MAKE) -C $(GTEST_BUILD_DIR) clean; \
-		rm -rf $(GTEST_BUILD_DIR); \
-	fi;
+	fi; \
+	rm -rf $(GTEST_BUILD_DIR); \
+	rm -rf $(GTEST_LIB); \
+	rm -rf $(GTEST_LIBMAIN);
