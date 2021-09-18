@@ -11,9 +11,5 @@ sm3/sm3
 */*.o
 
 # gtest files
-gtest/CMakeCache.txt
-gtest/CMakeFiles/
-gtest/Makefile
-gtest/_deps/
-gtest/cmake_install.cmake
-gtest/lib/
+gtest/build
+gtest/gtest

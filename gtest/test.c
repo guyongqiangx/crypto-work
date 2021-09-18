@@ -1,5 +1,4 @@
 #include "foo.h"
-// #include "build/_deps/googletest-src/googletest/include/
 #include <gtest/gtest.h>
 
 TEST(GCDTest, EvenTest)
