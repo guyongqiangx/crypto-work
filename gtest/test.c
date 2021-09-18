@@ -35,15 +35,19 @@ TEST(FactorialTest, HandlesPositiveInput) {
 //     return RUN_ALL_TESTS();
 // }
 
-int main(int argc, char *argv[])
-{
-    testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
+// int main(int argc, char *argv[])
+// {
+//     testing::InitGoogleTest(&argc, argv);
+//     return RUN_ALL_TESTS();
+// }
 
 /*
  * 1. Building
- * $ g++ test.c foo.c -L. -lgtest -lpthread -Ibuild/_deps/googletest-src/googletest/include/ -o test
+ * 1). with main in test.c
+ * $ g++ test.c foo.c -o test -Igtest/include -Lgtest/lib -lgtest -lpthread
+ *
+ * 2). no main in test.c, link with libgtest_main.a
+ * $ g++ test.c foo.c -o test -Igtest/include -Lgtest/lib -lgtest_main -lgtest -lpthread
  *
  * 2. Running
  * $ ./test
