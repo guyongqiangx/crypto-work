@@ -1,4 +1,4 @@
-.PHONY: all clean gtestfoo test
+.PHONY: all test clean
 
 CROSS_COMPILE=
 
@@ -6,41 +6,43 @@ CC      = $(CROSS_COMPILE)gcc
 CXX     = $(CROSS_COMPILE)g++
 
 LD      = $(CROSS_COMPILE)ld
-LDFLAGS = 
-
-STRIP   = $(CROSS_COMPILE)strip
-AR      = $(CROSS_COMPILE)ar
-ARFLAGS = crs
+LDFLAGS =
 
 RM      = rm
 RMFLAGS = -rf
 
 CFLAGS  = -Wall -g -O2
-
-LIBS    = -Lgtest/lib  -libgtest_main -libgtest -lpthread
 INCLUDE = -Igtest/include
 
-SRCS    = foo.c foo_unittest.cc
-TARGET  = gtestfoo
+LDLIBS  = -Lgtest/lib -lgtest_main -lgtest -lpthread
 
-OBJS 	= $(SRCS:.c=.o) $(SRCS:.cc=.o)
+LIB     = libfoo.a
 
-all: gtestfoo test
+SRCS    = foo_unittest.cc
+OBJS    = $(SRCS:.cc=.o)
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
+TARGET  = footest
+
+all: .prepare $(TARGET) test
+
+.prepare:
+	make -f gtest.mk
+	touch .prepare
+
+$(LIB):
+	make -f lib.mk
 
 %.o: %.cc
-	$(CXX) $(CFLAGS) -c $< -o $@ $(INCLUDE)
+	$(CXX) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-$(TARGET): $(OBJS)
-	$(LD) $(LDFLAGS) $(OBJS) -o $@ $(LIBS)
-#	$(STRIP) --strip-unneeded $(TARGET)
+$(TARGET): $(OBJS) $(LIB)
+	$(CXX) $(LDFLAGS) $(OBJS) -o $@ $(LDLIBS) $(LIB)
 
 test: $(TARGET)
-	@echo
 	@echo "Run Test..."
-	./$(TARGET) -x
+	./$(TARGET)
 
 clean:
-	$(RM) $(RMFLAGS) $(TARGET) $(OBJS)
+	make -f gtest.mk clean
+	make -f lib.mk clean
+	$(RM) $(RMFLAGS) $(TARGET) $(OBJS) .prepare

@@ -14,8 +14,7 @@ int gcd(int a, int b)
 
 int Factorial(int n)
 {
-    int i;
-    int res;
+    int i, res;
 
     res = 1;
     for (i=n; i>0; i--)

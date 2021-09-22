@@ -48,6 +48,9 @@ TEST(FactorialTest, HandlesPositiveInput) {
  * 2). no main in test.c, link with libgtest_main.a
  * $ g++ test.c foo.c -o test -Igtest/include -Lgtest/lib -lgtest_main -lgtest -lpthread
  *
+ * 3). using libfoo.a, link with libgtest_main.a
+ * $ g++ test.c -o test -Igtest/include -Lgtest/lib -lgtest_main -lgtest -lpthread libfoo.a
+ *
  * 2. Running
  * $ ./test
  * [==========] Running 1 test from 1 test suite.
