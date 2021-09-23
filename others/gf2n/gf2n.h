@@ -1,3 +1,10 @@
+#ifndef __GF2N_H__
+#define __GF2N_H__
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 /*
  * GF(2^8) 内的多项式乘法
  * 0x13 x 0xcc = 0xd94
@@ -49,3 +56,8 @@ unsigned int gf2n_ext_euclidean(unsigned int p1, unsigned int p2, unsigned int *
  * ax + by = 1 mod b
  */
 unsigned int gf2n_inv(unsigned int p1, unsigned int p2);
+
+#ifdef __cplusplus
+}
+#endif
+#endif

@@ -109,6 +109,8 @@ unsigned int gf2n_ext_euclidean(unsigned int a, unsigned int b, unsigned int *ia
     unsigned int x, y, x0, y0, x1, y1;
     unsigned int q, r;
 
+    x = y = 0; /* Avoid: warning: 'x/y' may be used uninitialized in this function [-Wmaybe-uninitialized] */
+
     x0 = 1; y0 = 0;
     x1 = 0; y1 = 1;
 

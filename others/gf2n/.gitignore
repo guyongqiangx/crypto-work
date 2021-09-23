@@ -1,0 +1,8 @@
+gf2n.o
+libgf2n.a
+gf2n_unittest.o
+gf2ntest
+.prepare
+
+build/
+gtest/

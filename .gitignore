@@ -13,3 +13,5 @@ sm3/sm3
 # gtest files
 gtest/build
 gtest/gtest
+
+out/
