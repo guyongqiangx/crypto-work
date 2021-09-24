@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include "gcd.h"
 
 /*
  * 最大公约数: Greatest Common Divisor (GCD)
@@ -44,7 +44,7 @@ int int_gcd(int a, int b)
 /*
  * 扩展欧几里得算法: Extend Euclidean Algorithm (EEA)
  * ax + by = 1 = gcd(a, b)
- * 使用扩展欧几里得算法计算 a 和 b 的 x 和 y, 似的 ax + by = gcd(a, b)
+ * 使用扩展欧几里得算法计算正整数 a 和 b 的系数 x 和 y, 使得 ax + by = gcd(a, b)
  * 返回 a 和 b 的最大公约数 gcd(a, b)
  */
 int int_gcd_ex(int a, int b, int *ia, int *ib)
@@ -86,8 +86,8 @@ int int_gcd_ex(int a, int b, int *ia, int *ib)
 }
 
 /*
- * 计算 a 关于 b 的乘法逆元
- * 返回 a 关于 b 的最小正整数乘法逆元
+ * 计算整数 a 关于 b 的乘法逆元
+ * 返回整数 a 关于整数 b 的最小正整数乘法逆元
  * 如果逆元不存在 gcd(a, b) != 1, 则返回 0
  */
 int int_inv(int a, int b)
@@ -95,9 +95,10 @@ int int_inv(int a, int b)
     int res, ia, ib;
 
     res = int_gcd_ex(a, b, &ia, &ib);
+
+    /* No Inverse, 没有乘法逆元 */
     if (res != 1)
     {
-        /* No Inverse, 没有乘法逆元 */
         return 0;
     }
 
@@ -108,56 +109,4 @@ int int_inv(int a, int b)
     }
 
     return ia;
-}
-
-int main(int argc, char *argv[])
-{
-    int x;
-    int ia, ib;
-
-    x = int_gcd(33, 18);
-    printf("int_gcd(33,18)=%d\n", x);
-
-    x = int_gcd(100, 29);
-    printf("int_gcd(100,29)=%d\n", x);
-
-    x = int_gcd(33, 18);
-    printf("int_gcd(33,18)=%d\n", x);
-
-    x = int_gcd(18, 33);
-    printf("int_gcd(18,33)=%d\n", x);
-
-    x = int_gcd(100, 29);
-    printf("int_gcd(100,29)=%d\n", x);
-
-    x = int_gcd(29, 100);
-    printf("int_gcd(29,100)=%d\n", x);
-
-    x = int_gcd(50, 30);
-    printf("int_gcd(50,30)=%d\n", x);
-
-    x = int_gcd(1759, 550);
-    printf("int_gcd(1759,550)=%d\n", x);
-
-    int_gcd_ex(1759, 550, &ia, &ib);
-    printf("int_gcd_ex(1759, 550) = (%d, %d)\n", ia, ib);
-    printf("%d x (%d) + %d x (%d) = %d\n", 1759,  ia, 550, ib, 1759 * ia + 550 * ib);
-
-    int_gcd_ex(29, 100, &ia, &ib);
-    printf("int_gcd_ex(29, 100) = (%d, %d)\n", ia, ib);
-    printf("%d x (%d) + %d x (%d) = %d\n", 29,  ia, 100, ib, 29 * ia + 100 * ib);
-
-    x = int_inv(33, 18);
-    printf("int_inv(33, 18) = %d\n", x);
-
-    x = int_inv(29, 100);
-    printf("int_inv(29, 100) = %d\n", x);
-
-    x = int_inv(1759, 550);
-    printf("int_inv(1759, 550) = %d\n", x);
-
-    x = int_inv(550, 1759);
-    printf("int_inv(550, 1759) = %d\n", x);
-
-    return 0;
 }
