@@ -3,7 +3,7 @@
 #include "gtest/gtest.h"
 
 #if 0
-static void show_polynomial(unsigned int x);
+static void show_polynomial(int x);
 static void show_sbox(int *arr);
 
 /*
@@ -17,7 +17,7 @@ static void show_sbox(int *arr);
  * 0x00cc: x^7  + x^6  + x^3  + x^2
  * 0x0d94: x^11 + x^10 + x^8  + x^7  + x^4  + x^2
  */
-static void show_polynomial(unsigned int p)
+static void show_polynomial(int p)
 {
     int z[32], i;
 
@@ -76,7 +76,7 @@ static void show_polynomial(unsigned int p)
 
 static void show_sbox(int arr[256])
 {
-    unsigned int x, y;
+    int x, y;
 
     printf("  ");
     for (x=0; x<16; x++)
@@ -100,7 +100,7 @@ static void show_sbox(int arr[256])
 TEST(gf2n, AllInOne)
 {
     int i, sbox[256];
-    unsigned int p, p1, p2, t;
+    int p, p1, p2, t;
 
     p1 = 0x7f;
     p2 = 0x17;
@@ -146,7 +146,7 @@ TEST(gf2n, AllInOne)
 
 TEST(gf2n, MulThenModTest)
 {
-    unsigned int p, p1, p2, t;
+    int p, p1, p2, t;
 
     p1 = 0x57;  // x^6 + x^4 + x^2 + x + 1
     p2 = 0x83;  // x^7 + x + 1
@@ -161,18 +161,17 @@ TEST(gf2n, MulThenModTest)
 
 TEST(gf2n, InvTest)
 {
-    unsigned int p, p1, p2;
+    int p1, p2;
 
     p1 = 0x57;  // x^6 + x^4 + x^2 + x + 1
-    p2 = 0x83;  // x^7 + x + 1
-    p  = 0x11b; // x^8 + x^4 + x^3 + x + 1
+    p2 = 0x11b; // x^8 + x^4 + x^3 + x + 1
 
-    EXPECT_EQ(0xbf, gf2n_inv(p1, p));
+    EXPECT_EQ(0xbf, gf2n_inv(p1, p2));
 }
 
 TEST(gf2n, ModTest)
 {
-    unsigned int p1, p2;
+    int p1, p2;
 
     p1 = 0x7f;
     p2 = 0x17;
@@ -182,7 +181,7 @@ TEST(gf2n, ModTest)
 
 TEST(gf2n, DivTest)
 {
-    unsigned int p1, p2;
+    int p1, p2;
 
     p1 = 0x7f;
     p2 = 0x17;
@@ -192,7 +191,7 @@ TEST(gf2n, DivTest)
 
 TEST(gf2n, GcdTest)
 {
-    unsigned int p1, p2;
+    int p1, p2;
 
     p1 = 0x7f;
     p2 = 0x17;
@@ -202,7 +201,7 @@ TEST(gf2n, GcdTest)
 
 TEST(gf2n, ExtEuclideanTest)
 {
-    unsigned int p, p1, p2, t;
+    int p, p1, p2, t;
 
     p1 = 0x83;  // x^7 + x + 1
     p2 = 0x11b; // x^8 + x^4 + x^3 + x + 1

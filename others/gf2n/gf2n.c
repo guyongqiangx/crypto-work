@@ -4,9 +4,9 @@
  * GF(2^8) 内的多项式乘法
  * 0x13 x 0xcc = 0xd94
  */
-unsigned int gf2n_mul(unsigned int p1, unsigned int p2)
+int gf2n_mul(int p1, int p2)
 {
-    unsigned int i, x;
+    int i, x;
 
     x = 0;
     i = 0;
@@ -26,7 +26,7 @@ unsigned int gf2n_mul(unsigned int p1, unsigned int p2)
 /*
  * 获取最高位为 1 的位置(从 0 开始)
  */
-static int get_msb1_pos(unsigned int x)
+static int get_msb1_pos(int x)
 {
     int i;
 
@@ -46,9 +46,9 @@ static int get_msb1_pos(unsigned int x)
  * p2 = 0x011b: x^8  + x^4  + x^3  + x^1  + 1
  * p1 mod p2 = 0xd98 mod 0x11b = 0x3d: x^5  + x^4  + x^3  + x^1  + 1
  */
-unsigned int gf2n_mod(unsigned int p1, unsigned int p2)
+int gf2n_mod(int p1, int p2)
 {
-    unsigned int i, j;
+    int i, j;
 
     // 找到 p2 的最高位
     j = get_msb1_pos(p2);
@@ -69,9 +69,9 @@ unsigned int gf2n_mod(unsigned int p1, unsigned int p2)
  * p2 = 0x0017: x^4  + x^2  + x^1  + 1
  * p1 mod p2 = 0x007f mod 0x0017 = 0x0006: x^2  + x^1
  */
-unsigned int gf2n_div(unsigned int p1, unsigned int p2)
+int gf2n_div(int p1, int p2)
 {
-    unsigned int i, j;
+    int i, j;
 
     // 找到 p2 的最高位
     j = get_msb1_pos(p2);
@@ -86,7 +86,7 @@ unsigned int gf2n_div(unsigned int p1, unsigned int p2)
     return (0x1 << (i-j)) | gf2n_div(p1 ^ (p2 << (i-j)), p2);
 }
 
-unsigned int gf2n_gcd(unsigned int p1, unsigned int p2)
+int gf2n_gcd(int p1, int p2)
 {
     if (p2 == 0)
     {
@@ -104,10 +104,10 @@ unsigned int gf2n_gcd(unsigned int p1, unsigned int p2)
  * --> ax mod b + by mod b = 1 mod b
  * --> ax mod b = 1 mod b
  */
-unsigned int gf2n_ext_euclidean(unsigned int a, unsigned int b, unsigned int *ia, unsigned int *ib)
+int gf2n_ext_euclidean(int a, int b, int *ia, int *ib)
 {
-    unsigned int x, y, x0, y0, x1, y1;
-    unsigned int q, r;
+    int x, y, x0, y0, x1, y1;
+    int q, r;
 
     x = y = 0; /* Avoid: warning: 'x/y' may be used uninitialized in this function [-Wmaybe-uninitialized] */
 
@@ -144,9 +144,9 @@ unsigned int gf2n_ext_euclidean(unsigned int a, unsigned int b, unsigned int *ia
  * 返回多项式 a 对于多项式 b 的逆元
  * ax + by = 1 mod b
  */
-unsigned int gf2n_inv(unsigned int a, unsigned int b)
+int gf2n_inv(int a, int b)
 {
-    unsigned int ia, ib;
+    int ia, ib;
 
     gf2n_ext_euclidean(a, b, &ia, &ib);
 
