@@ -25,6 +25,11 @@ int int_gcd_ex(int a, int b, int *ia, int *ib);
  */
 int int_inv(int a, int b);
 
+/* 扩展域上的多项式 GF(2^n), 系数位于 GF(2) 上的欧几里得算法/扩展欧几里得算法/乘法逆元 */
+int poly_gcd(int p1, int p2);
+int poly_gcd_ex(int a, int b, int *ia, int *ib);
+int poly_inv(int a, int b);
+
 #ifdef __cplusplus
 }
 #endif

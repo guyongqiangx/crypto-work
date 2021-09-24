@@ -18,7 +18,7 @@ LDLIBS  = -Lgtest/lib -lgtest_main -lgtest -lpthread
 
 LIB     = libgcd.a
 
-SRCS    = int_gcd_unittest.cc
+SRCS    = int_gcd_unittest.cc poly_gcd_unittest.cc
 OBJS    = $(SRCS:.cc=.o)
 
 TARGET  = gcdtest

@@ -20,7 +20,7 @@ INCLUDE =
 
 INSTALL ?= .
 
-SRCS    = int_gcd.c
+SRCS    = int_gcd.c poly_gcd.c
 OBJS    = $(SRCS:.c=.o)
 HDRS	= gcd.h
 

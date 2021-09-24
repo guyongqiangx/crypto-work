@@ -1,0 +1,13 @@
+.prepare
+build/
+gtest/
+
+libgcd.a
+
+int_gcd.o
+int_gcd_unittest.o
+
+poly_gcd.o
+poly_gcd_unittest.o
+
+gcdtest
