@@ -122,7 +122,7 @@ TEST(gf2n, AllInOne)
 
     show_polynomial(p1);
     show_polynomial(p2);
-    gf2n_ext_euclidean(p1, p2, &p, &t);
+    gf2n_gcd_ex(p1, p2, &p, &t);
     show_polynomial(p);
 
     p1 = 0x57;  // x^6 + x^4 + x^2 + x + 1
@@ -206,7 +206,7 @@ TEST(gf2n, ExtEuclideanTest)
     p1 = 0x83;  // x^7 + x + 1
     p2 = 0x11b; // x^8 + x^4 + x^3 + x + 1
 
-    gf2n_ext_euclidean(p1, p2, &p, &t);
+    gf2n_gcd_ex(p1, p2, &p, &t);
     EXPECT_EQ(0x80, p);
 }
 

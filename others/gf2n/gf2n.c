@@ -86,31 +86,60 @@ int gf2n_div(int p1, int p2)
     return (0x1 << (i-j)) | gf2n_div(p1 ^ (p2 << (i-j)), p2);
 }
 
+
+/*
+ * 最大公约数: Greatest Common Divisor (GCD)
+ * 示例:
+ * gcd(3, 0) = 3
+ */
+/*
+ * 递归版本
+ *
+ * int gf2n_gcd(int p1, int p2)
+ * {
+ *     if (p2 == 0)
+ *     {
+ *         return p1;
+ *     }
+ *     else
+ *     {
+ *         return poly_gcd(p2, gf2n_mod(p1, p2)); // gf2n_gcd(p2, p1 % p2);
+ *     }
+ * }
+ */
+
+/*
+ * 非递归版本
+ */
 int gf2n_gcd(int p1, int p2)
 {
-    if (p2 == 0)
+    int t;
+
+    while (p2 != 0)
     {
-        return p1;
+        t = gf2n_mod(p1, p2); // t = p1 % p2;
+        p1 = p2;
+        p2 = t;
     }
-    else
-    {
-        return gf2n_gcd(p2, gf2n_mod(p1, p2));
-    }
+
+    return p1;
 }
 
 /*
- * 扩展欧几里得算法求多项式 a 和 b 互相的逆元
+ * 扩展欧几里得算法: Extend Euclidean Algorithm (EEA)
  * ax + by = 1 = gcd(a, b)
- * --> ax mod b + by mod b = 1 mod b
- * --> ax mod b = 1 mod b
+ * 使用扩展欧几里得算法计算多项式 a 和 b 的系数 x 和 y, 使得 ax + by = gcd(a, b)
+ * 返回 a 和 b 的最大公约数 gcd(a, b)
  */
-int gf2n_ext_euclidean(int a, int b, int *ia, int *ib)
+int gf2n_gcd_ex(int a, int b, int *ia, int *ib)
 {
     int x, y, x0, y0, x1, y1;
     int q, r;
 
-    x = y = 0; /* Avoid: warning: 'x/y' may be used uninitialized in this function [-Wmaybe-uninitialized] */
+    /* 消除警告: "warning: ‘x’/‘y’ may be used uninitialized in this function" */
+    x = y = 0;
 
+    /* 初始化最初两项系数 */
     x0 = 1; y0 = 0;
     x1 = 0; y1 = 1;
 
@@ -137,18 +166,25 @@ int gf2n_ext_euclidean(int a, int b, int *ia, int *ib)
     *ia = x;
     *ib = y;
 
-    return x;
+    return b;
 }
 
 /*
- * 返回多项式 a 对于多项式 b 的逆元
- * ax + by = 1 mod b
+ * 计算多项式 a 关于 b 的乘法逆元
+ * 返回多项式 a 关于多项式 b 的多项式乘法逆元
+ * 如果逆元不存在 gcd(a, b) != 1, 则返回 0
  */
 int gf2n_inv(int a, int b)
 {
-    int ia, ib;
+    int res, ia, ib;
 
-    gf2n_ext_euclidean(a, b, &ia, &ib);
+    res = gf2n_gcd_ex(a, b, &ia, &ib);
+
+    /* No Inverse, 没有乘法逆元 */
+    if (res != 1)
+    {
+        return 0;
+    }
 
     return ia;
 }

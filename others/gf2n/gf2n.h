@@ -49,7 +49,7 @@ int gf2n_gcd(int p1, int p2);
  * --> ax mod b + by mod b = 1 mod b
  * --> ax mod b = 1 mod b
  */
-int gf2n_ext_euclidean(int p1, int p2, int *ip1, int *ip2);
+int gf2n_gcd_ex(int p1, int p2, int *ip1, int *ip2);
 
 /*
  * 返回多项式 p1 对于多项式 p2 的逆元
