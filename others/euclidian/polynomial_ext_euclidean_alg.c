@@ -1,17 +1,17 @@
 #include <stdio.h>
 #include "gf2n.h"
 
-static void show_polynomial(unsigned int x);
-static void show_sbox(unsigned int arr[256]);
+static void show_polynomial(int x);
+static void show_sbox(int arr[256]);
 
 #if 0
 /*
  * GF(2^8) 内的多项式乘法
  * 0x13 x 0xcc = 0xd94
  */
-unsigned int gf2n_mul(unsigned int p1, unsigned int p2)
+int gf2n_mul(int p1, int p2)
 {
-    unsigned int i, x;
+    int i, x;
 
     x = 0;
     i = 0;
@@ -31,7 +31,7 @@ unsigned int gf2n_mul(unsigned int p1, unsigned int p2)
 /*
  * 获取最高位为 1 的位置(从 0 开始)
  */
-static int get_msb1_pos(unsigned int x)
+static int get_msb1_pos(int x)
 {
     int i;
 
@@ -51,9 +51,9 @@ static int get_msb1_pos(unsigned int x)
  * p2 = 0x011b: x^8  + x^4  + x^3  + x^1  + 1
  * p1 mod p2 = 0xd98 mod 0x11b = 0x3d: x^5  + x^4  + x^3  + x^1  + 1
  */
-unsigned int gf2n_mod(unsigned int p1, unsigned int p2)
+int gf2n_mod(int p1, int p2)
 {
-    unsigned int i, j;
+    int i, j;
 
     // 找到 p2 的最高位
     j = get_msb1_pos(p2);
@@ -74,9 +74,9 @@ unsigned int gf2n_mod(unsigned int p1, unsigned int p2)
  * p2 = 0x0017: x^4  + x^2  + x^1  + 1
  * p1 mod p2 = 0x007f mod 0x0017 = 0x0006: x^2  + x^1
  */
-unsigned int gf2n_div(unsigned int p1, unsigned int p2)
+int gf2n_div(int p1, int p2)
 {
-    unsigned int i, j;
+    int i, j;
 
     // 找到 p2 的最高位
     j = get_msb1_pos(p2);
@@ -91,7 +91,7 @@ unsigned int gf2n_div(unsigned int p1, unsigned int p2)
     return (0x1 << (i-j)) | gf2n_div(p1 ^ (p2 << (i-j)), p2);
 }
 
-unsigned int gf2n_gcd(unsigned int p1, unsigned int p2)
+int gf2n_gcd(int p1, int p2)
 {
     if (p2 == 0)
     {
@@ -160,7 +160,7 @@ int gf2n_inv(int a, int b)
 int main(int argc, char *argv[])
 {
     int i, sbox[256];
-    unsigned int p, p1, p2, t;
+    int p, p1, p2, t;
 
     p1 = 0x7f;
     p2 = 0x17;
@@ -216,7 +216,7 @@ int main(int argc, char *argv[])
  * 0x00cc: x^7  + x^6  + x^3  + x^2
  * 0x0d94: x^11 + x^10 + x^8  + x^7  + x^4  + x^2
  */
-static void show_polynomial(unsigned int p)
+static void show_polynomial(int p)
 {
     int z[32], i;
 
@@ -273,9 +273,9 @@ static void show_polynomial(unsigned int p)
     printf("\n");
 }
 
-static void show_sbox(unsigned int arr[256])
+static void show_sbox(int arr[256])
 {
-    unsigned int x, y;
+    int x, y;
 
     printf("  ");
     for (x=0; x<16; x++)
