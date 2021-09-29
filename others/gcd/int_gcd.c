@@ -92,29 +92,83 @@ int int_gcd_ex(int a, int b, int *ia, int *ib)
     return b;
 }
 
+///**
+// * @description: 基于扩展欧几里得算法计算整数 a 关于 整数 b 的乘法逆元
+// * @param {int} a 整数 a
+// * @param {int} b 整数 b
+// * @return {*} 返回整数 a 关于整数 b 的最小正整数乘法逆元, 乘法逆元不存在(gcd(a, b) != 1)则返回 0;
+// */
+//int int_inv(int a, int b)
+//{
+//    int res, ia, ib;
+//
+//    res = int_gcd_ex(a, b, &ia, &ib);
+//
+//    /* gcd(a, b) != 1, 没有乘法逆元 */
+//    if (res != 1)
+//    {
+//        return 0;
+//    }
+//
+//    /* 调整小于 0 的情况 */
+//    if (ia < 0)
+//    {
+//        ia += b;
+//    }
+//
+//    return ia;
+//}
+
 /**
- * @description: 基于扩展欧几里得算法计算整数 a 关于 整数 b 的乘法逆元
+ * @description: 基于扩展欧几里得算法计算整数 a 关于 整数 b 的乘法逆元(展开 int_gcd_ex 后的优化版本)
  * @param {int} a 整数 a
  * @param {int} b 整数 b
  * @return {*} 返回整数 a 关于整数 b 的最小正整数乘法逆元, 乘法逆元不存在(gcd(a, b) != 1)则返回 0;
  */
 int int_inv(int a, int b)
 {
-    int res, ia, ib;
+    int x, x0, x1;
+    int q, r, t;
 
-    res = int_gcd_ex(a, b, &ia, &ib);
+    /* 消除警告: "warning: ‘x’ may be used uninitialized in this function" */
+    x = 0;
 
-    /* No Inverse, 没有乘法逆元 */
-    if (res != 1)
+    /* 初始化最初两项系数 */
+    x0 = 1;
+    x1 = 0;
+
+    /* 临时保存 b */
+    t = b;
+
+    q = a / b;
+    r = a % b;
+
+    while (r != 0)
+    {
+        /* 计算当前项 x */
+        x = x0 - q * x1;
+
+        /* 依次保存前两项到 x0, x1 */
+        x0 = x1; x1 = x;
+
+        a = b;
+        b = r; /* 前一次的余数 */
+
+        q = a / b;
+        r = a % b;
+    }
+
+    /* gcd(a, b) != 1, 没有乘法逆元 */
+    if (b != 1)
     {
         return 0;
     }
 
     /* 调整小于 0 的情况 */
-    if (ia < 0)
+    if (x < 0)
     {
-        ia += b;
+        x += t;
     }
 
-    return ia;
+    return x;
 }
