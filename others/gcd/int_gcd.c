@@ -1,30 +1,29 @@
 /*
  * @        file: int_gcd.c
- * @ description: 整数的最大公约数，和扩展欧几里得算法求乘法逆元的实现
+ * @ description: 整数的最大公约数(欧几里得算法 Euclidean Algorithm)，和扩展欧几里得算法(Extend Euclidean Algorithm)求乘法逆元的实现
  * @      author: Yongqiang Gu
  * @        blog: https://blog.csdn.net/guyongqiangx
  */
 #include "gcd.h"
 
-/**
- * @description: 使用欧几里得算法(辗转相除)求最大公约数的递归版本
- * @param {int} a 整数a
- * @param {int} b 整数b
- * @return {*} 返回整数 (a, b) 的最大公约数
- */
-/*
- * int int_gcd(int a, int b)
- * {
- *     if (b == 0)
- *     {
- *         return a;
- *     }
- *     else
- *     {
- *         return int_gcd(b, a % b);
- *     }
- * }
- */
+///**
+// * @description: 使用欧几里得算法(辗转相除)求最大公约数的递归版本
+// * @param {int} a 整数a
+// * @param {int} b 整数b
+// * @return {*} 返回整数 (a, b) 的最大公约数
+// */
+//int int_gcd(int a, int b)
+//{
+//    if (b == 0)
+//    {
+//        return a;
+//    }
+//    else
+//    {
+//        return int_gcd(b, a % b);
+//    }
+//}
+
 
 /**
  * @description: 使用欧几里得算法(辗转相除)求最大公约数的非递归版本
@@ -46,8 +45,37 @@ int int_gcd(int a, int b)
     return a;
 }
 
+///**
+// * @description: 使用扩展欧几里得算法(EEA)计算等式 a x ia + b x ib = gcd(a, b) 中的系数 ia, ib 和 gcd(a, b), 递归版本, 推导和证明参考: https://blog.csdn.net/lincifer/article/details/49391175
+// * @param {int} a 整数 a
+// * @param {int} b 整数 b
+// * @param {int} *ia 整数 a 的系数 ia
+// * @param {int} *ib 整数 b 的系数 ib
+// * @return {*} 返回整数 (a, b) 的最大公约数 gcd(a, b)
+// */
+//int int_gcd_ex(int a, int b, int *ia, int *ib)
+//{
+//    int x, y;
+//    int q, r;
+//
+//    if (b == 0)
+//    {
+//        *ia = 1;
+//        *ib = 0;
+//
+//        return a;
+//    }
+//
+//    r = int_gcd_ex(b, a % b, &x, &y);
+//
+//    *ia = y;
+//    *ib = x - a / b * y;
+//
+//    return r;
+//}
+
 /**
- * @description: 使用扩展欧几里得算法: Extend Euclidean Algorithm (EEA) 计算等式 a x ia + b x ib = gcd(a, b) 中的 ia, ib 和 gcd(a, b)
+ * @description: 使用扩展欧几里得算法(EEA) 计算等式 a x ia + b x ib = gcd(a, b) 中的系数 ia, ib 和 gcd(a, b), 非递归版本
  * @param {int} a 整数 a
  * @param {int} b 整数 b
  * @param {int} *ia 整数 a 的系数 ia
