@@ -200,65 +200,65 @@ int gf2n_gcd_ex(int a, int b, int *ia, int *ib)
     return b;
 }
 
-///*
-// * 计算多项式 a 关于 b 的乘法逆元
-// * 返回多项式 a 关于多项式 b 的多项式乘法逆元
-// * 如果逆元不存在 gcd(a, b) != 1, 则返回 0
-// */
-//int gf2n_inv(int a, int b)
-//{
-//    int res, ia, ib;
-//
-//    res = gf2n_gcd_ex(a, b, &ia, &ib);
-//
-//    /* No Inverse, 没有乘法逆元 */
-//    if (res != 1)
-//    {
-//        return 0;
-//    }
-//
-//    return ia;
-//}
-
 /*
- * 计算多项式 a 关于 b 的乘法逆元 (非递归版本)
+ * 计算多项式 a 关于 b 的乘法逆元
  * 返回多项式 a 关于多项式 b 的多项式乘法逆元
  * 如果逆元不存在 gcd(a, b) != 1, 则返回 0
  */
 int gf2n_inv(int a, int b)
 {
-    int x, x0, x1;
-    int q, r;
+    int res, ia, ib;
 
-    /* 消除警告: "warning: ‘x’ may be used uninitialized in this function" */
-    x = 0;
-
-    /* 初始化最初两项系数 */
-    x0 = 1; x1 = 0;
-
-    q = gf2n_div(a, b); // q = a / b;
-    r = gf2n_mod(a, b); // r = a % b;
-
-    while (r != 0)
-    {
-        /* 计算当前项 x */
-        x = x0 ^ gf2n_mul(q, x1); // x = x0 - q * x1;
-
-        /* 依次保存前两项到 x0, x1 */
-        x0 = x1; x1 = x;
-
-        a = b;
-        b = r;
-
-        q = gf2n_div(a, b); // q = a / b;
-        r = gf2n_mod(a, b); // r = a % b;
-    }
+    res = gf2n_gcd_ex(a, b, &ia, &ib);
 
     /* No Inverse, 没有乘法逆元 */
-    if (b != 1)
+    if (res != 1)
     {
         return 0;
     }
 
-    return x;
+    return ia;
 }
+
+///*
+// * 计算多项式 a 关于 b 的乘法逆元 (非递归版本)
+// * 返回多项式 a 关于多项式 b 的多项式乘法逆元
+// * 如果逆元不存在 gcd(a, b) != 1, 则返回 0
+// */
+//int gf2n_inv(int a, int b)
+//{
+//    int x, x0, x1;
+//    int q, r;
+//
+//    /* 消除警告: "warning: ‘x’ may be used uninitialized in this function" */
+//    x = 0;
+//
+//    /* 初始化最初两项系数 */
+//    x0 = 1; x1 = 0;
+//
+//    q = gf2n_div(a, b); // q = a / b;
+//    r = gf2n_mod(a, b); // r = a % b;
+//
+//    while (r != 0)
+//    {
+//        /* 计算当前项 x */
+//        x = x0 ^ gf2n_mul(q, x1); // x = x0 - q * x1;
+//
+//        /* 依次保存前两项到 x0, x1 */
+//        x0 = x1; x1 = x;
+//
+//        a = b;
+//        b = r;
+//
+//        q = gf2n_div(a, b); // q = a / b;
+//        r = gf2n_mod(a, b); // r = a % b;
+//    }
+//
+//    /* No Inverse, 没有乘法逆元 */
+//    if (b != 1)
+//    {
+//        return 0;
+//    }
+//
+//    return x;
+//}
