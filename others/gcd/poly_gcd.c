@@ -125,6 +125,31 @@ int poly_gcd(int p1, int p2)
     return p1;
 }
 
+///*
+// * 扩展欧几里得算法: Extend Euclidean Algorithm (EEA)
+// * ax + by = 1 = gcd(a, b)
+// * 使用扩展欧几里得算法计算多项式 a 和 b 的系数 x 和 y, 使得 ax + by = gcd(a, b)
+// * 返回 a 和 b 的最大公约数 gcd(a, b)
+// */
+//int poly_gcd_ex(int a, int b, int *ia, int *ib)
+//{
+//    int r, x, y;
+//
+//    if (b == 0)
+//    {
+//        *ia = 1;
+//        *ib = 0;
+//
+//        return a;
+//    }
+//
+//    r = poly_gcd_ex(b, gf2n_mod(a, b), &x, &y);
+//    *ia = y;
+//    *ib = x ^ gf2n_mul(gf2n_div(a, b), y);
+//
+//    return r;
+//}
+
 /*
  * 扩展欧几里得算法: Extend Euclidean Algorithm (EEA)
  * ax + by = 1 = gcd(a, b)
