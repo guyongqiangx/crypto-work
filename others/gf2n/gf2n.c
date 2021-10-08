@@ -125,11 +125,42 @@ int gf2n_gcd(int p1, int p2)
     return p1;
 }
 
+///*
+// * 扩展欧几里得算法: Extend Euclidean Algorithm (EEA)
+// * ax + by = 1 = gcd(a, b)
+// * 使用扩展欧几里得算法计算多项式 a 和 b 的系数 x 和 y, 使得 ax + by = gcd(a, b)
+// * 返回 a 和 b 的最大公约数 gcd(a, b)
+// */
+///*
+// * 递归版本
+// */
+//int gf2n_gcd_ex(int a, int b, int *ia, int *ib)
+//{
+//    int r, x, y;
+//
+//    if (b == 0)
+//    {
+//        *ia = 1;
+//        *ib = 0;
+//
+//        return a;
+//    }
+//
+//    r = gf2n_gcd_ex(b, gf2n_mod(a, b), &x, &y);
+//    *ia = y;
+//    *ib = x ^ gf2n_mul(gf2n_div(a, b), y);
+//
+//    return r;
+//}
+
 /*
- * 扩展欧几里得算法: Extend Euclidean Algorithm (EEA)
+ * 扩展欧几里得算法: Extend Euclidean Algorithm (EEA)(非递归版本)
  * ax + by = 1 = gcd(a, b)
  * 使用扩展欧几里得算法计算多项式 a 和 b 的系数 x 和 y, 使得 ax + by = gcd(a, b)
  * 返回 a 和 b 的最大公约数 gcd(a, b)
+ */
+/*
+ * 非递归版本
  */
 int gf2n_gcd_ex(int a, int b, int *ia, int *ib)
 {
@@ -169,22 +200,65 @@ int gf2n_gcd_ex(int a, int b, int *ia, int *ib)
     return b;
 }
 
+///*
+// * 计算多项式 a 关于 b 的乘法逆元
+// * 返回多项式 a 关于多项式 b 的多项式乘法逆元
+// * 如果逆元不存在 gcd(a, b) != 1, 则返回 0
+// */
+//int gf2n_inv(int a, int b)
+//{
+//    int res, ia, ib;
+//
+//    res = gf2n_gcd_ex(a, b, &ia, &ib);
+//
+//    /* No Inverse, 没有乘法逆元 */
+//    if (res != 1)
+//    {
+//        return 0;
+//    }
+//
+//    return ia;
+//}
+
 /*
- * 计算多项式 a 关于 b 的乘法逆元
+ * 计算多项式 a 关于 b 的乘法逆元 (非递归版本)
  * 返回多项式 a 关于多项式 b 的多项式乘法逆元
  * 如果逆元不存在 gcd(a, b) != 1, 则返回 0
  */
 int gf2n_inv(int a, int b)
 {
-    int res, ia, ib;
+    int x, x0, x1;
+    int q, r;
 
-    res = gf2n_gcd_ex(a, b, &ia, &ib);
+    /* 消除警告: "warning: ‘x’ may be used uninitialized in this function" */
+    x = 0;
+
+    /* 初始化最初两项系数 */
+    x0 = 1; x1 = 0;
+
+    q = gf2n_div(a, b); // q = a / b;
+    r = gf2n_mod(a, b); // r = a % b;
+
+    while (r != 0)
+    {
+        /* 计算当前项 x */
+        x = x0 ^ gf2n_mul(q, x1); // x = x0 - q * x1;
+
+        /* 依次保存前两项到 x0, x1 */
+        x0 = x1; x1 = x;
+
+        a = b;
+        b = r;
+
+        q = gf2n_div(a, b); // q = a / b;
+        r = gf2n_mod(a, b); // r = a % b;
+    }
 
     /* No Inverse, 没有乘法逆元 */
-    if (res != 1)
+    if (b != 1)
     {
         return 0;
     }
 
-    return ia;
+    return x;
 }
