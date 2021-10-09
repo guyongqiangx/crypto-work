@@ -1,13 +1,24 @@
 #include <stdio.h>
 #include <string.h>
 
-void show_polynomial(unsigned int x);
+typedef unsigned char      uint8_t;
+typedef unsigned short     uint16_t;
+typedef unsigned int       uint32_t;
+typedef unsigned long long uint64_t;
+
+typedef struct {
+    uint64_t hi;
+    uint64_t lo;
+}uint128_t;
+
+#if 0
+void show_polynomial(uint128_t x);
 
 /*
- * GF(2^8) 内的多项式乘法
+ * GF(2^128) 内的多项式乘法
  * 0x13 x 0xcc = 0xd94
  */
-unsigned int gf256_multi(unsigned int p1, unsigned int p2)
+unsigned int gf256_multi(uint128_t p1, uint128_t p2)
 {
     unsigned int i, x;
     
@@ -25,11 +36,12 @@ unsigned int gf256_multi(unsigned int p1, unsigned int p2)
 
     return x;
 }
+#endif
 
 /*
- * 获取最高位为 1 的位置(从 0 开始)
+ * 获取 64 位整数最高位为 1 的位置(从 0 开始), 没有 1 的位则返回 -1
  */
-int get_msb1_pos(unsigned int x)
+static int get_msb1(uint64_t x)
 {
     int i;
     
@@ -43,6 +55,81 @@ int get_msb1_pos(unsigned int x)
     return i;
 }
 
+int get_msb1_pos(uint128_t x)
+{
+    int i;
+
+    i = get_msb1(x.hi);
+    if (i == -1) /* 高 64 位中没有为 1 的位, 即全 0 */
+    {
+        i = get_msb1(x.lo);
+    }
+    else
+    {
+        i += 64;
+    }
+
+    return i;
+}
+
+void u128_show(uint128_t x)
+{
+    printf("0x%016llx-%016llx", x.hi, x.lo);
+}
+
+void u128_left_shift(const uint128_t *x, int shift, uint128_t *y)
+{
+    if (shift >= 128)
+    {
+        y->hi = 0;
+        y->lo = 0;
+    }
+    else if (shift >= 64)
+    {
+        shift -= 64;
+
+        y->lo = 0;
+        y->hi = x->lo << shift;
+    }
+    else if (shift > 0) /* 0 < shift < 64 */
+    {
+        y->hi = (x->hi << shift) | (x->lo >> (64-shift));
+        y->lo = x->lo << shift;
+    }
+    else /* shift == 0 */
+    {
+        y->hi = x->hi;
+        y->lo = x->lo;
+    }
+}
+
+void u128_right_shift(const uint128_t *x, int shift, uint128_t *y)
+{
+    if (shift >= 128)
+    {
+        y->hi = 0;
+        y->lo = 0;
+    }
+    else if (shift >= 64)
+    {
+        shift -= 64;
+
+        y->hi = 0;
+        y->lo = x->hi >> shift;
+    }
+    else if (shift > 0) /* shift < 64 */
+    {
+        y->hi = x->hi >> shift;
+        y->lo = (x->hi << (64-shift)) | (x->lo >> shift);
+    }
+    else /* shift == 0 */
+    {
+        y->hi = x->hi;
+        y->lo = x->lo;
+    }
+}
+
+#if 0
 /*
  * GF(2^8) 内的多项式求余
  * p1 = 0x0d94: x^11 + x^10 + x^8  + x^7  + x^4  + x^2
@@ -133,7 +220,92 @@ static void show_polynomial(unsigned int p)
 
     printf("\n");
 }
+#endif
 
+#if 1
+
+static void test_get_msb1(void)
+{
+    uint64_t x = 0x1234567890abcdef;
+    int i, pos;
+
+    for (i=0; i<64; i++)
+    {
+        pos = get_msb1(x >> i);
+        printf("0x%016llx, msb1: %02d\n", x>>i, pos);
+    }
+}
+
+static void test_get_msb1_pos(void)
+{
+    uint128_t x;
+    uint64_t y;
+    int i, pos;
+
+    y = 0x00001234567890ab;
+    x.hi = 0x00001234567890ab;
+    x.lo = 0x1234567890abcdef;
+
+    for (i=0; i<64; i++)
+    {
+        x.hi = y >> i;
+        pos = get_msb1_pos(x);
+        printf("%02d msb1: %02d\n", i, pos);
+    }
+}
+
+static void test_u128_right_shift(void)
+{
+    uint128_t x, y;
+    int i, pos;
+
+    x.hi = 0x00001234567890ab;
+    x.lo = 0xfedcba0987654321;
+
+    for (i=0; i<=128; i++)
+    {
+        u128_right_shift(&x, i, &y);
+        printf("%03d: ", i);
+        u128_show(x);
+        printf(" ");
+        u128_show(y);
+
+        pos = get_msb1_pos(y);
+        printf(" pos: %03d\n", pos);
+    }
+}
+
+static void test_u128_left_shift(void)
+{
+    uint128_t x, y;
+    int i, pos;
+
+    x.hi = 0x00001234567890ab;
+    x.lo = 0xfedcba0987654321;
+
+    for (i=0; i<=128; i++)
+    {
+        u128_left_shift(&x, i, &y);
+        printf("%03d: ", i);
+        u128_show(x);
+        printf(" ");
+        u128_show(y);
+
+        pos = get_msb1_pos(y);
+        printf(" pos: %03d\n", pos);
+    }
+}
+
+int main(int argc, char *argv[])
+{
+    //test_get_msb1();
+    //test_get_msb1_pos();
+    test_u128_right_shift();
+    test_u128_left_shift();
+    return 0;
+}
+
+#else
 static char *get_polynomial(unsigned int p)
 {
     int z[32], i, pos;
@@ -580,3 +752,4 @@ int main(int argc, char *argv)
 
     return 0;
 }
+#endif
