@@ -52,8 +52,14 @@
  * $ openssl rsa -in rsa_private_key.txt -pubout | openssl rsa -pubin -text -out rsa_public_key.txt
  */
 
+#include <stdio.h>
+#include <stdarg.h>
+#include <gmp.h>
+
 // mpz_mod(mpz_t r, const mpz_t n, const mpz_t d)
 // mpz_powm_ui(mpz_t rop, const mpz_t base, unsigned long int exp, const mpz_t mod)
+
+static int generate_prime_integer(unsigned long int bits, gmp_randstate_t state, mpz_t big_int);
 
 // Fast Exponentiation, rop = n ^ exp
 void fast_exp(mpz_t rop, mpz_t x, unsigned long int exp, const mpz_t n)
@@ -67,7 +73,7 @@ void fast_exp(mpz_t rop, mpz_t x, unsigned long int exp, const mpz_t n)
     // 1. 找到最高为 1 的位
     temp = exp;
     i = -1;
-    while (!temp)
+    while (temp)
     {
         temp >>= 1;
         i ++;
@@ -91,6 +97,8 @@ void fast_exp(mpz_t rop, mpz_t x, unsigned long int exp, const mpz_t n)
         }
 
         mpz_set(rop, m);
+
+        i --;
     }
 
     mpz_clear(m);
@@ -100,19 +108,15 @@ int main(int argc, char *argv[])
 {
     int i, len;
     gmp_randstate_t state;
-    mpz_t p, q, n, x, y;
+    mpz_t p, q, n, fn, e, d, x, y;
+
+    mpz_t plain, cipher;
 
     len = 1024;
 
     gmp_randinit_default(state);
-    //gmp_randinit_mt(state);
-    //gmp_randseed_ui(state, time(NULL));
 
-    mpz_init(p);
-    mpz_init(q);
-    mpz_init(n);
-    mpz_init(x);
-    mpz_init(y);
+    mpz_inits(p, q, n, fn, e, d, x, y, plain, cipher, NULL);
 
     generate_prime_integer(len, state, p);
     gmp_printf("P: %Zx\n", p);
@@ -120,31 +124,50 @@ int main(int argc, char *argv[])
     generate_prime_integer(len, state, q);
     gmp_printf("Q: %Zx\n", q);
 
-    mpz_mul(n, p, q);
-    gmp_printf("N: %Zx\n", n);
+    mpz_mul(n, p, q);     // n = p x q
+    gmp_printf("N: %Zx\n", fn);
 
-    fast_exp(x, p, 65537, n);
-    gmp_printf("x: %Zx\n", x);
+    mpz_sub_ui(p, p, 1);  // p = p - 1
+    mpz_sub_ui(q, q, 1);  // q = q - 1
+    mpz_mul(fn, p, q);    // Φ(N) = Φ(p) x Φ(q) = (p-1) x (q-1)
+    gmp_printf("Φ(N): %Zx\n", fn);
 
-    mpz_clear(p);
-    mpz_clear(q);
-    mpz_clear(n);
-    mpz_clear(x);
-    mpz_clear(y);
+    mpz_set_ui(e, 65537);
+    gmp_printf("e: %Zd\n", e);
+
+    mpz_invert(d, e, fn);
+    gmp_printf("d: %Zx\n", d);
+
+    char *msg = "54f7edd9153c3b3ac14ac664e254e50a42556933713c086574e2d82aa76"
+                "50ebe03534beb607f4027734eb27cb7dc44c8cc792054dffc148dbd8fa6"
+                "a6b2c655bf424e697a71b29efad04b053e3dff253bb10436fb33a9dd1d9"
+                "6adecfdea0dbd5327f44f0a718159f68b576357965c7c5b06995589d886"
+                "0bd4f945a11a3a2a265c5be0910d0458539740b3807ee87bf688ceb3c8b"
+                "81a1272253525b3f66203b1304068d7977ebcbec9e709bb0b5ec764f91e"
+                "1daa135e8c8a1640f48027658410947bc389a638b5c92dda0676a7064b5"
+                "6b07843e84ae26872d30fee06dddd8e9";
+    mpz_init_set_str(plain, msg, 16);
+    gmp_printf("plain: %Zx\n", plain);
+
+    //fast_exp(cipher, plain, 65537, n);
+    mpz_powm(cipher, plain, e, n);
+    gmp_printf("cipher: %Zx\n", cipher);
+
+    mpz_powm(plain, cipher, d, n);
+    gmp_printf("plain: %Zx\n", plain);
+
+    mpz_inits(p, q, n, fn, e, d, x, y, plain, cipher, NULL);
 
     gmp_randclear(state);
 
     return 0;
 }
 
-int generate_prime_integer(int bits, gmp_randstate_t state, mpz_t big_int)
+static int generate_prime_integer(unsigned long int bits, gmp_randstate_t state, mpz_t big_int)
 {
     int i;
-    mp_bitcnt_t n;
 
-    n = bits;
-
-    mpz_urandomb(big_int, state, n);
+    mpz_urandomb(big_int, state, bits); /* mp_bitcnt_t is unsigned long int */
     //gmp_printf("%d bits: %Zx\n", bits, big_int);
 
     // 检查随机数是否为素数
