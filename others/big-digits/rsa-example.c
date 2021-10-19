@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
 {
     int i, len;
     gmp_randstate_t state;
-    mpz_t p, q, n, fn, e, d, x, y;
+    mpz_t p, q, n, fn, e, d;
 
     mpz_t plain, cipher;
 
@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
 
     gmp_randinit_default(state);
 
-    mpz_inits(p, q, n, fn, e, d, x, y, plain, cipher, NULL);
+    mpz_inits(p, q, n, fn, e, d, plain, cipher, NULL);
 
     generate_prime_integer(len, state, p);
     gmp_printf("P: %Zx\n", p);
@@ -131,6 +131,11 @@ int main(int argc, char *argv[])
     mpz_sub_ui(q, q, 1);  // q = q - 1
     mpz_mul(fn, p, q);    // Φ(N) = Φ(p) x Φ(q) = (p-1) x (q-1)
     gmp_printf("Φ(N): %Zx\n", fn);
+
+    // void mpz_gcd (mpz_t rop, const mpz_t op1, const mpz_t op2)
+    // void mpz_gcd_ui (mpz_t rop, const mpz_t op1, unsigned long int op2)
+    mpz_gcd_ui(e, fn, 65537);
+    gmp_printf("gcd(e, Φ(N))= %Zd\n", e);
 
     mpz_set_ui(e, 65537);
     gmp_printf("e: %Zd\n", e);
@@ -156,7 +161,7 @@ int main(int argc, char *argv[])
     mpz_powm(plain, cipher, d, n);
     gmp_printf("plain: %Zx\n", plain);
 
-    mpz_inits(p, q, n, fn, e, d, x, y, plain, cipher, NULL);
+    mpz_inits(p, q, n, fn, e, d, plain, cipher, NULL);
 
     gmp_randclear(state);
 
