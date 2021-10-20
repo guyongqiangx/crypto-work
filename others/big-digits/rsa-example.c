@@ -104,6 +104,7 @@ void fast_exp(mpz_t rop, mpz_t x, unsigned long int exp, const mpz_t n)
     mpz_clear(m);
 }
 
+#if 0
 int main(int argc, char *argv[])
 {
     int i, len;
@@ -167,6 +168,7 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+#endif
 
 static int generate_prime_integer(unsigned long int bits, gmp_randstate_t state, mpz_t big_int)
 {
@@ -187,4 +189,158 @@ static int generate_prime_integer(unsigned long int bits, gmp_randstate_t state,
     }
 
     return i;
+}
+
+/*
+ * @description: I2OSP, Integer-to-Octet-String Primitive
+ * @param {mpz_t} x, nonnegative integer to be converted
+ * @param {unsigned long} xLen, intended length of the resulting octet string
+ * @param {unsigned char} *X, corresponding octet string of length xLen
+ * @return {*} 0, OK; -1 Fail;
+ */
+int I2OSP(mpz_t x, unsigned long xLen, char *X)
+{
+    mpz_t max;
+    char format[12]; // unsigned long: 0～4294967295. format="%04294967296Zx"
+    int i, res;
+
+    if (X == NULL)
+    {
+        return -1;
+    }
+
+    res = 0;
+
+    mpz_init(max);
+    mpz_ui_pow_ui(max, 256, xLen);
+    if (mpz_cmp(x, max) > 0)
+    {
+        printf("integer too large\n");
+        res = -1;
+    }
+    else
+    {
+        sprintf(format, "%%0%luZx", 2 * xLen);
+        gmp_sprintf(X, format, x);
+    }
+    mpz_clear(max);
+
+    return res;
+}
+
+/**
+ * @description: OS2IP, Octet-String-to-Integer Primitive
+ * @param {char} *X, octet string to be converted
+ * @param {mpz_t} x, corresponding onnegative integer
+ * @return {*} 0, OK; -1 Fail;
+ */
+int OS2IP(const char *X, mpz_t x)
+{
+    if (X == NULL)
+    {
+        return -1;
+    }
+
+    mpz_set_str(x, X, 16);
+
+    return 0;
+}
+
+#include "gtest/gtest.h"
+
+// g++ rsa-example.c -o rsa-example -I/public/ygu/cryptography/crypto-work.git/out/gmp/include -L/public/ygu/cryptography/crypto-work.git/out/gmp/lib -lgmp -I/public/ygu/cryptography/crypto-work.git/out/gtest/include -L/public/ygu/cryptography/crypto-work.git/out/gtest/lib -lgtest_main -lgtest -lpthread
+TEST(RSAPrimitive, I2OSPTest)
+{
+    char buf[256];
+    int res;
+    mpz_t x;
+
+    mpz_init(x);
+
+    /*
+     * Test 1, 10 octets
+     */
+    const char *str1 = "54f7edd9153c3b3ac14a";
+    mpz_set_str(x, str1, 16);
+
+    memset(buf, 0, sizeof(buf));
+    res = I2OSP(x, 10, buf);
+    EXPECT_EQ(0, res);
+
+    res = strncmp(str1, buf, 10 * 2);
+    EXPECT_EQ(0, res);
+
+    /*
+     * Test 2, 11 octets, and only 10 octets buffer, error: large integer
+     */
+    const char *str2 = "54f7edd9153c3b3ac14ace";
+    mpz_set_str(x, str2, 16);
+
+    memset(buf, 0, sizeof(buf));
+    res = I2OSP(x, 10, buf);
+    EXPECT_EQ(-1, res);
+
+    /*
+     * Test 3, 30 octets
+     */
+    const char *str3 = "54f7edd9153c3b3ac14ac664e254e50a42556933713c086574e2d82aa7cd";
+    mpz_set_str(x, str3, 16);
+
+    memset(buf, 0, sizeof(buf));
+    res = I2OSP(x, 30, buf);
+    EXPECT_EQ(0, res);
+
+    res = strncmp(str3, buf, 30 * 2);
+    EXPECT_EQ(0, res);
+
+    /*
+     * Test 4, 40 octets, prefix '0's
+     */
+    const char *str4 = "54f7edd9153c3b3ac14ac664e254e50a42556933713c086574e2d82aa7cd";
+    mpz_set_str(x, str4, 16);
+
+    memset(buf, 0, sizeof(buf));
+    res = I2OSP(x, 40, buf);
+    EXPECT_EQ(0, res);
+
+    const char *str5 = "0000000000000000000054f7edd9153c3b3ac14ac664e254e50a42556933713c086574e2d82aa7cd";
+    res = strncmp(str5, buf, 40 * 2);
+    EXPECT_EQ(0, res);
+
+    mpz_clear(x);
+}
+
+TEST(RSAPrimitive, OS2IPTest)
+{
+    mpz_t x;
+    int res;
+
+    mpz_init(x);
+
+    /*
+     * Test 1
+     */
+    const char *str1 = "54f7edd9153c3b3ac14a";
+    res = OS2IP(str1, x);
+    gmp_printf("%Zx\n", x);
+    EXPECT_EQ(res, 0);
+
+    /*
+     * Test 2
+     */
+    const char *str2 = "54f7edd9153c3b3ac14ac664e254e50a42556933713c086574e2d82aa7cd";
+    res = OS2IP(str2, x);
+    gmp_printf("%Zx\n", x);
+    EXPECT_EQ(res, 0);
+
+    /*
+     * Test 3
+     */
+    const char *str3 = "000000000000000000ac54f7edd9153c3b3ac14ac664e254e50a42556933713c086574e2d82aa7cd";
+    res = OS2IP(str3, x);
+    gmp_printf("%Zx\n", x);
+    gmp_printf("%050Zx\n", x);
+    EXPECT_EQ(res, 0);
+
+    mpz_clear(x);
 }
