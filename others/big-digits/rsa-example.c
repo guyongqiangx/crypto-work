@@ -246,6 +246,158 @@ int OS2IP(const char *X, mpz_t x)
     return 0;
 }
 
+typedef struct {
+    mpz_t n;
+    unsigned long e;
+} *RSAPublicKey;
+
+typedef struct {
+    // 0: (n, d); 1: (p, q, dP, dQ, qInv)
+    int type;
+
+    // (n, d)
+    mpz_t n;
+    mpz_t d;
+
+    // (p, q, dP, dQ, qInv)
+    mpz_t p;
+    mpz_t q;
+    mpz_t dP;
+    mpz_t dQ;
+    mpz_t qInv;
+} *RSAPrivateKey;
+
+/**
+ * @description: RSAEP, RSA Encryption Primitive
+ * @param {RSAPublicKey} key, RSA public key
+ * @param {mpz_t} m, message representative, an integer between 0 and n-1
+ * @param {mpz_t} c, ciphertext representative, an integer between 0 and n-1
+ * @return {*}, 0, OK; -1 Fail;
+ */
+int RSAEP(RSAPublicKey key, mpz_t m, mpz_t c)
+{
+    int res = 0;
+
+    res = mpz_cmp(m, key->n);
+    if (res > 0)
+    {
+        printf("message representative out of range\n");
+        res = -1;
+    }
+
+    mpz_powm_ui(c, m, key->e, key->n);
+
+    gmp_printf("message: %Zx\n", m);
+    gmp_printf(" cipher: %Zx\n", c);
+
+    return 0;
+}
+
+/**
+ * @description: RSADP, RSA Decryption Primitive
+ * @param {RSAPrivateKey} key, RSA private key
+ * @param {mpz_t} c, ciphertext representative, an integer between 0 and n-1
+ * @param {mpz_t} m, message representative, an integer between 0 and n-1
+ * @return {*}, 0, OK; -1, Fail;
+ */
+int RSADP(RSAPrivateKey key, mpz_t c, mpz_t m)
+{
+    int res = 0;
+
+    if (key->type == 1) // (p, q, dP, dQ, qInv)
+    {
+        mpz_mul(key->n, key->p, key->q); // n = p x q
+    }
+
+    res = mpz_cmp(c, key->n);
+    if (res > 0)
+    {
+        printf("ciphertext representative out of range\n");
+        return -1;
+    }
+
+    switch (key->type)
+    {
+    case 0: // (n, d)
+        mpz_powm(m, c, key->d, key->n);
+        break;
+    case 1: // (p, q, dP, dQ, qInv)
+    default:
+        gmp_printf("Not Implemented Yet!\n");
+        break;
+    }
+
+    gmp_printf("message: %Zx\n", m);
+    gmp_printf(" cipher: %Zx\n", c);
+
+    return 0;
+}
+
+/**
+ * @description: RSASP1, RSA Signature Primitive, version 1 
+ * @param {RSAPrivateKey} key, RSA private key
+ * @param {mpz_t} m, message representative, an integer between 0 and n-1
+ * @param {mpz_t} s, signature representative, an integer between 0 and n-1
+ * @return {*}, 0, OK; -1, Fail;
+ */
+int RSASP1(RSAPrivateKey key, mpz_t m, mpz_t s)
+{
+    int res = 0;
+
+    if (key->type == 1) // (p, q, dP, dQ, qInv)
+    {
+        mpz_mul(key->n, key->p, key->q);
+    }
+
+    res = mpz_cmp(m, key->n);
+    {
+        printf("message representative out of range\n");
+        return -1;
+    }
+
+    switch (key->type)
+    {
+    case 0: // (n, d)
+        mpz_powm(m, s, key->d, key->n);
+        break;
+    case 1: // (p, q, dP, dQ, qInv)
+    default:
+        gmp_printf("Not Implemented Yet!\n");
+        break;
+    }
+
+    gmp_printf("  message: %Zx\n", m);
+    gmp_printf("signature: %Zx\n", s);
+
+    return 0;
+}
+
+/**
+ * @description: RSAVP1, RSA Verification Primitive, version 1
+ * @param {RSAPublicKey} key, RSA public key
+ * @param {mpz_t} s, signature representative, an integer between 0 and n-1
+ * @param {mpz_t} m, message representative, an integer between 0 and n-1
+ * @return {*}, 0, OK; -1, Fail;
+ */
+int RSAVP1(RSAPublicKey key, mpz_t s, mpz_t m)
+{
+    int res = 0;
+
+    res = mpz_cmp(s, key->n);
+    if (res > 0)
+    {
+        printf("signature representative out of range\n");
+        res = -1;
+    }
+
+    mpz_powm_ui(m, s, key->e, key->n);
+
+    gmp_printf(" cipher: %Zx\n", s);
+    gmp_printf("message: %Zx\n", m);
+
+    return 0;
+}
+
 #include "gtest/gtest.h"
 
 // g++ rsa-example.c -o rsa-example -I/public/ygu/cryptography/crypto-work.git/out/gmp/include -L/public/ygu/cryptography/crypto-work.git/out/gmp/lib -lgmp -I/public/ygu/cryptography/crypto-work.git/out/gtest/include -L/public/ygu/cryptography/crypto-work.git/out/gtest/lib -lgtest_main -lgtest -lpthread
