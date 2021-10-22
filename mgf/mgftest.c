@@ -33,35 +33,35 @@ int main(int argc, char *argv)
     int i;
     char buf[1024];
 
-    MGF1("foo", HASH_ALG_SHA1, 3, buf);
+    MGF1("foo", 3, HASH_ALG_SHA1, 3, buf);
     for (i=0; i<3; i++)
     {
         printf("%02x", ((unsigned char *)buf)[i]);
     }
     printf("\n");
 
-    MGF1("foo", HASH_ALG_SHA1, 5, buf);
+    MGF1("foo", 3, HASH_ALG_SHA1, 5, buf);
     for (i=0; i<5; i++)
     {
         printf("%02x", ((unsigned char *)buf)[i]);
     }
     printf("\n");
 
-    MGF1("bar", HASH_ALG_SHA1, 5, buf);
+    MGF1("bar", 3, HASH_ALG_SHA1, 5, buf);
     for (i=0; i<5; i++)
     {
         printf("%02x", ((unsigned char *)buf)[i]);
     }
     printf("\n");
 
-    MGF1("bar", HASH_ALG_SHA1, 50, buf);
+    MGF1("bar", 3, HASH_ALG_SHA1, 50, buf);
     for (i=0; i<50; i++)
     {
         printf("%02x", ((unsigned char *)buf)[i]);
     }
     printf("\n");
 
-    MGF1("bar", HASH_ALG_SHA256, 50, buf);
+    MGF1("bar", 3, HASH_ALG_SHA256, 50, buf);
     for (i=0; i<50; i++)
     {
         printf("%02x", ((unsigned char *)buf)[i]);

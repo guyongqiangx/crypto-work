@@ -52,13 +52,12 @@
  */
 
 #define MGF1_BUF_SIZE 1024
-int MGF1(const char *mgfSeed, HASH_ALG alg, unsigned int maskLen, char *mask)
+int MGF1(const char *mgfSeed, unsigned int mgfSeedLen, HASH_ALG alg, unsigned int maskLen, char *mask)
 {
     unsigned char buf[MGF1_BUF_SIZE], *p;
-    unsigned long mgfSeedLen, digestLen;
+    unsigned long digestLen;
     unsigned long counter, length;
 
-    mgfSeedLen = strlen(mgfSeed);
     if (mgfSeedLen > MGF1_BUF_SIZE - 4)
     {
         printf("MGF1 buffer is not long enough!\n");

@@ -35,8 +35,8 @@ TEST(MGF, MGFMetaTest)
      */
     const char *str1 = "foo";
     const int res1[] = {0x1a, 0xc9, 0x07};
-    size = strlen(str1);
-    MGF1("foo", HASH_ALG_SHA1, size, buf);
+    size = sizeof(res1);
+    MGF1(str1, strlen(str1), HASH_ALG_SHA1, size, buf);
     for (i=0; i<size; i++)
     {
         EXPECT_EQ(buf[i], res1[i]);
@@ -47,8 +47,8 @@ TEST(MGF, MGFMetaTest)
      */
     const char *str2 = "foo";
     const int res2[] = {0x1a, 0xc9, 0x07, 0x5c, 0xd4};
-    size = strlen(str2);
-    MGF1("foo", HASH_ALG_SHA1, size, buf);
+    size = sizeof(res2);
+    MGF1(str2, strlen(str2), HASH_ALG_SHA1, size, buf);
     for (i=0; i<size; i++)
     {
         EXPECT_EQ(buf[i], res2[i]);
@@ -59,8 +59,8 @@ TEST(MGF, MGFMetaTest)
      */
     const char *str3 = "bar";
     const int res3[] = {0xbc, 0x0c, 0x65, 0x5e, 0x01};
-    size = strlen(str3);
-    MGF1("foo", HASH_ALG_SHA1, size, buf);
+    size = sizeof(res3);
+    MGF1(str3, strlen(str3), HASH_ALG_SHA1, size, buf);
     for (i=0; i<size; i++)
     {
         EXPECT_EQ(buf[i], res3[i]);
@@ -74,8 +74,8 @@ TEST(MGF, MGFMetaTest)
                        0xef, 0x7f, 0x58, 0x1f, 0x76, 0xdf, 0x27, 0x39, 0xda, 0x74, 0xfa, 0xac, 0x41, 0x62, 0x7b, 0xe2,
                        0xf7, 0xf4, 0x15, 0xc8, 0x9e, 0x98, 0x3f, 0xd0, 0xce, 0x80, 0xce, 0xd9, 0x87, 0x86, 0x41, 0xcb,
                        0x48, 0x76};
-    size = strlen(str4);
-    MGF1("foo", HASH_ALG_SHA256, size, buf);
+    size = sizeof(res4);
+    MGF1(str4, strlen(str4), HASH_ALG_SHA256, size, buf);
     for (i=0; i<size; i++)
     {
         EXPECT_EQ(buf[i], res4[i]);
@@ -89,8 +89,8 @@ TEST(MGF, MGFMetaTest)
                        0x31, 0x20, 0x90, 0xce, 0xa9, 0x42, 0xea, 0x4c, 0x4e, 0x73, 0x5d, 0x10, 0xdc, 0x72, 0x4b, 0x15,
                        0x5f, 0x9f, 0x60, 0x69, 0xf2, 0x89, 0xd6, 0x1d, 0xac, 0xa0, 0xcb, 0x81, 0x45, 0x02, 0xef, 0x04,
                        0xea, 0xe1};
-    size = strlen(str5);
-    MGF1("foo", HASH_ALG_SHA1, size, buf);
+    size = sizeof(res5);
+    MGF1(str5, strlen(str5), HASH_ALG_SHA1, size, buf);
     for (i=0; i<size; i++)
     {
         EXPECT_EQ(buf[i], res5[i]);
