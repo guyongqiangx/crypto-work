@@ -3,31 +3,44 @@
 CROSS_COMPILE=
 
 CC      = $(CROSS_COMPILE)gcc
+CXX     = $(CROSS_COMPILE)g++
 STRIP   = $(CROSS_COMPILE)strip
 AR      = $(CROSS_COMPILE)ar
 ARFLAGS = crs
+LD      = $(CROSS_COMPILE)ld
+LDFLAGS =
 
 RM      = rm
 RMFLAGS = -rf
 
-LIBS    =
-INCLUDE =
 CFLAGS  = -Wall -g -O2
+# INCLUDE = -Igtest/include
+INCLUDE =
 
-SRCS    = utils.c md2.c md4.c md5.c sha1.c sha256.c sha512.c sha3.c sha3ex.c sm3.c hash_tables.c hash.c hashtest.c
-# use sha1test.c for test
-# SRCS    = utils.c md2.c md4.c md5.c sha1.c sha256.c sha512.c sha3.c sha3ex.c sm3.c hash_tables.c hash.c sha1test.c
+# LDLIBS  = -Lgtest/lib -lgtest_main -lgtest -lpthread
+LDLIBS  =
+LIB     = libhash.a
+
+SRCS    = utils.c hashtest.c
+OBJS    = $(SRCS:.c=.o)
+
 TARGET  = hash
 
 OBJS 	= $(SRCS:.c=.o)
 
 all: hash test
 
+
+$(LIB):
+	make -f lib.mk
+
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
+	# $(CXX) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -o $@ $(LIBS) $(INCLUDE)
+$(TARGET): $(OBJS) $(LIB)
+	$(CC) $(CFLAGS) $(OBJS) -o $@ $(INCLUDE) $(LDLIBS) $(LIB)
+	# $(CXX) $(LDFLAGS) $(OBJS) -o $@ $(LDLIBS) $(LIB)
 #	$(STRIP) --strip-all $(TARGET)
 
 test: $(TARGET)
