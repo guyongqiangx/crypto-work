@@ -87,6 +87,8 @@ int MGF1(const char *mgfSeed, unsigned int mgfSeedLen, HASH_ALG alg, unsigned in
 
         length += digestLen;
         mask += digestLen;
+
+        counter ++;
     }
 
     return 0;
