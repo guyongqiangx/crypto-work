@@ -11,17 +11,17 @@ LDFLAGS =
 RM      = rm
 RMFLAGS = -rf
 
-CFLAGS  = -Wall -g -O2
+CFLAGS  = -Wall -g -O2 -Wno-narrowing
 INCLUDE = -I../out/gtest/include -I../out/include
 
-LDLIBS  = -L../out/gtest/lib -lgtest_main -lgtest -lpthread -L../out/lib -lhash
+LDLIBS  = -L../out/gtest/lib -lgtest_main -lgtest -lpthread -L../out/lib -lmgf -lhash
 
 LIB     = libmgf.a
 
 SRCS    = mgf_unittest.cc
 OBJS    = $(SRCS:.cc=.o)
 
-TARGET  = mgftest
+TARGET  = mgf_unittest
 
 all: .prepare $(TARGET) test
 
@@ -36,13 +36,13 @@ $(LIB):
 	$(CXX) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 $(TARGET): $(OBJS) $(LIB)
-	$(CXX) $(LDFLAGS) $(OBJS) -o $@ $(LDLIBS) $(LIB)
+	$(CXX) $(LDFLAGS) $(OBJS) -o $@ $(LDLIBS)
 
 test: $(TARGET)
 	@echo "Run Test..."
 	./$(TARGET)
 
 clean:
-	make -f gtest.mk clean
+#	make -f gtest.mk clean
 	make -f lib.mk clean
 	$(RM) $(RMFLAGS) $(TARGET) $(OBJS) .prepare
