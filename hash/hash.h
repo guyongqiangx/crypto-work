@@ -6,7 +6,6 @@
  */
 #ifndef __ROCKY_HASH__H
 #define __ROCKY_HASH__H
-#include "type.h"
 
 /*
  * According to NIST SP 800-107 Rev 1, Recommendation for Applications Using Approved Hash Algorithms, 08/2012
@@ -47,8 +46,8 @@ typedef struct hash_context {
      * just for future use, like hmac, hash_drbg, hmac_drbg and so on.
      */
     HASH_ALG alg;
-    uint32_t block_size;
-    uint32_t digest_size;
+    unsigned long block_size;
+    unsigned long digest_size;
 
     void     *impl;
 }HASH_CTX;
@@ -61,10 +60,10 @@ unsigned char *HASH(HASH_ALG alg, const unsigned char *data, size_t n, unsigned 
 /*
  * For SHA-512t, SHAKE128, SHAKE256
  */
-int HASH_Init_Ex(HASH_CTX *ctx, HASH_ALG alg, uint32_t ext);
-unsigned char *HASH_Ex(HASH_ALG alg, const unsigned char *data, size_t n, unsigned char *md, uint32_t ext);
+int HASH_Init_Ex(HASH_CTX *ctx, HASH_ALG alg, unsigned long ext);
+unsigned char *HASH_Ex(HASH_ALG alg, const unsigned char *data, size_t n, unsigned char *md, unsigned long ext);
 
-uint32_t HASH_GetBlockSize(HASH_ALG alg);
-uint32_t HASH_GetDigestSize(HASH_ALG alg, uint32_t ext);
+unsigned long HASH_GetBlockSize(HASH_ALG alg);
+unsigned long HASH_GetDigestSize(HASH_ALG alg, unsigned long ext);
 
 #endif

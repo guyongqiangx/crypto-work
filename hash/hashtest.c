@@ -14,6 +14,7 @@
 #include <string.h> /* strlen */
 #include <unistd.h> /* getopt */
 
+#include "err.h"
 #include "hash.h"
 #include "utils.h"
 
@@ -98,9 +99,9 @@ void usage(const char *argv0)
 /*
  * Print a message digest in hexadecimal
  */
-static int print_digest(unsigned char *digest, uint32_t len)
+static int print_digest(unsigned char *digest, unsigned long len)
 {
-    uint32_t i;
+    unsigned long i;
 
     for (i = 0; i < len; i++)
     {
@@ -113,7 +114,7 @@ static int print_digest(unsigned char *digest, uint32_t len)
 /*
  * Hash a string and print the digest
  */
-static int digest_string(const char *argv0, TEST_CTX *ctx, const unsigned char *string, uint32_t len)
+static int digest_string(const char *argv0, TEST_CTX *ctx, const unsigned char *string, unsigned long len)
 {
     printf("%s(\"%s\") = ", argv0, string);
 
@@ -233,16 +234,16 @@ int main(int argc, char *argv[])
     int test_stdin = 0;
 
     /* d value for SHAKE128/SHAKE256 */
-    uint32_t d = 0;
+    unsigned long d = 0;
 
     /* t value for SHA512/t */
-    uint32_t t = 0;
+    unsigned long t = 0;
 
     char alg[HASH_NAME_SIZE];
-    uint32_t alg_len = 0;
+    unsigned long alg_len = 0;
 
     char *str = NULL;
-    uint32_t len = 0;
+    unsigned long len = 0;
 
     char *filename = NULL;
 

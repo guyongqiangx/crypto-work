@@ -6,6 +6,7 @@
  */
 #ifndef __ROCKY_SHA1__H
 #define __ROCKY_SHA1__H
+#include "err.h"
 #include "type.h"
 
 typedef struct sha1_context {

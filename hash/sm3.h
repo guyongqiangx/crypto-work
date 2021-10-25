@@ -6,6 +6,7 @@
  */
 #ifndef __ROCKY_SM3__H
 #define __ROCKY_SM3__H
+#include "err.h"
 #include "type.h"
 
 typedef struct sm3_context {

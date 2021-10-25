@@ -1,5 +1,6 @@
 #ifndef __ROCKY_SHA3EXT__H
 #define __ROCKY_SHA3EXT__H
+#include "err.h"
 #include "sha3.h"
 
 /*

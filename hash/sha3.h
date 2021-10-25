@@ -6,6 +6,7 @@
  */
 #ifndef __ROCKY_SHA3__H
 #define __ROCKY_SHA3__H
+#include "err.h"
 #include "type.h"
 
 /*

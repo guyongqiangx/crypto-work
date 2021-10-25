@@ -1,5 +1,6 @@
 #ifndef __ROCKY_MD2__H
 #define __ROCKY_MD2__H
+#include "err.h"
 #include "type.h"
 
 typedef struct md2_context {

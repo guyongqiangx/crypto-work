@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "err.h"
 #include "type.h"
 
 #include "hash_tables.h"
@@ -101,7 +102,7 @@ unsigned char *HASH(HASH_ALG alg, const unsigned char *data, size_t n, unsigned 
     return md;
 }
 
-int HASH_Init_Ex(HASH_CTX *ctx, HASH_ALG alg, uint32_t ext)
+int HASH_Init_Ex(HASH_CTX *ctx, HASH_ALG alg, unsigned long ext)
 {
     int rc = ERR_OK;
     HASH_STRUCT *impl = NULL;
@@ -132,7 +133,7 @@ int HASH_Init_Ex(HASH_CTX *ctx, HASH_ALG alg, uint32_t ext)
     return rc;
 }
 
-unsigned char *HASH_Ex(HASH_ALG alg, const unsigned char *data, size_t n, unsigned char *md, uint32_t ext)
+unsigned char *HASH_Ex(HASH_ALG alg, const unsigned char *data, size_t n, unsigned char *md, unsigned long ext)
 {
     int rc = ERR_OK;
     HASH_CTX ctx;
@@ -159,12 +160,12 @@ unsigned char *HASH_Ex(HASH_ALG alg, const unsigned char *data, size_t n, unsign
     return md;
 }
 
-uint32_t HASH_GetBlockSize(HASH_ALG alg)
+unsigned long HASH_GetBlockSize(HASH_ALG alg)
 {
     return get_hash_block_size(alg);
 }
 
-uint32_t HASH_GetDigestSize(HASH_ALG alg, uint32_t ext)
+unsigned long HASH_GetDigestSize(HASH_ALG alg, unsigned long ext)
 {
     return get_hash_digest_size(alg, ext);
 }

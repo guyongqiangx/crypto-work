@@ -6,6 +6,7 @@
  */
 #ifndef __ROCKY_MD4__H
 #define __ROCKY_MD4__H
+#include "err.h"
 #include "type.h"
 
 typedef struct md4_context {

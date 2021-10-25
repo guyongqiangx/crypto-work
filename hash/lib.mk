@@ -38,6 +38,7 @@ install: $(LIB)
 	mkdir -p $(INSTALL)/include $(INSTALL)/lib
 	cp -f $(LIB) $(INSTALL)/lib/$(LIB)
 	cp -f $(HDRS) $(INSTALL)/include/$(HDRS)
+	cp -f err.h $(INSTALL)/include/err.h
 	cp -f type.h $(INSTALL)/include/type.h
 
 clean:

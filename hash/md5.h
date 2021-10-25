@@ -6,6 +6,7 @@
  */
 #ifndef __ROCKY_MD5__H
 #define __ROCKY_MD5__H
+#include "err.h"
 #include "type.h"
 
 typedef struct md5_context {
