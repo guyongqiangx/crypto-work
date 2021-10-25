@@ -167,6 +167,8 @@ int MGF1(const char *mgfSeed, unsigned int mgfSeedLen, HASH_ALG alg, unsigned in
         // 更新计数器和地址
         length += digestLen;
         mask += digestLen;
+
+        counter ++;
     }
 
     return 0;
@@ -320,13 +322,35 @@ int main(int argc, char *argv)
 ### 3.3 编译代码和并测试
 
 使用如下命令编译:
-```
+```shell
 cc mgftest.c mgf.c -o mgftest -I/public/ygu/cryptography/crypto-work.git/out/include -L/public/ygu/cryptography/crypto-work.git/out/lib -lhash
 ```
 
 这里使用了 `-I` 和 `-L` 选项来指定哈希函数库的头文件和库文件位置。
 
 执行结果如下:
+```shell
+/public/ygu/cryptography/crypto-work.git/mgf$ ./mgftest 
+1ac907
+1ac9075cd4
+bc0c655e01
+bc0c655e016bc2931d85a2e675181adcef7f581f76df2739da74faac41627be2f7f415c89e983fd0ce80ced9878641cb4876
+382576a7841021cc28fc4c0948753fb8312090cea942ea4c4e735d10dc724b155f9f6069f289d61daca0cb814502ef04eae1
 ```
 
-```
+## 4. 其它
+
+洛奇工作中常常会遇到自己不熟悉的问题，这些问题可能并不难，但因为不了解，找不到人帮忙而瞎折腾，往往导致浪费几天甚至更久的时间。
+
+所以我组建了几个微信讨论群(记得微信我说加哪个群，如何加微信见后面)，欢迎一起讨论:
+- 一个密码编码学讨论组，主要讨论各种加解密，签名校验等算法，请说明加密码学讨论群。
+- 一个Android OTA的讨论组，请说明加Android OTA群。
+- 一个git和repo的讨论组，请说明加git和repo群。
+
+在工作之余，洛奇尽量写一些对大家有用的东西，如果洛奇的这篇文章让您有所收获，解决了您一直以来未能解决的问题，不妨赞赏一下洛奇，这也是对洛奇付出的最大鼓励。扫下面的二维码赞赏洛奇，金额随意：
+
+![收钱码](https://img-blog.csdnimg.cn/20190111150810383.png)
+
+洛奇自己维护了一个公众号“洛奇看世界”，一个很佛系的公众号，不定期瞎逼逼。公号也提供个人联系方式，一些资源，说不定会有意外的收获，详细内容见公号提示。扫下方二维码关注公众号：
+
+![公众号](https://img-blog.csdnimg.cn/20190111150824695.png)
