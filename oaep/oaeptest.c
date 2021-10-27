@@ -336,3 +336,112 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+/*
+
+1. 生成 RSA Private Key
+
+$ openssl genrsa -outform=PEM -out rsa_private_key.pem -f4 2048
+$ cat rsa_private_key.pem
+-----BEGIN RSA PRIVATE KEY-----
+MIIEpQIBAAKCAQEAyQtipu9UPSIEpyyspheuxaduAUhfliNTEtPq/4VPft2RU8Oz
+rBSsZk4lTlCkJVaTNxPAhldOLYKqdlDr4DU0vrYH9AJ3NOsny33ETIzHkgVN/8FI
+29j6amssZVv0JOaXpxsp760EsFPj3/JTuxBDb7M6ndHZat7P3qDb1TJ/RPCnGBWf
+aLV2NXllx8WwaZVYnYhgvU+UWhGjoqJlxb4JENBFhTl0CzgH7oe/aIzrPIuBoSci
+U1JbP2YgOxMEBo15d+vL7J5wm7C17HZPkeHaoTXoyKFkD0gCdlhBCUe8OJpji1yS
+3aBnanBktWsHhD6EriaHLTD+4G3d2OkwtUKwXwIDAQABAoIBADhM8O6Q3UVVbnom
+f57vyOjfL2Y6j1IrSEtgf1HZUl7Ty6vqhTlufK0Vu0rIOH+gVA+7f1HfxyvliLkj
+hjq+i6vQrD+AJUPziqxo5v0M+6J/y80Qose2ZsJAiylDbAadcODCMadGC6cZhxoi
+8aHUNx5j0cl6h+luxkWxRH7a6lsyjkfNvtk6HY5cEUh7kbRDR2eVEljs6UBlYbFN
+o381xf+EcYYBHpYK+eJwyLkzkNsnj8fRsI4CR7Vdy5I0tObfXLOraH+GfAgiwLgC
+rf3pD3ntHIGrWvcVWzGsEJDDH3KMAjrt/0nihbCjh3VPLFtMtwUldiJxe2k97GXD
+oeaikYkCgYEA75Wc0R0KlxsAHFrhBUH0FGL+jFB7JZqb9NnBk/fLSE5dExsFAtoT
+jCuMNSizFXeUPg3bcgOoT9J5gTq0BROhNj1AZM+FMcx4Sc6suv8RYqcukohO6vL0
+raDWxFmxybj1je0ORIKn9X0+EhBwCRreEsSIoMy8WC/gEeaKRj/9/aUCgYEA1tHF
+DdwtHQBBadWbpQifTezIJ0fAKafkPRt917FkPIk583VQHz3CGr4pNKkag6S9Fb+o
+6ptdsYuQALY+c789SE5Zfmw+XnNJpqX2d5gHyKDKceaM6L/szgUKDiGQj2XcQXFG
+wb2MY/1VBpk6Ewj9i17ur8wE7J5DNEXzZ3ZdHrMCgYEAkyZVFqq7omtW+hNnOY90
+lkDnDs8vk70OJKjKGFONa2+WAvIJdeLzNphYmR3SQFEdn69rJO/SJJSlRBYGE0gn
+L+UW89PxftCS4OIrfP7Ecs8z75QAxJVMaofq4NYmODt9thnvNWz6M/EkenvWFAGI
+fAZx1DFrTM661MPAEb2kBnECgYEAkJyKQPhVTk6bunlX29NgGn8phnfgvqoNFa3q
+G0eJqM7gOiphE4bpokMdThwAg1plB70MI1MP0bOX70K/6/9za7eCu352xfJqREs5
+De1EYCUN43tGpHB/I3l0+WpS/JWfnlZ5QXcuiSlDEbwYwjOtKyNvHt0C+57Wstvc
+LWwa580CgYEAyQDOL29qGXOtb1JzcpOIbNu96CtZU2jLEGHjPi2KCT8FfdqtcTbH
+F+Cq5RdRYmIhSuEF7NAXVqMBpghsW8n+vbdKh5EkSgF5PqLhrLbb3oW1kS9RgnPt
+w4fZbvOUDBTCeIPKnsV2zSM2VGsWeqdxZ1bQncHvjl4vQg9mGxOZVKs=
+-----END RSA PRIVATE KEY-----
+
+2. 从私钥导出 Public Key
+
+$ openssl rsa -inform PEM -in rsa_private_key.pem -pubout -out rsa_public_key.pem
+
+3. 使用 Public Key 加密消息
+
+$ echo -n "I Love China!" | openssl rsautl  -encrypt -pubin -inkey rsa_public_key.pem -oaep -out cipher_msg.bin
+$ hexdump -Cv cipher_msg.bin
+00000000  7b f8 ee d0 07 5b c2 2c  d1 15 c6 75 21 54 73 30  |{....[.,...u!Ts0|
+00000010  66 6e 78 97 02 7f fa 83  46 27 34 b0 ff 6b de ab  |fnx.....F'4..k..|
+00000020  e2 e4 24 67 1f 1a 4e e5  a5 bf b5 91 d8 0b 6a 6a  |..$g..N.......jj|
+00000030  4e 81 08 74 fa b7 07 db  c6 7c 93 63 aa d3 2b 70  |N..t.....|.c..+p|
+00000040  a1 bf 2b cd 01 94 e8 39  a4 23 12 41 68 b2 7f 2c  |..+....9.#.Ah..,|
+00000050  4f 6e 3a 7a bf de 24 42  3b 21 84 c3 4b 50 22 9e  |On:z..$B;!..KP".|
+00000060  6c 04 41 c8 a9 b3 81 73  be f6 15 c3 9d 5c 7b 48  |l.A....s.....\{H|
+00000070  a8 c0 70 54 94 a0 de 9e  8d 1c 99 7a ac 79 68 0b  |..pT.......z.yh.|
+00000080  43 73 21 6c 4c 38 3e 92  2f c7 22 98 82 77 4b af  |Cs!lL8>./."..wK.|
+00000090  11 27 e6 ff 86 e4 0c 8b  28 70 87 4c 43 46 4b eb  |.'......(p.LCFK.|
+000000a0  b4 ce de a5 70 00 fe 42  24 5e bf e4 fb 02 3a b0  |....p..B$^....:.|
+000000b0  1f b6 1f 7d 9a c9 ff 49  8a b1 cf 3a 12 ba 65 6d  |...}...I...:..em|
+000000c0  b3 ad df b2 87 4f 7f 51  07 0b 7d f2 82 5d ef 40  |.....O.Q..}..].@|
+000000d0  67 62 41 05 45 f6 31 e3  18 e6 50 51 5d af 13 62  |gbA.E.1...PQ]..b|
+000000e0  13 8f b0 cd 15 d6 e3 eb  5d 05 ef 33 9a 57 62 6b  |........]..3.Wbk|
+000000f0  48 c4 1c 27 b5 b9 0e 34  55 4f 4d 3f 8c 93 3c 38  |H..'...4UOM?..<8|
+00000100
+
+4. 使用 Private Key 解密消息
+
+$ openssl rsautl -decrypt -inkey rsa_private_key.pem -oaep -in cipher_msg.bin | xxd -g 1
+00000000: 49 20 4c 6f 76 65 20 43 68 69 6e 61 21           I Love China!
+
+5. 使用 Private Key 解密获取原始的消息内容
+
+$ openssl rsautl -decrypt -inkey rsa_private_key.pem -oaep -in cipher_msg.bin -raw -hexdump
+0000 - 00 4a 8e 3f 7f d7 3d c8-06 ce fb fb 0b 20 d1 7b   .J.?..=...... .{
+0010 - 3a 27 90 2b 71 64 d5 27-de 50 20 0d be 50 2a 02   :'.+qd.'.P ..P*.
+0020 - d0 3e 7a 2c c2 d3 39 41-f8 4e c0 de 97 54 93 eb   .>z,..9A.N...T..
+0030 - a5 f1 28 78 1a 2f 96 88-26 7e fc 36 e1 6e 4b e2   ..(x./..&~.6.nK.
+0040 - e5 44 e3 3e 6b d3 6a e9-6a 36 fa ae 7a a8 98 49   .D.>k.j.j6..z..I
+0050 - 23 99 95 f1 ea 41 6d 6e-a0 d8 ce e7 ab 5d b9 db   #....Amn.....]..
+0060 - 5b 38 48 bf 11 b0 1f 72-f8 ee 90 ce 9d 0c 00 fe   [8H....r........
+0070 - 56 dd 4f 65 97 82 b3 ea-8b 6e 74 4e 75 12 06 c6   V.Oe.....ntNu...
+0080 - e8 ab 88 2a fd 54 3d ac-d9 fe 44 27 6b 8d 3e 28   ...*.T=...D'k.>(
+0090 - 07 df e2 33 48 69 8d 14-f2 71 89 d6 8d 0f d4 65   ...3Hi...q.....e
+00a0 - 84 a7 5a 1e 63 c6 26 e3-29 0f e0 dc b5 71 f6 9e   ..Z.c.&.)....q..
+00b0 - 12 7e 41 ff 76 69 28 e3-9e d3 97 2d 49 74 27 f0   .~A.vi(....-It'.
+00c0 - 30 a7 a1 da 67 fa 14 bd-22 7d e8 9a 8a 52 c7 da   0...g..."}...R..
+00d0 - 7f 8e 12 de ad b0 d5 99-48 3d d0 c6 aa 14 47 e2   ........H=....G.
+00e0 - 27 e3 85 66 a0 39 e9 3b-52 1e 8c 57 c1 5c 5e 0c   '..f.9.;R..W.\^.
+00f0 - aa d7 43 9f b9 16 0b 05-54 a4 18 27 c4 a3 d5 b4   ..C.....T..'....
+
+
+# 使用 pkeyutl 指定 MGF 函数和 OAEP 填充的 hash 算法
+$ echo -n "I Love China!" | openssl pkeyutl -encrypt -inkey rsa_private_key.pem -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha1 -pkeyopt rsa_mgf1_md:sha1 -out cipher2.bin
+$ hexdump -Cv cipher2.bin
+00000000  13 27 a3 86 0d 7e 9e b2  20 d3 26 16 9a c0 1c 19  |.'...~.. .&.....|
+00000010  9a b5 7c 7d 20 02 58 fa  85 de 7e 72 81 7e ed 08  |..|} .X...~r.~..|
+00000020  fb c5 54 51 f4 be c0 b7  3d 15 38 d6 a7 a7 63 cc  |..TQ....=.8...c.|
+00000030  3c 00 c4 62 d9 40 bb 0f  8d 4d d0 21 a8 e1 9e 13  |<..b.@...M.!....|
+00000040  c3 bc 08 6f 46 44 37 fc  7f 28 a5 b5 6c 31 39 28  |...oFD7..(..l19(|
+00000050  01 03 4a 93 c4 02 4b f3  d7 a8 54 58 c9 c0 f0 bc  |..J...K...TX....|
+00000060  3d 08 98 89 b4 17 4e ef  0c 84 66 51 ac 66 28 16  |=.....N...fQ.f(.|
+00000070  21 78 d1 bd a6 0d d5 7f  27 0d 3d 1d 14 b1 63 e0  |!x......'.=...c.|
+00000080  32 fc 43 3e bf 04 57 34  8c e3 6c 3e 90 7f 27 c1  |2.C>..W4..l>..'.|
+00000090  28 0c 6f d2 ca 0e 77 16  ad 5c c7 3b 62 52 73 a9  |(.o...w..\.;bRs.|
+000000a0  2e 8c 4c ec 9b ad ce 98  b5 bf 1c 8a 14 52 ba e4  |..L..........R..|
+000000b0  46 00 9e f9 e0 dd 5b 11  46 69 aa a0 5c fa e7 96  |F.....[.Fi..\...|
+000000c0  a7 ac c4 c5 09 5c 67 95  16 98 92 aa 5a 79 30 b1  |.....\g.....Zy0.|
+000000d0  9a 8a 44 d7 7a e6 b4 ff  fa 68 98 7b 08 03 51 59  |..D.z....h.{..QY|
+000000e0  96 df 55 9e 25 c6 4b 07  bc fe 69 2b 11 69 4f 8e  |..U.%.K...i+.iO.|
+000000f0  8b c3 8d 15 fe 55 8b 97  1a 35 d1 42 95 42 1f c1  |.....U...5.B.B..|
+00000100
+$ openssl pkeyutl -decrypt -inkey rsa_private_key.pem -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha1 -pkeyopt rsa_mgf1_md:sha1 -in cipher2.bin -hexdump
+0000 - 49 20 4c 6f 76 65 20 43-68 69 6e 61 21            I Love China!
+*/
