@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 #include "rand.h"
 #include "hash.h"
+#include "mgf.h"
 #include "oaep.h"
 
 // 测试数据来自文档: 《RSAES-OAEP Encryption Scheme》, 附录 C. Test Vectors
@@ -236,3 +237,84 @@ static char h[] =
 
 // m = m2 + qh is equal to the integer value of the encoded message EM above.
 // The intermediate values of the decoding operation are similar to those of the encoding operation.
+
+// use fixed bytes to simulate the Get_Random_Bytes(char *buf, unsigned long len);
+int Get_Random_Bytes(char *buf, unsigned long len)
+{
+    memcpy(buf, seed, 20);
+
+    return 0;
+}
+
+TEST(OAEP, HashTest)
+{
+    unsigned char hash[64];
+    unsigned long hLen;
+
+    // sha1("");
+    hLen = HASH_GetDigestSize(HASH_ALG_SHA1, 0);
+    EXPECT_EQ(hLen, sizeof(pHash)/sizeof(pHash[0]));
+
+    HASH(HASH_ALG_SHA1, (const unsigned char *)"", 0, hash);
+    EXPECT_EQ(0, memcmp(hash, pHash, hLen));
+}
+
+TEST(OAEP, MGFTest)
+{
+    char mySeed[20], myMGF[256];
+    unsigned long k, hLen;
+
+    k = sizeof(n)/sizeof(n[0]);
+
+    hLen = HASH_GetDigestSize(HASH_ALG_SHA1, 0);
+    EXPECT_EQ(hLen, sizeof(pHash)/sizeof(pHash[0]));
+
+    Get_Random_Bytes(mySeed, hLen);
+    EXPECT_EQ(0, memcmp(mySeed, seed, hLen));
+
+    // dbMask = MGF1(seed, 107)
+    MGF1(mySeed, hLen, HASH_ALG_SHA1, k-hLen-1, myMGF);
+    EXPECT_EQ(0, memcmp(myMGF, dbMask, k-hLen-1));
+
+    // seedMask = MGF(maskedDB, 20)
+    MGF1(maskedDB, k-hLen-1, HASH_ALG_SHA1, hLen, mySeed);
+    EXPECT_EQ(0, memcmp(mySeed, seedMask, hLen));
+}
+
+TEST(OAEP, EncodingTest)
+{
+    char out[256];
+    unsigned long k, mLen, emLen;
+
+    k = sizeof(n)/sizeof(n[1]);
+    mLen = sizeof(M)/sizeof(M[1]);
+    emLen = sizeof(EM)/sizeof(EM[0]);
+
+    EXPECT_EQ(k, emLen);
+
+    // L = ""
+    OAEP_Encoding(HASH_ALG_SHA1, k, M, mLen, "", 0, out, emLen);
+    EXPECT_EQ(0, memcmp(out, EM, emLen));
+
+    memset(out, 0, sizeof(out));
+    // L = NULL
+    OAEP_Encoding(HASH_ALG_SHA1, k, M, mLen, NULL, 0, out, emLen);
+    EXPECT_EQ(0, memcmp(out, EM, emLen));
+}
+
+TEST(OAEP, DecodingTest)
+{
+    char out[256];
+    unsigned long k, mLen, emLen;
+    int res;
+
+    k = sizeof(n)/sizeof(n[1]);
+    emLen = sizeof(EM)/sizeof(EM[0]);
+
+    EXPECT_EQ(k, emLen);
+
+    res = OAEP_Decoding(HASH_ALG_SHA1, k, (const char *)"", 0, EM, emLen, out, &mLen);
+    EXPECT_EQ(0, res);
+    EXPECT_EQ(sizeof(M)/sizeof(M[0]), mLen);
+    EXPECT_EQ(0, memcmp(out, M, mLen));
+}

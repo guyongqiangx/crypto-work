@@ -11,7 +11,10 @@ LDFLAGS =
 RM      = rm
 RMFLAGS = -rf
 
-CFLAGS  = -Wall -g -O2 -Wno-narrowing
+CFLAGS  = -Wall -g -O2
+CFLAGS += -Wno-narrowing
+# CFLAGS += -Wno-unused-variable
+
 INCLUDE = -I../out/gtest/include -I../out/include
 
 LDLIBS  = -L../out/gtest/lib -lgtest_main -lgtest -lpthread -L../out/lib -loaep -lmgf -lhash
