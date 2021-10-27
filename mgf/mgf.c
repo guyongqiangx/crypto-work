@@ -51,7 +51,7 @@
  *    4.  Output the leading maskLen octets of T as the octet string mask.
  */
 
-#define MGF1_BUF_SIZE 1024
+#define MGF1_BUF_SIZE 256
 int MGF1(const char *mgfSeed, unsigned int mgfSeedLen, HASH_ALG alg, unsigned int maskLen, char *mask)
 {
     unsigned char buf[MGF1_BUF_SIZE], *p;
