@@ -104,3 +104,41 @@ int Get_Random_Bytes(char *buf, unsigned long len)
     
     return 0;
 }
+
+int Get_Random_NonZero_Bytes(char *buf, unsigned long len)
+{
+    uint8_t key[256], key_size;
+    uint8_t S[256];
+    int i;
+    char x;
+
+    time_t t;
+
+    /* 初始化随机数发生器 */
+    srand((unsigned) time(&t));
+
+    /* 随机获得一个小于 1~256 的 key_size */
+    key_size = rand() % 256 + 1;
+
+    /* 基于 key_size 填充一个随机数组 key 作为 RC4 的种子 */
+    for (i=0; i<key_size; i++)
+    {
+        key[i] = rand() % 256;
+    }
+
+    /* 用获取的随机数组 key 初始化 RC4 算法 */
+    rc4_initialize(S, key, key_size);
+
+    for (i=0; i<len; i++)
+    {
+        // 每次生成 1 byte
+        rc4_key_generation(S, &x, 1);
+        while (!x) // 确保 x != 0
+        {
+            rc4_key_generation(S, &x, 1);
+        };
+        *buf ++ = x;
+    }
+
+    return 0;
+}

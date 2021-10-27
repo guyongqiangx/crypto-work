@@ -18,16 +18,50 @@ int main(int argc, char *argv[])
 
     memset(buf, 0, 1024);
 
+    printf("Random bytes test: \n");
     for (j=0; j<10; j++)
     {
         count = rand() % 32;
+        while (count == 0)
+        {
+            count = rand() % 32;
+        }
 
         Get_Random_Bytes(buf, count);
 
-        printf("%d: %3d bytes ", j, count);
+        printf("\n%2d: %3d bytes\n", j, count);
         for (i=0; i<count; i++)
         {
-            printf("%02x", ((unsigned char *)buf)[i]);
+            printf("%02x ", ((unsigned char *)buf)[i]);
+            if (i % 16 == 15)
+            {
+                printf("\n");
+            }
+        }
+        printf("\n");
+
+        system("sleep 1");
+    }
+
+    printf("Random nonzero bytes test: \n");
+    for (j=0; j<30; j++)
+    {
+        count = rand() % 32;
+        while (count == 0)
+        {
+            count = rand() % 32;
+        }
+
+        Get_Random_NonZero_Bytes(buf, count);
+
+        printf("\n%2d: %3d bytes\n", j, count);
+        for (i=0; i<count; i++)
+        {
+            printf("%02x ", ((unsigned char *)buf)[i]);
+            if (i % 16 == 15)
+            {
+                printf("\n");
+            }
         }
         printf("\n");
 
