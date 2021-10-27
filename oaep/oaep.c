@@ -230,7 +230,7 @@ int OAEP_Encoding(HASH_ALG alg, unsigned long k, char *M, unsigned long mLen, co
  */
 int OAEP_Decoding(HASH_ALG alg, unsigned long k, const char *L, unsigned long lLen, char *EM, unsigned long emLen, char *M, unsigned long *mLen)
 {
-    unsigned long hLen, psLen;
+    unsigned long hLen, psLen, mSize;
     unsigned char buf[OAEP_BUF_SIZE];
     unsigned char *p, *pSeed, *pDB;
     unsigned char *maskedSeed, *maskedDB;
@@ -326,11 +326,11 @@ int OAEP_Decoding(HASH_ALG alg, unsigned long k, const char *L, unsigned long lL
 
     // 跳过填充数据 PS 直到非 0x00 数据
     p     = pDB + hLen; // p 指向 PS
-    *mLen = k - 1 - hLen - hLen;
+    mSize = k - 1 - hLen - hLen;
     while (*p == 0x00)
     {
         p ++;
-        *mLen --;
+        mSize --;
     }
 
     // 检查 PS 结束的位置是否为 0x01
@@ -342,10 +342,11 @@ int OAEP_Decoding(HASH_ALG alg, unsigned long k, const char *L, unsigned long lL
 
     // 跳过 0x01;
     p ++;
-    *mLen --;
+    mSize --;
 
     // 提取最后的数据到 M 中，长度为 mLen
-    memcpy(M, p, *mLen);
+    memcpy(M, p, mSize);
+    *mLen = mSize;
 
     return 0;
 }
