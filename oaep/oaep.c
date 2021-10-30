@@ -89,6 +89,18 @@ static void xor(unsigned char *dest, unsigned char *src, unsigned long len)
  *
  *             EM = 0x00 || maskedSeed || maskedDB.
  */
+/**
+ * @description:
+ * @param {HASH_ALG} alg, OAEP 填充使用的哈希算法
+ * @param {unsigned long} k, RSA 秘钥中模数 n 的长度
+ * @param {char} *M, 待填充的消息 M
+ * @param {unsigned long} mLen, 带填充消息 M 的长度
+ * @param {char} *L, 可选字符串 L, 为空则计算空字符串 "" 的哈希
+ * @param {unsigned long} lLen, 可选字符串 L 的长度
+ * @param {char} *EM, OAEP 填充编码后输出的消息
+ * @param {unsigned long} emLen, OAEP 填充编码生成消息的长度，和 k 值一样
+ * @return {*}, 编码成功返回 0; 编码失败返回 -1;
+ */
 int OAEP_Encoding(HASH_ALG alg, unsigned long k, char *M, unsigned long mLen, const char *L, unsigned long lLen, char *EM, unsigned long emLen)
 {
     unsigned long hLen, psLen;
@@ -135,7 +147,7 @@ int OAEP_Encoding(HASH_ALG alg, unsigned long k, char *M, unsigned long mLen, co
     p     = pDB; // p 指向 db
 
     /*
-     * 1. 准备 DB = lHash || PS || 0x01 || M
+     * 1. 构造 DB 数据块: DB = lHash || PS || 0x01 || M
      */
     // 取 label L 的哈希值
     if (NULL == L)
@@ -164,12 +176,12 @@ int OAEP_Encoding(HASH_ALG alg, unsigned long k, char *M, unsigned long mLen, co
     memcpy(p, M, mLen);
 
     /*
-     * 2. 准备 seed
+     * 2. 构造长度为 hLen 的随机字节串 seed
      */
     Get_Random_Bytes(pSeed, hLen);
 
     /*
-     * 3. 设置 maskedDB
+     * 3. 生成 maskedDB
      */
     // dbMask = MGF(seed, k - hLen - 1)
     MGF1(pSeed, hLen, alg, k-hLen-1, maskedDB);
@@ -178,7 +190,7 @@ int OAEP_Encoding(HASH_ALG alg, unsigned long k, char *M, unsigned long mLen, co
     xor(maskedDB, pDB, k-hLen-1);
 
     /*
-     * 4. 设置 maskedSeed
+     * 4. 生成 maskedSeed
      */
     // seedMask = MGF(maskedDB, hLen)
     MGF1(maskedDB, k-hLen-1, alg, hLen, maskedSeed);
@@ -186,7 +198,9 @@ int OAEP_Encoding(HASH_ALG alg, unsigned long k, char *M, unsigned long mLen, co
     // maskedSeed = seed \xor seedMask
     xor(maskedSeed, pSeed, hLen);
 
-    // 5. 填充 EM[0] = 0;
+    /*
+     * 5. 填充 EM[0] = 0
+     */
     EM[0] = 0;
 
     return 0;
@@ -227,6 +241,19 @@ int OAEP_Encoding(HASH_ALG alg, unsigned long k, char *M, unsigned long mLen, co
  *         separate PS from M, if lHash does not equal lHash', or if
  *         Y is nonzero, output "decryption error" and stop.  (See
  *         the note below.)
+ */
+
+/**
+ * @description:
+ * @param {HASH_ALG} alg, OAEP 填充使用的哈希算法
+ * @param {unsigned long} k, RSA 秘钥中模数 n 的长度
+ * @param {char} *L, 可选字符串 L, 为空则计算空字符串 "" 的哈希
+ * @param {unsigned long} lLen, 可选字符串 L 的长度
+ * @param {char} *EM, OAEP 中待解码的消息
+ * @param {unsigned long} emLen, OAEP 中待解码消息的长度
+ * @param {char} *M, OAEP 解码还原得到的消息
+ * @param {unsigned long} *mLen, OAEP 解码还原得到的消息的长度
+ * @return {*}, 解码成功返回 0, 解码失败返回 -1
  */
 int OAEP_Decoding(HASH_ALG alg, unsigned long k, const char *L, unsigned long lLen, char *EM, unsigned long emLen, char *M, unsigned long *mLen)
 {
