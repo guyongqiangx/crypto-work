@@ -7,6 +7,41 @@
 #include "pss.h"
 
 #define PSS_BUF_SIZE 512 /* 4096 bits */
+
+static void xor(unsigned char *dest, unsigned char *src, unsigned long len)
+{
+    while (len > 0)
+    {
+        *dest = *dest ^ *src;
+        dest ++;
+        src  ++;
+
+        len --;
+    }
+}
+
+static void clear_msb_bits(unsigned char *buf, unsigned long bit_count)
+{
+    unsigned char temp;
+
+    // 清空完整的 byte
+    while (bit_count >= 8)
+    {
+        *buf ++ = 0x00;
+        bit_count -= 8;
+    }
+
+    // 清空不足 1 byte 的部分
+    temp = 0;
+    while (bit_count > 0)
+    {
+        temp |= 0x01 << (8 - bit_count);
+        bit_count --;
+    }
+    temp ~= temp;
+    *buf = *buf & temp;
+}
+
 /*
  * EMSA-PSS Encoding Operation
  *                                      +-----------+
@@ -111,7 +146,7 @@
  *       13.  Output EM.
  */
 
-int PSS_Encoding(HASH_ALG alg, unsigned long k, char *M, unsigned long mLen, unsigned long sLen, char *EM, unsigned long emLen);
+int PSS_Encoding(HASH_ALG alg, unsigned long k, char *M, unsigned long mLen, unsigned long sLen, char *EM, unsigned long emLen, unsigned long emBits);
 {
     unsigned long hLen, psLen;
     unsigned char buf[PSS_BUF_SIZE];
@@ -120,6 +155,8 @@ int PSS_Encoding(HASH_ALG alg, unsigned long k, char *M, unsigned long mLen, uns
     unsigned char *p;
     unsigned char *maskedDB, *H;
 
+    //      pDb                 pMp
+    //       |                   |
     //       +-------- 256 ------+-------- 256 ------+
     //       |                   |                   |
     //       +-------------------+-------------------+
@@ -134,14 +171,68 @@ int PSS_Encoding(HASH_ALG alg, unsigned long k, char *M, unsigned long mLen, uns
     pmHash = pMp + 8;
     psalt1 = pmHash + hLen;
 
-    memset(pMp, 0, 8); // M'[0-7] = 0x00
+    // 检查 emLen
+    if (emLen < hLen + sLen + 2)
+    {
+        printf("encoding error\n");
+        return -1;
+    }
+
+    /*
+     * 1. 构造 M' 数据块: M' = padding1 || mHash || salt
+     */
+    psLen = 8;
+    // 设置 padding1, 填充 8 个字节的 0x00, padding1 = (0x)00 00 00 00 00 00 00 00
+    memset(pMp, 0, psLen); // padding1, M'[0 - 7] = 0x00
+
+    // 计算 mHash = Hash(M), M'[8 - 8+hLen] = mhash
     HASH(alg, M, mLen, pmHash);
+
+    // 生成 sLen 长度的随机字符串 salt, 如果 sLen 为 0, 则 salt 为空串
     if (sLen > 0)
     {
         Get_Random_Bytes(psalt1, sLen);
     }
 
-    
+    /*
+     * 2. 构造 DB 数据块: DB = padding2 || salt
+     */
+    psLen = emLen - sLen - hLen - 2;
+    psalt2 = pDB + psLen + 1;
+
+    // 设置 padding2 前面的 0, 填充 emLen - sLen - hLen - 2 的 0 字节
+    memset(pDB, 0, psLen);
+
+    // 设置 padding2 后面的 0x01 标记
+    pDB[psLen] = 0x01;
+
+    // 设置 sLen 长度的随机字符串 salt, 使用前面已经生成的结果
+    if (sLen > 0)
+    {
+        memcpy(psalt2, psalt1, sLen);
+    }
+
+    /*
+     * 3. 构造 EM 数据块: EM = maskedDB || H || 0xbc
+     */
+    maskedDB = EM;
+    H = EM + emLen - hLen - 1;
+
+    // 生成 M' 的哈希, H = Hash(M')
+    HASH(alg, pMp, 8 + hLen + sLen, H);
+
+    // 生成 maskedDB
+    MGF1(H, hLen, alg, maskedDB);
+    xor(maskedDB, DB, emLen - hLen - 1);
+
+    // 填充 EM 末尾的 0xBC
+    EM[emLen - 1] = 0xbc;
+
+    // 设置 EM 最左侧的 8emLen - emBits 的 bits 为 0
+    psLen = 8 * emLen - emBits;
+    clear_msb_bits(EM, psLen);
+
+    return 0;
 }
 
 /*
@@ -214,7 +305,8 @@ int PSS_Encoding(HASH_ALG alg, unsigned long k, char *M, unsigned long mLen, uns
  *       14.  If H = H', output "consistent".  Otherwise, output
  *            "inconsistent".
  */
-int PSS_Decoding(HASH_ALG alg, unsigned long k, unsigned long sLen, char *EM, unsigned long emLen, char *M, unsigned long *mLen);
+int PSS_Decoding(HASH_ALG alg, unsigned long k, unsigned long sLen, char *EM, unsigned long emLen, char *M, unsigned long *mLen unsigned long emBits)
 {
-    
+
+    return 0;
 }
