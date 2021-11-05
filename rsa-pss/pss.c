@@ -51,7 +51,7 @@ static void clear_leftmost_bits(unsigned char *buf, unsigned long bit_count)
         temp |= 0x01 << (8 - bit_count);
         bit_count --;
     }
-    temp ~= temp; /* 取反 */
+    temp = ~temp; /* 取反 */
     *buf = *buf & temp;
 }
 
@@ -207,10 +207,10 @@ static int check_leftmost_bits(unsigned char *buf, unsigned long bit_count)
 int PSS_Encode(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, char *EM, unsigned long emLen, unsigned long emBits)
 {
     unsigned long hLen, psLen;
-    unsigned char buf[PSS_BUF_SIZE];
-    unsigned char *pMp, *pmHash, *psalt1;
-    unsigned char *pDB, *psalt2;
-    unsigned char *maskedDB, *H;
+    char buf[PSS_BUF_SIZE];
+    char *pMp, *pmHash, *psalt1;
+    char *pDB, *psalt2;
+    char *maskedDB, *H;
 
     //      pDb                 pMp
     //       |                   |
@@ -287,8 +287,8 @@ int PSS_Encode(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, ch
     HASH(alg, pMp, 8 + hLen + sLen, H);
 
     // 生成 maskedDB
-    MGF1(H, hLen, alg, maskedDB);
-    xor(maskedDB, DB, emLen - hLen - 1);
+    MGF1(H, hLen, alg, emLen - hLen - 1, maskedDB);
+    xor(maskedDB, pDB, emLen - hLen - 1);
 
     // 设置 EM 最左侧的 8emLen - emBits 的 bits 为 0
     psLen = 8 * emLen - emBits;
@@ -385,10 +385,10 @@ int PSS_Encode(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, ch
 int PSS_Verify(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, char *EM, unsigned long emLen, unsigned long emBits)
 {
     unsigned long hLen, psLen;
-    unsigned char buf[PSS_BUF_SIZE];
-    unsigned char *pMp, *pmHash, *psalt1;
-    unsigned char *pDB, *psalt2;
-    unsigned char *maskedDB, *H;
+    char buf[PSS_BUF_SIZE];
+    char *pMp, *pmHash, *psalt1;
+    char *pDB, *psalt2;
+    char *maskedDB, *H;
 
     //      pDb                 pMp
     //       |                   |
@@ -430,7 +430,7 @@ int PSS_Verify(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, ch
     H = EM + emLen - hLen - 1;
 
     // 检查最左侧的 psLen bits
-    psLen = 8 * emLen - mBits;
+    psLen = 8 * emLen - emBits;
     if (check_leftmost_bits(maskedDB, psLen) != 0)
     {
         printf("inconsistent\n");
@@ -442,7 +442,7 @@ int PSS_Verify(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, ch
      */
 
     // 生成 DB 数据
-    MGF1(H, hLen, alg, pDB);
+    MGF1(H, hLen, alg, emLen - hLen - 1, pDB);
     xor(pDB, maskedDB, emLen - hLen - 1);
 
     // 设置 pDB 最左侧的 8emLen - emBits 的 bits 为 0
