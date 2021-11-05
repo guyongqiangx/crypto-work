@@ -211,6 +211,7 @@ int PSS_Encode(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, ch
     char *pMp, *pmHash, *psalt1;
     char *pDB, *psalt2;
     char *maskedDB, *H;
+    int i;
 
     //      pDb                 pMp
     //       |                   |
@@ -252,12 +253,43 @@ int PSS_Encode(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, ch
 
     // 计算 mHash = Hash(M), M'[8 - 8+hLen] = mhash
     HASH(alg, M, mLen, pmHash);
+    printf("mHash:\n");
+    for (i=0; i<hLen; i++)
+    {
+        printf("%02x ", ((unsigned char *)pmHash)[i]);
+        if (i % 16 == 15)
+        {
+            printf("\n");
+        }
+    }
+    printf("\n");
 
     // 生成 sLen 长度的随机字符串 salt, 如果 sLen 为 0, 则 salt 为空串
     if (sLen > 0)
     {
         Get_Random_Bytes(psalt1, sLen);
     }
+    printf("salt:\n");
+    for (i=0; i<sLen; i++)
+    {
+        printf("%02x ", ((unsigned char *)psalt1)[i]);
+        if (i % 16 == 15)
+        {
+            printf("\n");
+        }
+    }
+    printf("\n");
+
+    printf("M':\n");
+    for (i=0; i<8+hLen+sLen; i++)
+    {
+        printf("%02x ", ((unsigned char *)pMp)[i]);
+        if (i % 16 == 15)
+        {
+            printf("\n");
+        }
+    }
+    printf("\n");
 
     /*
      * 2. 构造 DB 数据块: DB = padding2 || salt
@@ -277,6 +309,17 @@ int PSS_Encode(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, ch
         memcpy(psalt2, psalt1, sLen);
     }
 
+    printf("DB:\n");
+    for (i=0; i<emLen-hLen-1; i++)
+    {
+        printf("%02x ", ((unsigned char *)pDB)[i]);
+        if (i % 16 == 15)
+        {
+            printf("\n");
+        }
+    }
+    printf("\n");
+
     /*
      * 3. 构造 EM 数据块: EM = maskedDB || H || 0xbc
      */
@@ -285,17 +328,80 @@ int PSS_Encode(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, ch
 
     // 生成 M' 的哈希, H = Hash(M')
     HASH(alg, pMp, 8 + hLen + sLen, H);
+    printf("HASH(M'):\n");
+    for (i=0; i<hLen; i++)
+    {
+        printf("%02x ", ((unsigned char *)H)[i]);
+        if (i % 16 == 15)
+        {
+            printf("\n");
+        }
+    }
+    printf("\n");
 
     // 生成 maskedDB
     MGF1(H, hLen, alg, emLen - hLen - 1, maskedDB);
+    printf("HASH(M')1:\n");
+    for (i=0; i<hLen; i++)
+    {
+        printf("%02x ", ((unsigned char *)H)[i]);
+        if (i % 16 == 15)
+        {
+            printf("\n");
+        }
+    }
+    printf("\n");
     xor(maskedDB, pDB, emLen - hLen - 1);
+
+    printf("HASH(M')2:\n");
+    for (i=0; i<hLen; i++)
+    {
+        printf("%02x ", ((unsigned char *)H)[i]);
+        if (i % 16 == 15)
+        {
+            printf("\n");
+        }
+    }
+    printf("\n");
+
+    printf("maskedDB:\n");
+    for (i=0; i<emLen-hLen-1; i++)
+    {
+        printf("%02x ", ((unsigned char *)maskedDB)[i]);
+        if (i % 16 == 15)
+        {
+            printf("\n");
+        }
+    }
+    printf("\n");
 
     // 设置 EM 最左侧的 8emLen - emBits 的 bits 为 0
     psLen = 8 * emLen - emBits;
     clear_leftmost_bits(EM, psLen);
 
+    printf("clear %lu bits:\n", psLen);
+    for (i=0; i<emLen-hLen-1; i++)
+    {
+        printf("%02x ", ((unsigned char *)maskedDB)[i]);
+        if (i % 16 == 15)
+        {
+            printf("\n");
+        }
+    }
+    printf("\n");
+
     // 填充 EM 末尾的 0xBC
     EM[emLen - 1] = 0xbc;
+    printf("EM:\n");
+    for (i=0; i<emLen; i++)
+    {
+        printf("%02x ", ((unsigned char *)EM)[i]);
+        if (i % 16 == 15)
+        {
+            printf("\n");
+        }
+    }
+    printf("\n");
 
     return 0;
 }
