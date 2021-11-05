@@ -8,6 +8,13 @@
 
 #define PSS_BUF_SIZE 512 /* 4096 bits */
 
+/**
+ * @description: 将两块指定长度的数据进行 XOR 操作
+ * @param {unsigned char} *dest, 缓冲区 1, 同时作为目的缓冲区
+ * @param {unsigned char} *src, 缓冲区 2
+ * @param {unsigned long} len, 异或操作数据的长度
+ * @return {*}, 无
+ */
 static void xor(unsigned char *dest, unsigned char *src, unsigned long len)
 {
     while (len > 0)
@@ -20,7 +27,13 @@ static void xor(unsigned char *dest, unsigned char *src, unsigned long len)
     }
 }
 
-static void clear_msb_bits(unsigned char *buf, unsigned long bit_count)
+/**
+ * @description: 设置一块数据左侧指定数量的 bit 为 0
+ * @param {unsigned char} *buf, 待操作的数据
+ * @param {unsigned long} bit_count, 需要设置为 0 的 bit 数
+ * @return {*}, 无
+ */
+static void clear_leftmost_bits(unsigned char *buf, unsigned long bit_count)
 {
     unsigned char temp;
 
@@ -31,15 +44,49 @@ static void clear_msb_bits(unsigned char *buf, unsigned long bit_count)
         bit_count -= 8;
     }
 
-    // 清空不足 1 byte 的部分
+    // 逐 bit 清空不足 1 byte 的部分
     temp = 0;
     while (bit_count > 0)
     {
         temp |= 0x01 << (8 - bit_count);
         bit_count --;
     }
-    temp ~= temp;
+    temp ~= temp; /* 取反 */
     *buf = *buf & temp;
+}
+
+/**
+ * @description: 检查一块数据左侧指定数量的 bit 是否为 0
+ * @param {unsigned char} *buf, 待检查的数据
+ * @param {unsigned long} bit_count, 需要检查为 0 的 bit 数
+ * @return {*}, 满足条件返回 0, 不满足条件返回 -1
+ */
+static int check_leftmost_bits(unsigned char *buf, unsigned long bit_count)
+{
+    // 检查完整的 byte
+    while (bit_count >= 8)
+    {
+        // 不为 0
+        if (*buf != 0x00)
+        {
+            return -1;
+        }
+        buf ++;
+        bit_count -= 8;
+    }
+
+    // 逐 bit 检查不足 1 byte 的部分
+    while (bit_count > 0)
+    {
+        // 不为 0
+        if ( *buf && (0x01 << (8 - bit_count)))
+        {
+            return -1;
+        }
+        bit_count --;
+    }
+
+    return 0;
 }
 
 /*
@@ -146,13 +193,23 @@ static void clear_msb_bits(unsigned char *buf, unsigned long bit_count)
  *       13.  Output EM.
  */
 
-int PSS_Encoding(HASH_ALG alg, unsigned long k, char *M, unsigned long mLen, unsigned long sLen, char *EM, unsigned long emLen, unsigned long emBits);
+/**
+ * @description: 对一块指定的数据进行 PSS 填充
+ * @param {HASH_ALG} alg, 计算消息 M 和 MGF 函数使用的哈希算法
+ * @param {char} *M, 用于填充的消息 M
+ * @param {unsigned long} mLen, 用于填充的消息 M 的长度(字节)
+ * @param {unsigned long} sLen, 用于生成随机数字符串 salt 的长度(字节)
+ * @param {char} *EM, 存放 PSS 填充后的编码消息 EM 的缓冲区
+ * @param {unsigned long} emLen, 存放 PSS 填充后的编码消息 EM 的缓冲区长度
+ * @param {unsigned long} emBits, PSS 填充后的编码消息 EM 的长度(比特)
+ * @return {*}, 填充成功返回 0, 失败返回 -1
+ */
+int PSS_Encode(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, char *EM, unsigned long emLen, unsigned long emBits)
 {
     unsigned long hLen, psLen;
     unsigned char buf[PSS_BUF_SIZE];
     unsigned char *pMp, *pmHash, *psalt1;
     unsigned char *pDB, *psalt2;
-    unsigned char *p;
     unsigned char *maskedDB, *H;
 
     //      pDb                 pMp
@@ -162,6 +219,14 @@ int PSS_Encoding(HASH_ALG alg, unsigned long k, char *M, unsigned long mLen, uns
     //       +-------------------+-------------------+
     // buf = |          DB       |        M'         |
     //       +-------------------+-------------------+
+
+    // 检查参数
+    if ((NULL == M) || (0 == mLen) ||
+        (NULL == EM) || (0 == emLen) ||
+        (0 == emBits))
+    {
+        return -1;
+    }
 
     hLen = HASH_GetDigestSize(alg, 0);
 
@@ -225,12 +290,12 @@ int PSS_Encoding(HASH_ALG alg, unsigned long k, char *M, unsigned long mLen, uns
     MGF1(H, hLen, alg, maskedDB);
     xor(maskedDB, DB, emLen - hLen - 1);
 
-    // 填充 EM 末尾的 0xBC
-    EM[emLen - 1] = 0xbc;
-
     // 设置 EM 最左侧的 8emLen - emBits 的 bits 为 0
     psLen = 8 * emLen - emBits;
-    clear_msb_bits(EM, psLen);
+    clear_leftmost_bits(EM, psLen);
+
+    // 填充 EM 末尾的 0xBC
+    EM[emLen - 1] = 0xbc;
 
     return 0;
 }
@@ -305,8 +370,122 @@ int PSS_Encoding(HASH_ALG alg, unsigned long k, char *M, unsigned long mLen, uns
  *       14.  If H = H', output "consistent".  Otherwise, output
  *            "inconsistent".
  */
-int PSS_Decoding(HASH_ALG alg, unsigned long k, unsigned long sLen, char *EM, unsigned long emLen, char *M, unsigned long *mLen unsigned long emBits)
+
+/**
+ * @description: 对一块指定的数据的 PSS 填充进行校验
+ * @param {HASH_ALG} alg, 计算消息 M 和 MGF 函数使用的哈希算法
+ * @param {char} *M, 用于计算填充的原始消息 M
+ * @param {unsigned long} mLen, 用于计算填充的原始消息 M 的长度(字节)
+ * @param {unsigned long} sLen, 用于生成随机数字符串 salt 的长度(字节)
+ * @param {char} *EM, 用于校验 PSS 填充消息 EM 的缓冲区
+ * @param {unsigned long} emLen, 用于校验 PSS 填充消息 EM 的缓冲区的长度
+ * @param {unsigned long} emBits, 用于校验 PSS 填充消息 EM 的长度(比特)
+ * @return {*}, 校验一致返回 0, 不一致返回 -1
+ */
+int PSS_Verify(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, char *EM, unsigned long emLen, unsigned long emBits)
 {
+    unsigned long hLen, psLen;
+    unsigned char buf[PSS_BUF_SIZE];
+    unsigned char *pMp, *pmHash, *psalt1;
+    unsigned char *pDB, *psalt2;
+    unsigned char *maskedDB, *H;
+
+    //      pDb                 pMp
+    //       |                   |
+    //       +-------- 256 ------+-------- 256 ------+
+    //       |                   |                   |
+    //       +-------------------+-------------------+
+    // buf = |          DB       |        M'         |
+    //       +-------------------+-------------------+
+
+    // 检查参数
+    if ((NULL == M) || (0 == mLen) ||
+        (NULL == EM) || (0 == emLen) ||
+        (0 == emBits))
+    {
+        return -1;
+    }
+
+    hLen = HASH_GetDigestSize(alg, 0);
+
+    pDB = buf;
+    pMp = buf + PSS_BUF_SIZE / 2;
+
+    pmHash = pMp + 8;
+    psalt1 = pmHash + hLen;
+
+    if (emLen < hLen + sLen + 2)
+    {
+        printf("inconsistent\n");
+        return -1;
+    }
+
+    if (EM[emLen] != 0xbc)
+    {
+        printf("inconsistent\n");
+        return -1;
+    }
+
+    maskedDB = EM;
+    H = EM + emLen - hLen - 1;
+
+    // 检查最左侧的 psLen bits
+    psLen = 8 * emLen - mBits;
+    if (check_leftmost_bits(maskedDB, psLen) != 0)
+    {
+        printf("inconsistent\n");
+        return -1;
+    }
+
+    /*
+     * 1. 反向构造 DB 数据块: DB = padding2 || salt
+     */
+
+    // 生成 DB 数据
+    MGF1(H, hLen, alg, pDB);
+    xor(pDB, maskedDB, emLen - hLen - 1);
+
+    // 设置 pDB 最左侧的 8emLen - emBits 的 bits 为 0
+    clear_leftmost_bits(pDB, psLen);
+
+    // 检查 pDB 最左侧的 emLen - hLen - sLen - 2 的 bytes 为 0
+    psLen = emLen - hLen - sLen - 2;
+    if (check_leftmost_bits(pDB, 8 * psLen) != 0)
+    {
+        printf("inconsistent\n");
+        return -1;
+    }
+
+    // 检查 padding2 结束后的 0x01 标记
+    if (pDB[psLen + 1] != 0x01)
+    {
+        printf("inconsistent\n");
+        return -1;
+    }
+    psalt2 = maskedDB + psLen + 2;
+
+    /*
+     * 2. 反向构造 M' 数据块: M' = padding1 || mHash || salt
+     */
+    psLen = 8;
+    // 设置 padding1, 填充 8 个字节的 0x00
+    memset(pMp, 0, psLen);
+
+    // 计算 mHash = Hash(M)
+    HASH(alg, M, mLen, pmHash);
+
+    // 复制 salt
+    memcpy(psalt1, psalt2, sLen);
+
+    // 临时计算 M' 的哈希存放到 DB 中, 并与 EM 中的哈希比较
+    HASH(alg, pMp, 8 + hLen + sLen, pDB);
+    if (memcmp(pDB, H, hLen) != 0x00)
+    {
+        printf("inconsistent\n");
+        return -1;
+    }
+
+    printf("consistent\n");
 
     return 0;
 }
