@@ -55,8 +55,9 @@
 int MGF1(const char *mgfSeed, unsigned int mgfSeedLen, HASH_ALG alg, unsigned int maskLen, char *mask)
 {
     unsigned char buf[MGF1_BUF_SIZE], *p;
+    unsigned char digest[64]; /* 最长支持 SHA-512 */
     unsigned long digestLen;
-    unsigned long counter, length;
+    unsigned long counter, restLen;
 
     if (mgfSeedLen > MGF1_BUF_SIZE - 4)
     {
@@ -74,21 +75,32 @@ int MGF1(const char *mgfSeed, unsigned int mgfSeedLen, HASH_ALG alg, unsigned in
     digestLen = HASH_GetDigestSize(alg, 0);
 
     counter = 0;
-    length = 0;
+    restLen = maskLen;
 
-    while (length < maskLen)
+    while (restLen > 0)
     {
         p[0] = (counter >> 0x24) & 0xff;
         p[1] = (counter >> 0x16) & 0xff;
         p[2] = (counter >> 0x08) & 0xff;
         p[3] = counter & 0xff;
 
-        HASH(alg, buf, mgfSeedLen+4, (unsigned char *)mask);
+        if (restLen >= digestLen)
+        {
+            HASH(alg, buf, mgfSeedLen+4, (unsigned char *)mask);
 
-        length += digestLen;
-        mask += digestLen;
+            restLen -= digestLen;
+            mask += digestLen;
 
-        counter ++;
+            counter ++;
+        }
+        else // 剩余的不足单次哈希长度的部分
+        {
+            HASH(alg, buf, mgfSeedLen+4, (unsigned char *)digest);
+
+            memcpy(mask, digest, restLen);
+
+            restLen = 0;
+        }
     }
 
     return 0;

@@ -26,7 +26,7 @@
  */
 
 /*
- * cc mgftest.c mgf.c -o mgftest -I/public/ygu/cryptography/crypto-work.git/out/include -L/public/ygu/cryptography/crypto-work.git/out/lib -lhash
+ * cc mgftest.c mgf.c -o mgftest -I../out/include -L../out/lib -lhash
  */
 int main(int argc, char *argv)
 {
