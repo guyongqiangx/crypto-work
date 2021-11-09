@@ -22,6 +22,7 @@ static void xor(unsigned char *dest, unsigned char *src, unsigned long len)
 
 /*
  * Optimal Asymmetric Encryption Padding (OAEP): 最优非对称加密填充
+ * EME: Encoding Method for Encryption
  *
  * EME-OAEP Encoding Operation
  *
@@ -89,6 +90,7 @@ static void xor(unsigned char *dest, unsigned char *src, unsigned long len)
  *
  *             EM = 0x00 || maskedSeed || maskedDB.
  */
+
 /**
  * @description:
  * @param {HASH_ALG} alg, OAEP 填充使用的哈希算法
