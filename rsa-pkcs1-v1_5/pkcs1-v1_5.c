@@ -125,8 +125,8 @@ int EME_PKCS1_v1_5_Decode(unsigned long k, char *EM, char *M, unsigned long *mLe
 
     p ++;
 
-    mLen = k - 2 - psLen - 1;
-    memcpy(M, p, mLen);
+    *mLen = k - 2 - psLen - 1;
+    memcpy(M, p, *mLen);
 
     return 0;
 }
@@ -260,7 +260,7 @@ static struct hash_encoding {
     {HASH_ALG_SHA384,     der_sha384,     sizeof(der_sha384)/sizeof(der_sha384[0])},
     {HASH_ALG_SHA512,     der_sha512,     sizeof(der_sha512)/sizeof(der_sha512[0])},
     {HASH_ALG_SHA512_224, der_sha512_224, sizeof(der_sha512_224)/sizeof(der_sha512_224[0])},
-    {HASH_ALG_SHA512_384, der_sha512_384, sizeof(der_sha512_384)/sizeof(der_sha512_384[0])},
+    {HASH_ALG_SHA512_256, der_sha512_256, sizeof(der_sha512_256)/sizeof(der_sha512_256[0])},
 };
 
 static struct hash_encoding *get_der_hash_encoding(HASH_ALG alg)
@@ -315,7 +315,7 @@ int EMSA_PKCS1_v1_5_Encode(HASH_ALG alg, char *M, unsigned long mLen, unsigned l
     memcpy(EM, pEncoding->encoding, pEncoding->len);
     EM += pEncoding->len;
 
-    Hash(alg, M, mLen, EM);
+    HASH(alg, M, mLen, EM);
 
     return 0;
 }
