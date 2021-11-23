@@ -64,15 +64,16 @@ int RSA_PrivateKey_UnInit(RSAPrivateKey *key)
         return ERR_INV_PARAM;
     }
 
-    if (key->type)
+    if (1 == key->type)
+    {
+        key->type = 0;
+        mpz_clears(key->n, key->d, NULL);
+    }
+    if (2 == key->type)
     {
         key->type = 0;
         mpz_clear(key->n);
         mpz_clears(key->p, key->q, key->dP, key->dQ, key->qInv, NULL);
-    }
-    else
-    {
-        mpz_clears(key->n, key->d, NULL);
     }
 
     return ERR_OK;
