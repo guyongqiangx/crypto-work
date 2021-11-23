@@ -12,11 +12,11 @@ RM      = rm
 RMFLAGS = -rf
 
 CFLAGS  = -Wall -g -O2 -Wno-narrowing
-INCLUDE = -I../out/gtest/include -I../out/include
+INCLUDE = -I../out/gtest/include -I../out/gmp/include -I../out/include
 
-LDLIBS  = -L../out/gtest/lib -lgtest_main -lgtest -lpthread -I../out/gmp/include -L../out/gmp/lib -lgmp
+LDLIBS  = -L../out/gtest/lib -lgtest_main -lgtest -lpthread -L../out/gmp/lib -lgmp -L../out/lib -lrsa_primitive
 
-LIB     = rsa_primitive.a
+LIB     = librsa_primitive.a
 
 SRCS    = rsa_primitive_unittest.cc
 OBJS    = $(SRCS:.cc=.o)
@@ -30,7 +30,7 @@ all: .prepare $(TARGET) test
 	touch .prepare
 
 $(LIB):
-	make -f lib.mk
+	make -f lib.mk install INSTALL=../out
 
 %.o: %.cc
 	$(CXX) $(CFLAGS) $(INCLUDE) -c $< -o $@

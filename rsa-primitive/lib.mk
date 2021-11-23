@@ -24,7 +24,7 @@ SRCS    = rsa_primitive.c rsa_key.c
 OBJS    = $(SRCS:.c=.o)
 HDRS	= rsa.h
 
-LIB     = rsa_primitive.a
+LIB     = librsa_primitive.a
 
 all: $(LIB)
 
