@@ -16,11 +16,11 @@ RM      = rm
 RMFLAGS = -rf
 
 CFLAGS  = -Wall -g -O2
-INCLUDE = -I../out/include
+INCLUDE = -I../out/gmp/include -I../out/include
 
 INSTALL ?= .
 
-SRCS    = rsa_primitive.c
+SRCS    = rsa_primitive.c rsa_key.c
 OBJS    = $(SRCS:.c=.o)
 HDRS	= rsa.h
 
