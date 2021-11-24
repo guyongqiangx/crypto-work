@@ -1,272 +1,178 @@
 #include <stdio.h>
 #include <string.h>
 #include "gmp.h"
-#include "hash.h"
-#include "pkcs1-v1_5.h"
+#include "rsa.h"
 
-// Test Vector: FIPS 186-4 RSA PKCS1-v1_5 RSASP1 Signature Primitive Component Test Vectors
-// https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/components/RSA2SP1testvectors.zip
-// RSA2SP1testvectors\RSASP1.fax
-static char   *str_n = "bad47a84c1782e4dbdd913f2a261fc8b65838412c6e45a2068ed6d7f16e9cdf4462b39119563cafb74b9cbf25cfd544bdae23bff0ebe7f6441042b7e109b9a8afaa056821ef8efaab219d21d6763484785622d918d395a2a31f2ece8385a8131e5ff143314a82e21afd713bae817cc0ee3514d4839007ccb55d68409c97a18ab62fa6f9f89b3f94a2777c47d6136775a56a9a0127f682470bef831fbec4bcd7b5095a7823fd70745d37d1bf72b63c4b1b4a3d0581e74bf9ade93cc46148617553931a79d92e9e488ef47223ee6f6c061884b13c9065b591139de13c1ea2927491ed00fb793cd68f463f5f64baa53916b46c818ab99706557a1c2d50d232577d1";
-static char   *str_p = "e7c9e4b3e5d7ac9e83be08328105356dfeefe222f26c95378effd2150fadf7ba23f5b4705d82e4f1bc45057067c7def73e2100f756ee6d547965fa4f24b85d68867f03d7c886d1dbcca4c589745701b362a1f1417f471d8475b6b7a16a4c48ef1f556edc3f0ff6ba13d365d6e82751f207d91101c8eea1013ccdd9e1de4c387f";
-static char   *str_q = "ce58602e051f0f4647c4ec57f682e5737fc482a8a1ffac9043bba4fba3387d7dd2154507af1e28bd81b61fcdfe35f9734e0d9b53682ec785f1f6e6224f63d10bf78484b83a4254f333d0fb3f3e9e1834bede52e3078ac279a862fb90af266d7591c81f20b718d07d51bfc221b66a25403b4ac1a68d673fdd959b01ecf3d0a7af";
-static char   *str_e = "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010001";
-static char   *str_d = "40d60f24b61d76783d3bb1dc00b55f96a2a686f59b3750fdb15c40251c370c65cada222673811bc6b305ed7c90ffcb3abdddc8336612ff13b42a75cb7c88fb936291b523d80acce5a0842c724ed85a1393faf3d470bda8083fa84dc5f31499844f0c7c1e93fb1f734a5a29fb31a35c8a0822455f1c850a49e8629714ec6a2657efe75ec1ca6e62f9a3756c9b20b4855bdc9a3ab58c43d8af85b837a7fd15aa1149c119cfe960c05a9d4cea69c9fb6a897145674882bf57241d77c054dc4c94e8349d376296137eb421686159cb878d15d171eda8692834afc871988f203fc822c5dcee7f6c48df663ea3dc755e7dc06aebd41d05f1ca2891e2679783244d068f";
+int generate_multi_prime(mpz_t d, mpz_t p, mpz_t q, char *str_dP, char *str_dQ, char *str_qInv)
+{
+    size_t count;
+    mpz_t dP, dQ, qInv, temp;
 
-static char *str_em1 = "70992c9d95a4908d2a94b3ab9fa1cd643f120e326f9d7808af50cac42c4b0b4eeb7f0d4df303a568fbfb82b0f58300d25357645721bb71861caf81b27a56082c80a146499fb4eab5bde4493f5d00f1a437bbc360dfcd8056fe6be10e608adb30b6c2f7652428b8d32d362945982a46585d2102ef7995a8ba6e8ad8fd16bd7ae8f53c3d7fcfba290b57ce7f8f09c828d6f2d3ce56f131bd9461e5667e5b73edac77f504dac4f202a9570eb4515b2bf516407db831518db8a2083ec701e8fd387c430bb1a72deca5b49d429cf9deb09cc4518dc5f57c089aa2d3420e567e732102c2c92b88a07c69d70917140ab3823c63f312d3f11fa87ba29da3c7224b4fb4bc";
-static char  *str_s1 = "7e65b998a05f626b028c75dc3fbf98963dce66d0f4c3ae4237cff304d84d8836cb6bad9ac86f9d1b8a28dd70404788b869d2429f1ec0663e51b753f7451c6b4645d99126e457c1dac49551d86a8a974a3131e9b371d5c214cc9ff240c299bd0e62dbc7a9a2dad9fa5404adb00632d36332d5be6106e9e6ec81cac45cd339cc87abbe7f89430800e16e032a66210b25e926eda243d9f09955496ddbc77ef74f17fee41c4435e78b46965b713d72ce8a31af641538add387fedfd88bb22a42eb3bda40f72ecad941dbffdd47b3e77737da741553a45b630d070bcc5205804bf80ee2d51612875dbc4796960052f1687e0074007e6a33ab8b2085c033f9892b6f74";
+    mpz_inits(dP, dQ, qInv, temp, NULL);
 
-#if 1
-// $ gcc pkcs1-v1_5_test.c pkcs1-v1_5.c -o pkcs-v1_5-test -I../out/gmp/include -L../out/gmp/lib -lgmp -I../out/include -L../out/lib -lhash -lrand
-int main(int argc, char *argv[])
+    mpz_sub_ui(temp, p, 1);
+    mpz_mod(dP, d, temp);
+    //mpz_export(str_dP, &count, 1, 1, 0, 0, dP);
+    mpz_get_str(str_dP, 16, dP);
+
+    mpz_sub_ui(temp, q, 1);
+    mpz_mod(dQ, d, temp);
+    //mpz_export(str_dQ, &count, 1, 1, 0, 0, dQ);
+    mpz_get_str(str_dQ, 16, dQ);
+
+    mpz_invert(qInv, q, p);
+    //mpz_export(str_qInv, &count, 1, 1, 0, 0, qInv);
+    mpz_get_str(str_qInv, 16, qInv);
+
+    mpz_clears(dP, dQ, qInv, temp, NULL);
+}
+
+int RSA_SP1_VP1_Test(const char *str_n, const char *str_p, const char *str_q, const char *str_e, const char *str_d, const char *str_em1, const char *str_s1)
 {
     int i;
     size_t count;
-    mpz_t n, e, d;
-    mpz_t m1, s1, em1, res;
-    char buf[512];
 
-    mpz_init_set_str(n, str_n, 16);
-    mpz_init_set_str(e, str_e, 16);
-    mpz_init_set_str(d, str_d, 16);
+    mpz_t n, d, p, q;
+    mpz_t em, s;
+    mpz_t temp;
 
-    mpz_init_set_str(em1, str_em1, 16);
-    mpz_init_set_str(s1, str_s1, 16);
+    char str_dP[512], str_dQ[512], str_qInv[512];
 
-    mpz_init(m1);
-    mpz_init(res);
+    RSAPublicKey pubKey;
+    RSAPrivateKey privKey1, privKey2;
 
-    gmp_printf("  n: %Zx\n", n);
-    gmp_printf("  e: %Zx\n", e);
-    gmp_printf("em1: %Zx\n", em1);
-    gmp_printf(" s1: %Zx\n", s1);
+    mpz_inits(n, d, p, q, em, s, temp, NULL);
+
+    /*
+     * Setup Public Key (n, e)
+     */
+    RSA_PublicKey_Init(str_n, str_e, &pubKey);
+
+    gmp_printf("Public Key: \n");
+    gmp_printf("   n: %Zx\n", pubKey.n);
+    gmp_printf("   e: %Zx\n", pubKey.e);
+
+    /*
+     * Setup Private Key (n, d)
+     */
+    RSA_PrivateKey_Init(str_n, str_d, &privKey1);
+
+    gmp_printf("\n");
+    gmp_printf("Private Key1: \n");
+    gmp_printf("   n: %Zx\n", privKey1.n);
+    gmp_printf("   d: %Zx\n", privKey1.d);
+
+    /*
+     * Setup Private Key (p, q, dP, dQ, qInv)
+     */
+    mpz_set_str(d, str_d, 16);
+    mpz_set_str(p, str_p, 16);
+    mpz_set_str(q, str_q, 16);
+
+    memset(str_dP, 0, 512);
+    memset(str_dQ, 0, 512);
+    memset(str_qInv, 0, 512);
+    generate_multi_prime(d, p, q, str_dP, str_dQ, str_qInv);
+
+    RSA_PrivateKey_Init_MultiPrime(str_p, str_q, str_dP, str_dQ, str_qInv, &privKey2);
+
+    gmp_printf("\n");
+    gmp_printf("Private Key2: \n");
+    gmp_printf("   n: %Zx\n", privKey2.n);
+    gmp_printf("   p: %Zx\n", privKey2.p);
+    gmp_printf("   q: %Zx\n", privKey2.q);
+    gmp_printf("  dP: %Zx\n", privKey2.dP);
+    gmp_printf("  dQ: %Zx\n", privKey2.dQ);
+    gmp_printf("qInv: %Zx\n", privKey2.qInv);
+
+    mpz_set_str(s, str_s1, 16);
+    gmp_printf(" s1: %Zx\n", s);
+
+    gmp_printf("\n");
 
     // signature primitive, s = m ^ d mod n
-    printf("RSASP1:\n");
-    mpz_powm(res, em1, d, n); /* s = res = em1 ^ d mod n */
-    gmp_printf("res: %Zx\n", res);
+    printf("RSASP1 with privKey1:\n");
+    mpz_set_ui(s, 0);
+    mpz_set_str(em, str_em1, 16);
+    RSASP1(&privKey1, em, s);
+    gmp_printf("res: %Zx\n", s);
 
-    // 从 res 中导出到 buf
-    mpz_export(buf, &count, 1, 1, 0, 0, res);
-    for (i=0; i<count; i++)
-    {
-        printf("%02x ", ((unsigned char *)buf)[i]);
-        if (i % 16 == 15)
-        {
-            printf("\n");
-        }
-    }
+    gmp_printf("\n");
+    printf("RSASP1 with privKey2:\n");
+    mpz_set_ui(s, 0);
+    mpz_set_str(em, str_em1, 16);
+    RSASP1(&privKey2, em, s);
+    gmp_printf("res: %Zx\n", s);
 
-    // verification primitive, m = s ^ e mode n
+    gmp_printf("\n");
+
+    // verification primitive, m = s ^ e mod n
     printf("RSAVP1:\n");
-    mpz_powm(res, s1, e, n); /* em1 = res = s ^ e mod n */
-    gmp_printf("res: %Zx\n", res);
+    mpz_set_ui(em, 0);
+    mpz_set_str(s, str_s1, 16);
+    RSAVP1(&pubKey, s, em);
+    gmp_printf("res: %Zx\n", em);
 
-    mpz_export(buf, &count, 1, 1, 0, 0, res);
-    for (i=0; i<count; i++)
-    {
-        printf("%02x ", ((unsigned char *)buf)[i]);
-        if (i % 16 == 15)
-        {
-            printf("\n");
-        }
-    }
-#if 0
-    EMSA_PKCS1_v1_5_Encode(HASH_ALG_SHA1, arr_m1, sizeof(arr_m1)/sizeof(arr_m1[0]), 128, buf);
+    mpz_set_ui(em, 0);
+    mpz_set_str(em, str_em1, 16);
+    gmp_printf(" em: %Zx\n", em);
 
-    printf("origin m1:\n");
-    for (i=0; i<128; i++)
-    {
-        printf("%02x ", ((unsigned char *)arr_m1)[i]);
-        if (i % 16 == 15)
-        {
-            printf("\n");
-        }
-    }
-    printf("\n");
+    mpz_clears(n, d, p, q, em, s, temp, NULL);
 
-    printf("encoding m1:\n");
-    for (i=0; i<128; i++)
-    {
-        printf("%02x ", ((unsigned char *)buf)[i]);
-        if (i % 16 == 15)
-        {
-            printf("\n");
-        }
-    }
-    printf("\n");
-
-    // 从 buf 中加载到 em1
-    mpz_import(em1, 128, 1, 1, 0, 0, buf);
-    gmp_printf("em1: %Zx\n", em1);
-
-    mpz_powm(res, em1, e, n); /* res = em1 ^ e mod n */
-    gmp_printf("res: %Zx\n", res);
-
-    memset(buf, 0, sizeof(buf));
-    // 从 res 中导出到 buf
-    mpz_export(buf, &count, 1, 1, 0, 0, res);
-    printf("res(%ld):\n", count);
-    for (i=0; i<count; i++)
-    {
-        printf("%02x ", ((unsigned char *)buf)[i]);
-        if (i % 16 == 15)
-        {
-            printf("\n");
-        }
-    }
-    printf("\n");
-#endif
-    mpz_clear(m1);
-    mpz_clear(s1);
-    mpz_clear(em1);
-    mpz_clear(res);
-
-    mpz_clear(d);
-    mpz_clear(e);
-    mpz_clear(n);
+    RSA_PublicKey_UnInit(&pubKey);
+    RSA_PrivateKey_UnInit(&privKey1);
+    RSA_PrivateKey_UnInit(&privKey2);
 
     printf("done!\n");
 
     return 0;
 }
-#else
-//SHAAlg = SHA1
-static char *str_m1 = "e8312742ae23c456ef28a23142c4490895832765dadce02afe5be5d31b0048fbeee2cf218b1747ad4fd81a2e17e124e6af17c3888e6d2d40c00807f423a233cad62ce9eaefb709856c94af166dba08e7a06965d7fc0d8e5cb26559c460e47bc088589d2242c9b3e62da4896fab199e144ec136db8d84ab84bcba04ca3b90c8e5";
-static char *str_s1 = "28928e19eb86f9c00070a59edf6bf8433a45df495cd1c73613c2129840f48c4a2c24f11df79bc5c0782bcedde97dbbb2acc6e512d19f085027cd575038453d04905413e947e6e1dddbeb3535cdb3d8971fe0200506941056f21243503c83eadde053ed866c0e0250beddd927a08212aa8ac0efd61631ef89d8d049efb36bb35f";
-static char arr_m1[] = {
-    0xe8, 0x31, 0x27, 0x42, 0xae, 0x23, 0xc4, 0x56, 0xef, 0x28, 0xa2, 0x31, 0x42, 0xc4, 0x49, 0x08,
-    0x95, 0x83, 0x27, 0x65, 0xda, 0xdc, 0xe0, 0x2a, 0xfe, 0x5b, 0xe5, 0xd3, 0x1b, 0x00, 0x48, 0xfb,
-    0xee, 0xe2, 0xcf, 0x21, 0x8b, 0x17, 0x47, 0xad, 0x4f, 0xd8, 0x1a, 0x2e, 0x17, 0xe1, 0x24, 0xe6,
-    0xaf, 0x17, 0xc3, 0x88, 0x8e, 0x6d, 0x2d, 0x40, 0xc0, 0x08, 0x07, 0xf4, 0x23, 0xa2, 0x33, 0xca,
-    0xd6, 0x2c, 0xe9, 0xea, 0xef, 0xb7, 0x09, 0x85, 0x6c, 0x94, 0xaf, 0x16, 0x6d, 0xba, 0x08, 0xe7,
-    0xa0, 0x69, 0x65, 0xd7, 0xfc, 0x0d, 0x8e, 0x5c, 0xb2, 0x65, 0x59, 0xc4, 0x60, 0xe4, 0x7b, 0xc0,
-    0x88, 0x58, 0x9d, 0x22, 0x42, 0xc9, 0xb3, 0xe6, 0x2d, 0xa4, 0x89, 0x6f, 0xab, 0x19, 0x9e, 0x14,
-    0x4e, 0xc1, 0x36, 0xdb, 0x8d, 0x84, 0xab, 0x84, 0xbc, 0xba, 0x04, 0xca, 0x3b, 0x90, 0xc8, 0xe5
-};
-static char arr_s1[] = {
-    0x28, 0x92, 0x8e, 0x19, 0xeb, 0x86, 0xf9, 0xc0, 0x00, 0x70, 0xa5, 0x9e, 0xdf, 0x6b, 0xf8, 0x43,
-    0x3a, 0x45, 0xdf, 0x49, 0x5c, 0xd1, 0xc7, 0x36, 0x13, 0xc2, 0x12, 0x98, 0x40, 0xf4, 0x8c, 0x4a,
-    0x2c, 0x24, 0xf1, 0x1d, 0xf7, 0x9b, 0xc5, 0xc0, 0x78, 0x2b, 0xce, 0xdd, 0xe9, 0x7d, 0xbb, 0xb2,
-    0xac, 0xc6, 0xe5, 0x12, 0xd1, 0x9f, 0x08, 0x50, 0x27, 0xcd, 0x57, 0x50, 0x38, 0x45, 0x3d, 0x04,
-    0x90, 0x54, 0x13, 0xe9, 0x47, 0xe6, 0xe1, 0xdd, 0xdb, 0xeb, 0x35, 0x35, 0xcd, 0xb3, 0xd8, 0x97,
-    0x1f, 0xe0, 0x20, 0x05, 0x06, 0x94, 0x10, 0x56, 0xf2, 0x12, 0x43, 0x50, 0x3c, 0x83, 0xea, 0xdd,
-    0xe0, 0x53, 0xed, 0x86, 0x6c, 0x0e, 0x02, 0x50, 0xbe, 0xdd, 0xd9, 0x27, 0xa0, 0x82, 0x12, 0xaa,
-    0x8a, 0xc0, 0xef, 0xd6, 0x16, 0x31, 0xef, 0x89, 0xd8, 0xd0, 0x49, 0xef, 0xb3, 0x6b, 0xb3, 0x5f
-};
 
-//SHAAlg = SHA1
-static char *str_m2 = "4c95073dac19d0256eaadff3505910e431dd50018136afeaf690b7d18069fcc980f6f54135c30acb769bee23a7a72f6ce6d90cbc858c86dbbd64ba48a07c6d7d50c0e9746f97086ad6c68ee38a91bbeeeb2221aa2f2fb4090fd820d4c0ce5ff025ba8adf43ddef89f5f3653de15edcf3aa8038d4686960fc55b2917ec8a8f9a8";
-static char *str_s2 = "53ab600a41c71393a271b0f32f521963087e56ebd7ad040e4ee8aa7c450ad18ac3c6a05d4ae8913e763cfe9623bd9cb1eb4bed1a38200500fa7df3d95dea485f032a0ab0c6589678f9e8391b5c2b1392997ac9f82f1d168878916aace9ac7455808056af8155231a29f42904b7ab87a5d71ed6395ee0a9d024b0ca3d01fd7150";
-
-// $ gcc pkcs1-v1_5_test.c pkcs1-v1_5.c -o pkcs-v1_5-test -I../out/gmp/include -L../out/gmp/lib -lgmp -I../out/include -L../out/lib -lhash -lrand
+// $ gcc rsa_primitive_test2.c rsa_primitive.c rsa_key.c -o rsa_primitive_test -I../out/gmp/include -L../out/gmp/lib -lgmp
 int main(int argc, char *argv[])
 {
-    int i;
-    size_t count;
-    mpz_t n, e;
-    mpz_t m1, s1, em1, res;
-    //mpz_t m2, s2, em2;
-    char buf[512];
-
-    //mpz_inits(n, e);
-    //mpz_inits(m1, s1, em1);
-    mpz_init(em1);
-    mpz_init(res);
-
-    mpz_init_set_str(n, str_n, 16);
-    mpz_init_set_str(e, str_e, 16);
-
-    mpz_init_set_str(m1, str_m1, 16);
-    mpz_init_set_str(s1, str_s1, 16);
-
-    gmp_printf("  n: %Zx\n", n);
-    gmp_printf("  e: %Zx\n", e);
-    gmp_printf(" m1: %Zx\n", m1);
-    gmp_printf(" s1: %Zx\n", s1);
-
-    EMSA_PKCS1_v1_5_Encode(HASH_ALG_SHA1, arr_m1, sizeof(arr_m1)/sizeof(arr_m1[0]), 128, buf);
-
-    printf("origin m1:\n");
-    for (i=0; i<128; i++)
+    // Test Vector: FIPS 186-4 RSA PKCS1-v1_5 RSASP1 Signature Primitive Component Test Vectors
+    // https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/components/RSA2SP1testvectors.zip
+    // RSA2SP1testvectors\RSASP1.fax
     {
-        printf("%02x ", ((unsigned char *)arr_m1)[i]);
-        if (i % 16 == 15)
-        {
-            printf("\n");
-        }
-    }
-    printf("\n");
+        char   *str_n1 = "bad47a84c1782e4dbdd913f2a261fc8b65838412c6e45a2068ed6d7f16e9cdf4462b39119563cafb74b9cbf25cfd544bdae23bff0ebe7f6441042b7e109b9a8afaa056821ef8efaab219d21d6763484785622d918d395a2a31f2ece8385a8131e5ff143314a82e21afd713bae817cc0ee3514d4839007ccb55d68409c97a18ab62fa6f9f89b3f94a2777c47d6136775a56a9a0127f682470bef831fbec4bcd7b5095a7823fd70745d37d1bf72b63c4b1b4a3d0581e74bf9ade93cc46148617553931a79d92e9e488ef47223ee6f6c061884b13c9065b591139de13c1ea2927491ed00fb793cd68f463f5f64baa53916b46c818ab99706557a1c2d50d232577d1";
+        char   *str_p1 = "e7c9e4b3e5d7ac9e83be08328105356dfeefe222f26c95378effd2150fadf7ba23f5b4705d82e4f1bc45057067c7def73e2100f756ee6d547965fa4f24b85d68867f03d7c886d1dbcca4c589745701b362a1f1417f471d8475b6b7a16a4c48ef1f556edc3f0ff6ba13d365d6e82751f207d91101c8eea1013ccdd9e1de4c387f";
+        char   *str_q1 = "ce58602e051f0f4647c4ec57f682e5737fc482a8a1ffac9043bba4fba3387d7dd2154507af1e28bd81b61fcdfe35f9734e0d9b53682ec785f1f6e6224f63d10bf78484b83a4254f333d0fb3f3e9e1834bede52e3078ac279a862fb90af266d7591c81f20b718d07d51bfc221b66a25403b4ac1a68d673fdd959b01ecf3d0a7af";
+        char   *str_e1 = "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010001";
+        char   *str_d1 = "40d60f24b61d76783d3bb1dc00b55f96a2a686f59b3750fdb15c40251c370c65cada222673811bc6b305ed7c90ffcb3abdddc8336612ff13b42a75cb7c88fb936291b523d80acce5a0842c724ed85a1393faf3d470bda8083fa84dc5f31499844f0c7c1e93fb1f734a5a29fb31a35c8a0822455f1c850a49e8629714ec6a2657efe75ec1ca6e62f9a3756c9b20b4855bdc9a3ab58c43d8af85b837a7fd15aa1149c119cfe960c05a9d4cea69c9fb6a897145674882bf57241d77c054dc4c94e8349d376296137eb421686159cb878d15d171eda8692834afc871988f203fc822c5dcee7f6c48df663ea3dc755e7dc06aebd41d05f1ca2891e2679783244d068f";
+        char  *str_em1 = "70992c9d95a4908d2a94b3ab9fa1cd643f120e326f9d7808af50cac42c4b0b4eeb7f0d4df303a568fbfb82b0f58300d25357645721bb71861caf81b27a56082c80a146499fb4eab5bde4493f5d00f1a437bbc360dfcd8056fe6be10e608adb30b6c2f7652428b8d32d362945982a46585d2102ef7995a8ba6e8ad8fd16bd7ae8f53c3d7fcfba290b57ce7f8f09c828d6f2d3ce56f131bd9461e5667e5b73edac77f504dac4f202a9570eb4515b2bf516407db831518db8a2083ec701e8fd387c430bb1a72deca5b49d429cf9deb09cc4518dc5f57c089aa2d3420e567e732102c2c92b88a07c69d70917140ab3823c63f312d3f11fa87ba29da3c7224b4fb4bc";
+        char   *str_s1 = "7e65b998a05f626b028c75dc3fbf98963dce66d0f4c3ae4237cff304d84d8836cb6bad9ac86f9d1b8a28dd70404788b869d2429f1ec0663e51b753f7451c6b4645d99126e457c1dac49551d86a8a974a3131e9b371d5c214cc9ff240c299bd0e62dbc7a9a2dad9fa5404adb00632d36332d5be6106e9e6ec81cac45cd339cc87abbe7f89430800e16e032a66210b25e926eda243d9f09955496ddbc77ef74f17fee41c4435e78b46965b713d72ce8a31af641538add387fedfd88bb22a42eb3bda40f72ecad941dbffdd47b3e77737da741553a45b630d070bcc5205804bf80ee2d51612875dbc4796960052f1687e0074007e6a33ab8b2085c033f9892b6f74";
 
-    printf("encoding m1:\n");
-    for (i=0; i<128; i++)
+        RSA_SP1_VP1_Test(str_n1, str_p1, str_q1, str_e1, str_d1, str_em1, str_s1);
+    }
+
+    gmp_printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+
     {
-        printf("%02x ", ((unsigned char *)buf)[i]);
-        if (i % 16 == 15)
-        {
-            printf("\n");
-        }
+        char   *str_n2 = "b968e2aaaee6ac4037af9268d0a90ae37b103c4eb302d0ecc23077752f395e6521647a15ab01117808ed7ddd1279090c42f83deb5029b03216e370a21fcdacc6119385d6e7b278862ff7bfc1461fc7d22ccf02a06c9f4eb63785950bad3b2db9279a973e2fc1e2be6c0d8eb124e0ea97e4642bec8ad0cd16f9ba7c3af22f2d1bdbc7e4d7ae1781d63d22c6a285a52d97730ce3746b94dd4fa4fd3dbd0526fcb141b1fdb99603f41425be8298ff8514a83c639f442f03447908f23603196941d666d2e24cb42a0841c0d99bcbd9db2289c5e2d9863670120b1b2f0ffecf4146d21bfffb1a07e00bc2f18e5909f390e9820b977ca7e3a2c67fdf3147c70a4df445";
+        char   *str_p2 = "c71485fa4116382afe9142d7d5580d798a41e7b4f73f505618978002f137f5c209fd1f377e824e7e0c4b3e44dc1f8e250272efdb715a48d434d8a01e3965c7b1f65aec349d963815d78998221fc2c3be3508cc69fa22b4fc3c9a2365309c5eae72094b2c22ae176704806a1994b7e4fe5109558a0bfad6964bd7d6c14cbda74b";
+        char   *str_q2 = "ee6bc4246895352b598c19207475131327b7daedaab3e007c28cc96c1901eb64a70132b313b36ee189eb45395856eb7ff5ae2e7a53282653c93475577690d6e0e18416a9b287bff910a72b7d8074cf0efc9b99558fb671a4d9f66c0a98d9f7fcc78e87e2bbe78e6d79ec56738ff81392669790de2f5d61546aa57f645622c8af";
+        char   *str_e2 = "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010001";
+        char   *str_d2 = "5bd8ff0c81b728d6691f931e545ba156be647513a16f403341218453eb5076980f9a38365aaf9d4942d6ef76600bd0752009dc96a0effde65a5b5235261f1bbb4502b91714515f8e4ddde3c2a96bddef9a9df415a7a9a572f3ff3b2dfd23674ba5385a3b06aa7c1a4be9cd69a8b4b8d204e4b0b3adb2b11e7418b328fa476f86d836b989750cdb7cdde5b888db3b747e82d5e878b473607aa8bcce8d80c40bd43149a84f5579c6b4dcb388a6ebb7710805bd1224c962c809ad2583623a3dfd6ddeb7a5d40840c79780a7e7eac4a4e7740a5603c184470118d46ff68ca3587c6e2ed35d1ee6560237c515fbf5bc0047abad25e71962d3885d90bbcf73df0a2c33";
+        char  *str_em2 = "3afbdaec9d872f6619ce373cbf5d9e1d48dbc2d5bf8d71e5d234bb5c7ec319cf9ddbf1b1aa1e82159adb589f7c3929f68a1c6ad323688569bd9aeb447d26e0537e07a79aad5632a5e8c0846e1ec15dd18e97ea5bbfdbb7fff34b80b8d81eb98e6aea4ee416e479f951b61411f2c0a22e005ad30a6481cff7019fa10ac04c0f846762389f7f241797e12f865a883fcff4735d50867082ed6af02a3b6a968a6a052ed85af524e37afb15d29969e3becc8f03895366ff6a5c05f544fe5f67a81999786c9aaabb00ac8b6442d807669a0a295225c11ae3902a228d8c9535acb2892083cd677fd72103073ec760c6e1317d3e81455c0e09689516bc21681c514686bc";
+        char   *str_s2 = "7237bc0432abdf7e9c87bcf9a7e26b19b245445ce40d5b7440e343542402d504b2d0885e1cff33c753af3c69cfa5965c36225adfd262e5a4ce80141be5f8c5f8aac2379dede905efdab52e6b8f3601d160179846d429abef8a7623c52c72f43299838ebf0513d36606718057d22f648e4ecff4d5950907eda7f4de76557620b73d687525f29d1829d2baf104e24eedec19a25fe57276c176af6fea1cd67ad3f5243dbea52205be786fdacb131412e2b29fe173d0d824315893fc603d755826b5bf29d52e230e82e2afcd2708cf81bf0e4a38741473a0f11a5b578e0a5dfd62c0ad83189fd1fefd2bfb53c8fb67c0747ab0591db02d3b997dafcd35139e8f34d3";
+
+        RSA_SP1_VP1_Test(str_n2, str_p2, str_q2, str_e2, str_d2, str_em2, str_s2);
     }
-    printf("\n");
 
-    // 从 buf 中加载到 em1
-    mpz_import(em1, 128, 1, 1, 0, 0, buf);
-    gmp_printf("em1: %Zx\n", em1);
+    gmp_printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 
-    mpz_powm(res, em1, e, n); /* res = em1 ^ e mod n */
-    gmp_printf("res: %Zx\n", res);
-
-    memset(buf, 0, sizeof(buf));
-    // 从 res 中导出到 buf
-    mpz_export(buf, &count, 1, 1, 0, 0, res);
-    printf("res(%ld):\n", count);
-    for (i=0; i<count; i++)
     {
-        printf("%02x ", ((unsigned char *)buf)[i]);
-        if (i % 16 == 15)
-        {
-            printf("\n");
-        }
+        char   *str_n3 = "9cc61aadbc7866db61cb03f389782e7369bc9314337efd861e334c7460bac0e6dd9c32e899b88c0e820093a6ef56403b78c459a512538a239c75cb08f3197caeb925a12b7e1685a22632a9022bad2f3e6fb17995292046b8d5bd801474b58797a1d712e902f9c02e61f16d8e72d9880d7fafa40cc7b8d48d1720700e3c310cf0b4336e560776e08ca1ee76e5e735c48d5e3e1cd86bb3ed130719ca778cd1bf2ad5b7126f580417ccd0f1c6709ff7eb238ca9679c6f1717ac523689bbde8e5145fa626ff4853e6bc18c3f8bfc1ef616f3dc98ed3d83329049d3181a050341a7319c6bd0b666a40c56714d0041643980f1824c8c805f2b5273cd6fd729ce67a233";
+        char   *str_p3 = "db8c4fcd2f248ebc8674d8175f3046f66fe5ae6cef965685e518d899778ccbf340a196bd076318d94ea5c7c1082a5372a46b8279d1a430327e9f7b8716028bc9b8880d777487fab69dfac305fd4951b6a5dd07562ae57b5bdc01792b4a5ffae91484b6c1a4d6034b887ed00db4986dedde16115db4859f20e51dfaca3891fda1";
+        char   *str_q3 = "b6cda1986b72f5ca4b5313285d4e5bee2fe515854cdfedc7419cf4c000115ca1f2bb9029f474da7486f8f14be026b0e90521100c89af5b14fe644fe2f66aecbffd15198426b08877bfe03b7d16d347f765cc3d82c64c7c07612f2530842f1933015697948bb94ed4ef12eb1bc2f630f99bc7bff8310885356779ce7118430753";
+        char   *str_e3 = "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010001";
+        char   *str_d3 = "12730bd3b350d605ee49c672c414451f26ebdec12b583ffca7143164a6b7839907ae689d4fedd469a6a9ebb663071af304c0d2ade6ecb6de7efcabc2a75d31fb9be54e44c08764fd929236aa7f3a57cb78b8818ee8b298300b534c3ddc083ae740cfff3535b8ef8165dc5420c5ea4ca50e083cfd96096dd616c925f6bee5a4d8857ac345c6023921a3ffcd4266577bda1063a1ac211618050565aef579d842d9e42bc1d89fc4401d437560278286dd34dbc8da58c945a381804782f73d0bc985ca700f28dfdd8723befb6d5cb7c6a583f0552bd37e0d1cf151e5d67b30aced3b44c53fda93b2b7c13f5ce7022c4365eb795792a62a7eb15d1e7b0e94a8e976a1";
+        char  *str_em3 = "03fff4f85fe62f42a8873ec273193b29df5e3dd023cd4fd3a365fec4623be736287c900038599b78e76247b3dfdbabf6dd74212818bada5b1cb02b8e2250cec914b68ca3d45cd361c0ac64347aa55fdda755fac0d2a7e360309b756ed32d1d57966c66d7109e914f1b6fd327ccf07b1c118b5c0ee473f8a00990f2a1f32787f261d8cd9892efa3804863c40ead28933c6baa8983c45029d5a5b1681544b2e42964f6db6d4e29989c8193af366ecb3290f164636abc2588f63d4eb180523b0a0e293c631382b865af1a218edb015f67e5dbd3728f4246fd2c6dc5bab60d541cb3283c2633502bb3b6071a1e5b514db18fc2adca155ac241b859b12ee40903c0bc";
+        char   *str_s3 = "6eb6e140cbc3e3eed591970997da7c55ca67b958320392342ba59c3351a78a48490c69e8d6db22cea59f48669e7b8955c0a6e50457db2cd798179d276c845b90bc2739ebdb9e2fb0cb75ffdade1145b7bd446aa164141c649bbd3bd4cef8b3730436120ac7747fc2bbbeb2991182a11c61105fdbfc4d5e94ede81122932b9898605c3101c4c479b369cf40deab87e60ee0de6e0f6ca964c4b7b9e4e25e981b6e6b985bc231fb29d11b9a169b0a790f9390a76ca4dbe9dfb0fc53314688c0008bdf6027a594de193ef47cc0f4505334910017e9297a194b26384058287f6036c70172ba1e2897044f54bdf148904b2ad406d196dda716d2278e859b8516a86c7e";
+
+        RSA_SP1_VP1_Test(str_n3, str_p3, str_q3, str_e3, str_d3, str_em3, str_s3);
     }
-    printf("\n");
-
-    mpz_clear(m1);
-    mpz_clear(s1);
-    mpz_clear(em1);
-    mpz_clear(res);
-    mpz_clear(n);
-    mpz_clear(e);
-
-    printf("done!\n");
 
     return 0;
 }
-#endif
-
-/*
- * 1. 生成 1024 bit RSA 私钥
- * openssl genrsa -out rsa_priv.pem -f4 1024
- *
- * 2. 将 PEM 格式的私钥存储为 text 格式
- * openssl rsa -inform PEM -in rsa_priv.pem -text -out rsa_priv.txt
- *
- * 3. 从私钥导出公钥
- * openssl rsa -inform PEM -in rsa_priv.pem -pubout -out rsa_pub.pem
- *
- * 4. 以 txt 格式显示公钥
- * openssl rsa -inform PEM -in rsa_pub.pem -pubin -text
- */
-
-/*
- * SHA1 填充的 DER 结构解析
- * $ echo -n "30 21 30 09 06 05 2b 0e 03 02 1a 05 00 04 14 c8 91 9f 90 87 28 2f 20 59 f1 12 b5 5f aa e3 c6 46 2f 44 69" | xxd -r -ps | openssl asn1parse -inform DER
- *     0:d=0  hl=2 l=  33 cons: SEQUENCE                                                          --> 30  21 [30  09  06  05  2b  0e  03  02  1a  05  00  04  14  c8  91  9f  90  87  28  2f  20  59  f1  12  b5  5f  aa  e3  c6  46  2f  44  69]
- *     2:d=1  hl=2 l=   9 cons: SEQUENCE                                                          -->         30  09 [06  05  2b  0e  03  02  1a  05  00]
- *     4:d=2  hl=2 l=   5 prim: OBJECT        :sha1                                               -->                 06  05 [2b  0e  03  02  1a]
- *    11:d=2  hl=2 l=   0 prim: NULL                                                              -->                                             05  00[]
- *    13:d=1  hl=2 l=  20 prim: OCTET STRING  [HEX DUMP]:C8919F9087282F2059F112B55FAAE3C6462F4469 -->                                                     04  14 [c8  91  9f  90  87  28  2f  20  59  f1  12  b5  5f  aa  e3  c6  46  2f  44  69]
- *
- * 30  21 [30  09  06  05  2b  0e  03  02  1a  05  00  04  14  c8  91  9f  90  87  28  2f  20  59  f1  12  b5  5f  aa  e3  c6  46  2f  44  69]
- *         30  09 [06  05  2b  0e  03  02  1a  05  00] 04  14 [c8  91  9f  90  87  28  2f  20  59  f1  12  b5  5f  aa  e3  c6  46  2f  44  69]
- *                 06  05 [2b  0e  03  02  1a] 05  00[]
- */
