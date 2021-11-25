@@ -17,6 +17,12 @@ extern "C"
 #define ERR_RSA_CIPHER_OUT_OF_RANGE -35
 #define ERR_RSA_SIG_OUT_OF_RANGE    -36
 
+/* RSAES-OAEP-Encrypt/Decrypt */
+#define ERR_RSA_LABEL_TOO_LONG      -37
+#define ERR_RSA_MSG_TOO_LONG        -38
+#define ERR_RSA_OAEP_ENCODING_ERR   -39
+#define ERR_RSA_OAEP_DECODING_ERR   -40
+
 typedef struct RSAPrivateKey {
     int type; /* 0: unused; 1:(n, d); 2:(p, q, dP, dQ, qInv) */
     mpz_t n, d;
@@ -33,17 +39,25 @@ int RSA_PrivateKey_Init(const char *n, const char *d, RSAPrivateKey *key);
 int RSA_PrivateKey_Init_MultiPrime(const char *p, const char *q, const char *dP, const char *dQ, const char *qInv, RSAPrivateKey *key);
 int RSA_PrivateKey_UnInit(RSAPrivateKey *key);
 
-#if 0
-/*
- * I2OSP: Integer(nonnegative) to Octet String Primitive
- */
-int I2OSP(mpz_t x, int *xLen, char *X);
+unsigned long RSA_Modulus_Octet_Length(mpz_t n);
 
 /*
- * OS2IP: Octet String to Integer(nonnegative)
+ * @description: I2OSP, Integer-to-Octet-String Primitive
+ * @param {mpz_t} x, nonnegative integer to be converted
+ * @param {unsigned long} xLen, intended length of the resulting octet string
+ * @param {unsigned char} *X, corresponding octet string of length xLen
+ * @return {*} 0, OK; -1 Fail;
  */
-int OS2IP(char *X, mpz_t x);
-#endif
+int I2OSP(mpz_t x, char *X, unsigned long xLen);
+
+/**
+ * @description: OS2IP, Octet-String-to-Integer Primitive
+ * @param {char} *X, octet string to be converted
+ * @param {unsigned long} xLen, length of octet string
+ * @param {mpz_t} x, corresponding nonegative integer
+ * @return {*} 0, OK; -1 Fail;
+ */
+int OS2IP(const char *X, unsigned long xLen, mpz_t x);
 
 /**
  * @description: RSAEP, RSA Encryption Primitive

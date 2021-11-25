@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "gmp.h"
 #include "rsa.h"
 
@@ -11,19 +12,28 @@
 #endif
 
 /*
+ * Example Octets String in ASN.1:
+ *   data: {0xDB, 0xFE, 0xED, 0x6A, 0xB4};
+ *   type: {0x04}, octets string;
+ * length: {0x05}, 5 bytes;
+ * Octets String: 04 05 DB FE ED 6A B4
+ */
+
+/*
  * @description: I2OSP, Integer-to-Octet-String Primitive
  * @param {mpz_t} x, nonnegative integer to be converted
  * @param {unsigned long} xLen, intended length of the resulting octet string
  * @param {unsigned char} *X, corresponding octet string of length xLen
  * @return {*} 0, OK; -1 Fail;
  */
-int I2OSP(mpz_t x, unsigned long xLen, char *X)
+int I2OSP(mpz_t x, char *X, unsigned long xLen)
 {
-    mpz_t max;
-    char format[12]; // unsigned long: 0～4294967295. format="%04294967296Zx"
     int res;
+    mpz_t max;
+    char buf[512];
+    size_t count;
 
-    if (X == NULL)
+    if (NULL == X)
     {
         return -1;
     }
@@ -31,16 +41,21 @@ int I2OSP(mpz_t x, unsigned long xLen, char *X)
     res = 0;
 
     mpz_init(max);
-    mpz_ui_pow_ui(max, 256, xLen);
-    if (mpz_cmp(x, max) > 0)
+    mpz_ui_pow_ui(max, 256, xLen); /* max = 256 ^ xLen */
+    if (mpz_cmp(x, max) >= 0)
     {
         printf("integer too large\n");
         res = -1;
     }
     else
     {
-        sprintf(format, "%%0%luZx", 2 * xLen);
-        gmp_sprintf(X, format, x);
+        /*
+         * it's octect string in ASN.1, which is different from a common string
+         * 0x1234567890ABCDEF: 1. {12 34 56 78 90 AB CD EF}, octet string; 2. '1234567890ABCDEF' (string) 
+         */
+        mpz_export(buf, &count, 1, 1, 0, 0, x);
+        memset(X, 0, xLen-count);
+        memcpy(X+xLen-count, buf, count);
     }
     mpz_clear(max);
 
@@ -50,17 +65,18 @@ int I2OSP(mpz_t x, unsigned long xLen, char *X)
 /**
  * @description: OS2IP, Octet-String-to-Integer Primitive
  * @param {char} *X, octet string to be converted
- * @param {mpz_t} x, corresponding onnegative integer
+ * @param {unsigned long} xLen, length of octet string
+ * @param {mpz_t} x, corresponding nonegative integer
  * @return {*} 0, OK; -1 Fail;
  */
-int OS2IP(const char *X, mpz_t x)
+int OS2IP(const char *X, unsigned long xLen, mpz_t x)
 {
-    if (X == NULL)
+    if (NULL == X)
     {
         return -1;
     }
 
-    mpz_set_str(x, X, 16);
+    mpz_import(x, xLen, 1, 1, 0, 0, X);
 
     return 0;
 }

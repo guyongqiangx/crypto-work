@@ -78,3 +78,13 @@ int RSA_PrivateKey_UnInit(RSAPrivateKey *key)
 
     return ERR_OK;
 }
+
+unsigned long RSA_Modulus_Octet_Length(mpz_t n)
+{
+    size_t count;
+    char *buf[1024]; /* support 4096 bits */
+
+    mpz_export(buf, &count, 1, 1, 0, 0, n);
+
+    return count;
+}

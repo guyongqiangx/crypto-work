@@ -14,7 +14,7 @@ RMFLAGS = -rf
 CFLAGS  = -Wall -g -O2 -Wno-narrowing
 INCLUDE = -I../out/gtest/include -I../out/gmp/include -I../out/include
 
-LDLIBS  = -L../out/gtest/lib -lgtest_main -lgtest -lpthread -L../out/gmp/lib -lgmp -L../out/lib -lrsa_primitive
+LDLIBS  = -L../out/gtest/lib -lgtest_main -lgtest -lpthread -L../out/lib -lrsa_primitive -L../out/gmp/lib -lgmp
 
 LIB     = librsa_primitive.a
 
