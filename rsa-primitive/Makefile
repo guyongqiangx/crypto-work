@@ -18,7 +18,7 @@ LDLIBS  = -L../out/gtest/lib -lgtest_main -lgtest -lpthread -L../out/lib -lrsa_p
 
 LIB     = librsa_primitive.a
 
-SRCS    = rsa_primitive_unittest.cc
+SRCS    = rsa_primitive_unittest.cc rsa_encryption_unittest.cc
 OBJS    = $(SRCS:.cc=.o)
 
 TARGET  = rsa_primitive_unittest

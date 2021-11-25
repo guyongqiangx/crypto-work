@@ -1,5 +1,8 @@
 #ifndef __ROCKY_RSA__H
 #define __ROCKY_RSA__H
+
+#include "hash.h"
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -22,6 +25,8 @@ extern "C"
 #define ERR_RSA_MSG_TOO_LONG        -38
 #define ERR_RSA_OAEP_ENCODING_ERR   -39
 #define ERR_RSA_OAEP_DECODING_ERR   -40
+#define ERR_RSA_ENCRYPTION_ERR      -41
+#define ERR_RSA_DECRYPTION_ERR      -42
 
 typedef struct RSAPrivateKey {
     int type; /* 0: unused; 1:(n, d); 2:(p, q, dP, dQ, qInv) */
@@ -94,6 +99,9 @@ int RSASP1(RSAPrivateKey *key, mpz_t em, mpz_t s);
  * @return {*}, 0, OK; -1, Fail;
  */
 int RSAVP1(RSAPublicKey *key, mpz_t s, mpz_t em);
+
+int RSAES_OAEP_Encrypt(RSAPublicKey *key, char *M, unsigned long mLen, const char *L, unsigned long lLen, HASH_ALG alg, char *C, unsigned long cLen);
+int RSAES_OAEP_Decrypt(RSAPrivateKey *key, char *C, unsigned long cLen, const char *L, unsigned long lLen, HASH_ALG alg, char *M, unsigned long *mLen);
 
 #ifdef __cplusplus
 }
