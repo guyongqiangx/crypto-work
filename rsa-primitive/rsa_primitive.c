@@ -117,13 +117,6 @@ int RSADP(RSAPrivateKey *key, mpz_t c, mpz_t m)
 
     int res = ERR_OK;
 
-    res = mpz_cmp(c, key->n);
-    if (res >= 0)
-    {
-        DBG_PRINT("ciphertext representative out of range\n");
-        return ERR_RSA_CIPHER_OUT_OF_RANGE;
-    }
-
     switch (key->type)
     {
     case 1: // (n, d)
@@ -146,6 +139,7 @@ int RSADP(RSAPrivateKey *key, mpz_t c, mpz_t m)
         break;
     default:
         DBG_PRINT("Not Implemented Yet!\n");
+        res = ERR_ERR;
         break;
     }
 
