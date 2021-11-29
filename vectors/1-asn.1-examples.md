@@ -183,9 +183,9 @@ padding 0 count: {0x04}
 
 ```
 Octets String in ASN.1:
-  data: {0xDB, 0xFE, 0xED, 0x6A, 0xB4};
-length: {0x05}, 5 bytes;
-  type: {0x04}, octets string;
+         data: {0xDB, 0xFE, 0xED, 0x6A, 0xB4};
+       length: {0x05}, 5 bytes;
+         type: {0x04}, octets string;
 Octets String: 04 05 DB FE ED 6A B4
 ```
 
@@ -207,6 +207,12 @@ MyAccount ::= SEQUENCE {undefined
 在上面这个结构中，帐号的证书应该包含一个 RSA 密钥或一个密码散列值或什么都没有．
 
 空类型的编码是 `05 00`.
+
+```
+  type: {0x05}
+length: {0x00}
+  Null: 05 00
+```
 
 ### 2.6 ASN.1 对象标识符类型(0x06)
 
@@ -234,6 +240,15 @@ MD5 OID 的编码:
 2. 然后将每个字分割为带有最高位的7位数字，`{undefined{0x2A},{0x86,0x48},{0x86,0xF7,0x0D},{0x02},{0x05}}`.
 3. 最后完整的编码为 `06 08 2A 86 48 86 F7 0D 02 05`.
 
+```
+{1.2.840.113549.2.5} --> {42=40*1+2,       840,         113549,    2,    5} /* 转换前两部分 */
+                     --> {     0x2A, 0x86-0x48, 0x86-0xF7-0x0D, 0x02, 0x05} /* 分割成 7 位数字编码 */
+  type: {0x06}
+length: {0x08}
+  data: {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x05}
+   OID: 06 08 2A 86 48 86 F7 0D 02 05
+```
+
 ### 2.7 ASN.1 序列(0x30)和集合类型
 
 序列(SEQUENCE)和单一序列(SEQUENCE OF)以及相应的集合(SET)和单一集合(SET OF)类型叫做"结构"类型或简单容器．它们是一种用来把相关数据元素收集为一个独立的可解码元素的简单方法．
@@ -250,11 +265,16 @@ Active BOOLEAN
 }
 ```
 
-当取值为{32, TRUE}时，编码为 0x30 06 02 01 20 01 01 FF} 在ASN.1文档里，使用空格来表示编码的属性．
+当取值为{32, TRUE}时，编码为 {0x30 06 02 01 20 01 01 FF} 在ASN.1文档里，使用空格来表示编码的属性．
 ```
 30 06
       02 01 20
       01 01 FF
+
+    type: {0x30}
+  length: {0x06}
+    data: {0x02, 0x01, 0x20, 0x01, 0x01, 0xFF}
+Sequence: 30 06 02 01 20 01 01 FF
 ```
 
 ### 2.8 ASN.1 可打印字符串(0x13)和IA5String类型(0x16)
@@ -268,9 +288,14 @@ IA5String 类型的编码对象是 ASCII 集合中的大多数．包括 NULL,BEL
 可打印字符串和 IA5String 的编码和八位位组串相似．可打印字符串的头字节是0x13, IA5String的是0x16. 例如："Hello World"的编码为:
 ```
 Hello World: 13 0B 48 65 6D 6D 6F 20 57 6F 72 6D 64.
+
+  type: {0x13}
+length: {0x0B}
+  data: {0x48, 0x65, 0x6D, 0x6D, 0x6F, 0x20, 0x57, 0x6F, 0x72, 0x6D, 0x64} /* "Hello World" */
+String: 13 0B 48 65 6D 6D 6F 20 57 6F 72 6D 64
 ```
 
-### 2.9 ASN.1世界协调时类型
+### 2.9 ASN.1世界协调时类型(0x17)
 
 世界协调时(UTCTIME)定义了一种相对 GMT 时间的标准时间(以日期)编码.它使用"YYMMDDHHMMSSZ"的格式分别表示年,月,日,时,分,秒. 其中"Z"是遗留自初始的UTCTIME.如果没有"Z",就允许两种附加组"[+/-]hh 'mm'",其中"hh"和"mm"分别为与GMT的时差和分差. 如果有"Z",则时间是以Zulu或GMT时间表示.
 
@@ -284,5 +309,10 @@ July 4,2003 at 11:33 and 28 seconds
 ```
 再编码:
 ```
-17 0D 30 33 30 37 30 34 31 31 33 33 32 38 5A.
+17 0D 30 33 30 37 30 34 31 31 33 33 32 38 5A
+
+  type: {0x17}
+length: {0x0D}
+  data: {0x30, 0x33, 0x30, 0x37, 0x30, 0x34, 0x31, 0x31, 0x33, 0x33, 0x32, 0x38, 0x5A} /* "030704113328Z" --> "July 4,2003 at 11:33 and 28 seconds" */
+   UTC: 17 0D 30 33 30 37 30 34 31 31 33 33 32 38 5A
 ```
