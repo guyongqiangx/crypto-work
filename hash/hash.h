@@ -6,6 +6,10 @@
  */
 #ifndef __ROCKY_HASH__H
 #define __ROCKY_HASH__H
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 /*
  * According to NIST SP 800-107 Rev 1, Recommendation for Applications Using Approved Hash Algorithms, 08/2012
@@ -66,4 +70,7 @@ unsigned char *HASH_Ex(HASH_ALG alg, const unsigned char *data, size_t n, unsign
 unsigned long HASH_GetBlockSize(HASH_ALG alg);
 unsigned long HASH_GetDigestSize(HASH_ALG alg, unsigned long ext);
 
+#ifdef __cplusplus
+}
+#endif
 #endif
