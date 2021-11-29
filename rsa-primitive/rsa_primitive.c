@@ -96,12 +96,12 @@ int RSAEP(RSAPublicKey *key, mpz_t m, mpz_t c)
     if (res >= 0)
     {
         DBG_PRINT("message representative out of range\n");
-        res = ERR_RSA_MSG_OUT_OF_RANGE;
+        return ERR_RSA_MSG_OUT_OF_RANGE;
     }
 
     mpz_powm(c, m, key->e, key->n); // c = m ^ e (mod n)
 
-    return res;
+    return ERR_OK;
 }
 
 /**
