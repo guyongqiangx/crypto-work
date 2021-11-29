@@ -14,14 +14,14 @@ RMFLAGS = -rf
 CFLAGS  = -Wall -g -O2 -Wno-narrowing
 INCLUDE = -I../out/gtest/include -I../out/gmp/include -I../out/include
 
-LDLIBS  = -L../out/gtest/lib -lgtest_main -lgtest -lpthread -L../out/lib -lrsa_primitive -L../out/gmp/lib -lgmp
+LDLIBS  = -L../out/gtest/lib -lgtest_main -lgtest -lpthread -L../out/lib -lrsa_primitive -loaep -lmgf -lhash -L../out/gmp/lib -lgmp
 
 LIB     = librsa_primitive.a
 
-SRCS    = rsa_primitive_unittest.cc rsa_encryption_unittest.cc
+SRCS    = rsa_key_unittest.cc rsa_primitive_unittest.cc rsa_encryption_unittest.cc
 OBJS    = $(SRCS:.cc=.o)
 
-TARGET  = rsa_primitive_unittest
+TARGET  = rsa_unittest
 
 all: .prepare $(TARGET) test
 
