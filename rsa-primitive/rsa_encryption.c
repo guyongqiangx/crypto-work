@@ -1,6 +1,7 @@
 #include <stdio.h>
-#include "oaep.h"
 #include "gmp.h"
+#include "oaep.h"
+#include "pkcs1-v1_5.h"
 #include "rsa.h"
 
 int RSAES_OAEP_Encrypt(RSAPublicKey *key, char *M, unsigned long mLen, const char *L, unsigned long lLen, HASH_ALG alg, char *C, unsigned long cLen)
@@ -120,5 +121,107 @@ int RSAES_OAEP_Decrypt(RSAPrivateKey *key, char *C, unsigned long cLen, const ch
 
 exit:
     mpz_clears(m, c, NULL);
+    return res;
+}
+
+int RSAES_PKCS1_v1_5_Encrypt(RSAPublicKey *key, char *M, unsigned long mLen, char *C, unsigned long cLen)
+{
+    mpz_t m, c;
+    int res = ERR_OK;
+    char buf[256];
+    int k;
+
+    if ((NULL == key) || (NULL == M) || (NULL == C))
+    {
+        return ERR_INV_PARAM;
+    }
+
+    k = RSA_Modulus_Octet_Length(key->n);
+    if (mLen > k - 11)
+    {
+        return ERR_RSA_MSG_TOO_LONG;
+    }
+
+    res = EME_PKCS1_v1_5_Encode(k, M, mLen, buf);
+    if (ERR_OK != res)
+    {
+        return res;
+    }
+
+    mpz_inits(m, c, NULL);
+
+    res = OS2IP(buf, k, m);
+    if (ERR_OK != res)
+    {
+        goto exit;
+    }
+
+    res = RSAEP(key, m, c);
+    if (ERR_OK != res)
+    {
+        goto exit;
+    }
+
+    res = I2OSP(c, C, cLen);
+    if (ERR_OK != res)
+    {
+        goto exit;
+    }
+
+exit:
+    mpz_clears(m, c, NULL);
+    return res;
+}
+
+int RSAES_PKCS1_v1_5_Decrypt(RSAPrivateKey *key, char *C, unsigned long cLen, char *M, unsigned long *mLen)
+{
+    mpz_t em, c;
+    int res = ERR_OK;
+    char buf[256];
+    int k;
+
+    if ((NULL == key) || (NULL == C) || (NULL == M))
+    {
+        return ERR_INV_PARAM;
+    }
+
+    k = RSA_Modulus_Octet_Length(key->n);
+    if (cLen != k)
+    {
+        return ERR_RSA_DECRYPTION_ERR;
+    }
+
+    mpz_inits(em, c, NULL);
+
+    res = OS2IP(C, cLen, c);
+    if (ERR_OK != res)
+    {
+        res = ERR_RSA_DECRYPTION_ERR;
+        goto exit;
+    }
+
+    res = RSADP(key, c, em);
+    if (ERR_OK != res)
+    {
+        res = ERR_RSA_DECRYPTION_ERR;
+        goto exit;
+    }
+
+    res = I2OSP(em, buf, k);
+    if (ERR_OK != res)
+    {
+        res = ERR_RSA_DECRYPTION_ERR;
+        goto exit;
+    }
+
+    res = EME_PKCS1_v1_5_Decode(k, buf, M, mLen);
+    if (ERR_OK != res)
+    {
+        res = ERR_RSA_DECRYPTION_ERR;
+        goto exit;
+    }
+
+exit:
+    mpz_clears(em, c, NULL);
     return res;
 }

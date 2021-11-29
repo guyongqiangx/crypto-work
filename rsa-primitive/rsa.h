@@ -28,6 +28,8 @@ extern "C"
 #define ERR_RSA_ENCRYPTION_ERR      -41
 #define ERR_RSA_DECRYPTION_ERR      -42
 
+/* RSAES-PKCS1-v1_5-Encrypt/Decrypt */
+
 typedef struct RSAPrivateKey {
     int type; /* 0: unused; 1:(n, d); 2:(p, q, dP, dQ, qInv) */
     mpz_t n, d;
@@ -102,6 +104,9 @@ int RSAVP1(RSAPublicKey *key, mpz_t s, mpz_t em);
 
 int RSAES_OAEP_Encrypt(RSAPublicKey *key, char *M, unsigned long mLen, const char *L, unsigned long lLen, HASH_ALG alg, char *C, unsigned long cLen);
 int RSAES_OAEP_Decrypt(RSAPrivateKey *key, char *C, unsigned long cLen, const char *L, unsigned long lLen, HASH_ALG alg, char *M, unsigned long *mLen);
+
+int RSAES_PKCS1_v1_5_Encrypt(RSAPublicKey *key, char *M, unsigned long mLen, char *C, unsigned long cLen);
+int RSAES_PKCS1_v1_5_Decrypt(RSAPrivateKey *key, char *C, unsigned long cLen, char *M, unsigned long *mLen);
 
 #ifdef __cplusplus
 }

@@ -110,7 +110,7 @@ TEST(RSAES, OAEPDecryptTest)
 
     RSAPrivateKey privKey;
     unsigned long mLen;
-    int i, res = ERR_OK;
+    int res = ERR_OK;
 
     memset(str_m, 0, sizeof(str_m));
 
@@ -186,4 +186,9 @@ TEST(RSAES, OAEPEncDecTest1)
     EXPECT_EQ(0, memcmp(message1, buf, sizeof(message1)));
 
     RSA_PrivateKey_UnInit(&privKey);
+}
+
+TEST(RSAES, PKCS1v15EncDecTest1)
+{
+    printf("No PKCS1v15EncDecTest1!\n");
 }
