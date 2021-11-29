@@ -26,7 +26,16 @@ TEST(RSAPrimitive, I2OSPTest)
 
     /* len = 256, only padding one 0 on the left most */
     {
-        char str2[] = "71485fa4116382afe9142d7d5580d798a41e7b4f73f505618978002f137f5c209fd1f377e824e7e0c4b3e44dc1f8e250272efdb715a48d434d8a01e3965c7b1f65aec349d963815d78998221fc2c3be3508cc69fa22b4fc3c9a2365309c5eae72094b2c22ae176704806a1994b7e4fe5109558a0bfad6964bd7d6c14cbda74b";
+        /*
+         * 这里 str2 只有 255 个字符
+         * - 使用 mpz_set_str 可以获取正确的值，前面填充 0 (mpz_set_str) 是从最右侧最低位开始操作;
+         * - 使用 "xxd -r -ps" 命令获取的内容会不正确, 因为 "xxd -r -ps" 是从最左侧的最高位开始操作;
+         * 由于字符数是奇数, 因此结果 mpz_set_str 和 xxd 的结果刚好相差半个字节
+         */
+        char str2[] =  "71485fa4116382afe9142d7d5580d798a41e7b4f73f505618978002f137f5c2"
+                      "09fd1f377e824e7e0c4b3e44dc1f8e250272efdb715a48d434d8a01e3965c7b1"
+                      "f65aec349d963815d78998221fc2c3be3508cc69fa22b4fc3c9a2365309c5eae"
+                      "72094b2c22ae176704806a1994b7e4fe5109558a0bfad6964bd7d6c14cbda74b";
         char result2[] =
         {
             0x07, 0x14, 0x85, 0xfa, 0x41, 0x16, 0x38, 0x2a, 0xfe, 0x91, 0x42, 0xd7, 0xd5, 0x58, 0x0d, 0x79,
@@ -78,7 +87,14 @@ TEST(RSAPrimitive, I2OSPTest)
 
     /* len = 512 */
     {
-        char str4[] = "bad47a84c1782e4dbdd913f2a261fc8b65838412c6e45a2068ed6d7f16e9cdf4462b39119563cafb74b9cbf25cfd544bdae23bff0ebe7f6441042b7e109b9a8afaa056821ef8efaab219d21d6763484785622d918d395a2a31f2ece8385a8131e5ff143314a82e21afd713bae817cc0ee3514d4839007ccb55d68409c97a18ab62fa6f9f89b3f94a2777c47d6136775a56a9a0127f682470bef831fbec4bcd7b5095a7823fd70745d37d1bf72b63c4b1b4a3d0581e74bf9ade93cc46148617553931a79d92e9e488ef47223ee6f6c061884b13c9065b591139de13c1ea2927491ed00fb793cd68f463f5f64baa53916b46c818ab99706557a1c2d50d232577d1";
+        char str4[] = "bad47a84c1782e4dbdd913f2a261fc8b65838412c6e45a2068ed6d7f16e9cdf4"
+                      "462b39119563cafb74b9cbf25cfd544bdae23bff0ebe7f6441042b7e109b9a8a"
+                      "faa056821ef8efaab219d21d6763484785622d918d395a2a31f2ece8385a8131"
+                      "e5ff143314a82e21afd713bae817cc0ee3514d4839007ccb55d68409c97a18ab"
+                      "62fa6f9f89b3f94a2777c47d6136775a56a9a0127f682470bef831fbec4bcd7b"
+                      "5095a7823fd70745d37d1bf72b63c4b1b4a3d0581e74bf9ade93cc4614861755"
+                      "3931a79d92e9e488ef47223ee6f6c061884b13c9065b591139de13c1ea292749"
+                      "1ed00fb793cd68f463f5f64baa53916b46c818ab99706557a1c2d50d232577d1";
         char result4[] = {
             0xba, 0xd4, 0x7a, 0x84, 0xc1, 0x78, 0x2e, 0x4d, 0xbd, 0xd9, 0x13, 0xf2, 0xa2, 0x61, 0xfc, 0x8b,
             0x65, 0x83, 0x84, 0x12, 0xc6, 0xe4, 0x5a, 0x20, 0x68, 0xed, 0x6d, 0x7f, 0x16, 0xe9, 0xcd, 0xf4,
@@ -130,7 +146,10 @@ TEST(RSAPrimitive, OS2IPTest)
 
     /* len = 256*/
     {
-        char str2[] = "71485fa4116382afe9142d7d5580d798a41e7b4f73f505618978002f137f5c209fd1f377e824e7e0c4b3e44dc1f8e250272efdb715a48d434d8a01e3965c7b1f65aec349d963815d78998221fc2c3be3508cc69fa22b4fc3c9a2365309c5eae72094b2c22ae176704806a1994b7e4fe5109558a0bfad6964bd7d6c14cbda74b";
+        char str2[] = "071485fa4116382afe9142d7d5580d798a41e7b4f73f505618978002f137f5c2"
+                      "09fd1f377e824e7e0c4b3e44dc1f8e250272efdb715a48d434d8a01e3965c7b1"
+                      "f65aec349d963815d78998221fc2c3be3508cc69fa22b4fc3c9a2365309c5eae"
+                      "72094b2c22ae176704806a1994b7e4fe5109558a0bfad6964bd7d6c14cbda74b";
         char octet2[] =
         {
             0x07, 0x14, 0x85, 0xfa, 0x41, 0x16, 0x38, 0x2a, 0xfe, 0x91, 0x42, 0xd7, 0xd5, 0x58, 0x0d, 0x79,
@@ -182,7 +201,14 @@ TEST(RSAPrimitive, OS2IPTest)
 
     /* len = 512 */
     {
-        char str4[] = "bad47a84c1782e4dbdd913f2a261fc8b65838412c6e45a2068ed6d7f16e9cdf4462b39119563cafb74b9cbf25cfd544bdae23bff0ebe7f6441042b7e109b9a8afaa056821ef8efaab219d21d6763484785622d918d395a2a31f2ece8385a8131e5ff143314a82e21afd713bae817cc0ee3514d4839007ccb55d68409c97a18ab62fa6f9f89b3f94a2777c47d6136775a56a9a0127f682470bef831fbec4bcd7b5095a7823fd70745d37d1bf72b63c4b1b4a3d0581e74bf9ade93cc46148617553931a79d92e9e488ef47223ee6f6c061884b13c9065b591139de13c1ea2927491ed00fb793cd68f463f5f64baa53916b46c818ab99706557a1c2d50d232577d1";
+        char str4[] = "bad47a84c1782e4dbdd913f2a261fc8b65838412c6e45a2068ed6d7f16e9cdf4"
+                      "462b39119563cafb74b9cbf25cfd544bdae23bff0ebe7f6441042b7e109b9a8a"
+                      "faa056821ef8efaab219d21d6763484785622d918d395a2a31f2ece8385a8131"
+                      "e5ff143314a82e21afd713bae817cc0ee3514d4839007ccb55d68409c97a18ab"
+                      "62fa6f9f89b3f94a2777c47d6136775a56a9a0127f682470bef831fbec4bcd7b"
+                      "5095a7823fd70745d37d1bf72b63c4b1b4a3d0581e74bf9ade93cc4614861755"
+                      "3931a79d92e9e488ef47223ee6f6c061884b13c9065b591139de13c1ea292749"
+                      "1ed00fb793cd68f463f5f64baa53916b46c818ab99706557a1c2d50d232577d1";
         char octet4[] = {
             0xba, 0xd4, 0x7a, 0x84, 0xc1, 0x78, 0x2e, 0x4d, 0xbd, 0xd9, 0x13, 0xf2, 0xa2, 0x61, 0xfc, 0x8b,
             0x65, 0x83, 0x84, 0x12, 0xc6, 0xe4, 0x5a, 0x20, 0x68, 0xed, 0x6d, 0x7f, 0x16, 0xe9, 0xcd, 0xf4,
