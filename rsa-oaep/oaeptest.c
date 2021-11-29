@@ -245,7 +245,7 @@ int Get_Random_Bytes(char *buf, unsigned long len)
 }
 
 /*
- * cc oaeptest.c oaep.c -o oaeptest -I/public/ygu/cryptography/crypto-work.git/out/include -L/public/ygu/cryptography/crypto-work.git/out/lib -lhash -lmgf
+ * cc oaeptest.c oaep.c -o oaeptest -I../out/include -L../out/lib -lhash -lmgf
  */
 int main(int argc, char *argv[])
 {
