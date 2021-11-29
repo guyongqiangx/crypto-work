@@ -21,13 +21,13 @@ int RSAES_OAEP_Encrypt(RSAPublicKey *key, char *M, unsigned long mLen, const cha
     }
 
     k = RSA_Modulus_Octet_Length(key->n);
-    hLen = HASH_GetDigestSize(alg);
+    hLen = HASH_GetDigestSize(alg, 0);
     if (mLen > k - 2 * hLen - 2)
     {
         return ERR_RSA_MSG_TOO_LONG;
     }
 
-    res = OAEP_Encoding(alg, k, M, mLen, L, len, buf, k);
+    res = OAEP_Encoding(alg, k, M, mLen, L, lLen, buf, k);
     if (ERR_OK != res)
     {
         return ERR_RSA_OAEP_ENCODING_ERR;
@@ -76,7 +76,7 @@ int RSAES_OAEP_Decrypt(RSAPrivateKey *key, char *C, unsigned long cLen, const ch
     }
 
     k = RSA_Modulus_Octet_Length(key->n);
-    hLen = HASH_GetDigestSize(alg);
+    hLen = HASH_GetDigestSize(alg, 0);
 
     if (cLen != k)
     {
@@ -111,7 +111,7 @@ int RSAES_OAEP_Decrypt(RSAPrivateKey *key, char *C, unsigned long cLen, const ch
         goto exit;
     }
 
-    res = OAEP_Decoding(alg, k, L, lLen, buf, k, M, mlen);
+    res = OAEP_Decoding(alg, k, L, lLen, buf, k, M, mLen);
     if (ERR_OK != res)
     {
         res = ERR_RSA_DECRYPTION_ERR;
