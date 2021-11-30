@@ -190,7 +190,7 @@ int RSASP1(RSAPrivateKey *key, mpz_t em, mpz_t s)
         break;
     }
 
-    return res;
+    return ERR_OK;
 }
 
 /**
@@ -208,10 +208,10 @@ int RSAVP1(RSAPublicKey *key, mpz_t s, mpz_t em)
     if (res >= 0)
     {
         DBG_PRINT("signature representative out of range\n");
-        res = ERR_RSA_SIG_OUT_OF_RANGE;
+        return ERR_RSA_SIG_OUT_OF_RANGE;
     }
 
     mpz_powm(em, s, key->e, key->n); // em = s ^ e (mod n)
 
-    return res;
+    return ERR_OK;
 }
