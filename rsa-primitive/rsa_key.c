@@ -82,9 +82,40 @@ int RSA_PrivateKey_UnInit(RSAPrivateKey *key)
 unsigned long RSA_Modulus_Octet_Length(mpz_t n)
 {
     size_t count;
-    char *buf[1024]; /* support 4096 bits */
+    char buf[1024]; /* support 4096 bits */
 
     mpz_export(buf, &count, 1, 1, 0, 0, n);
+
+    return count;
+}
+
+unsigned long RSA_Modulus_Bit_Length(mpz_t n)
+{
+    unsigned long i;
+    size_t count;
+    char buf[1024]; /* support 4096 bits */
+
+    /* get bytes count */
+    mpz_export(buf, &count, 1, 1, 0, 0, n);
+
+    if (count > 0)
+    {
+        /* to bits count */
+        count *= 8;
+
+        /* test msb bit position of msb byte */
+        for (i=1; i<=8; i++)
+        {
+            if (buf[0] & (1<<(8-i)))
+            {
+                break;
+            }
+            else
+            {
+                count --;
+            }
+        }
+    }
 
     return count;
 }

@@ -4,19 +4,19 @@
 #include "rsa.h"
 
 /* pkcs-1v2-1-vec\oaep-int.txt */
-static char str_n[] = "bbf82f090682ce9c2338ac2b9da871f7368d07eed41043a440d6b6f07454f51f"
-                      "b8dfbaaf035c02ab61ea48ceeb6fcd4876ed520d60e1ec4619719d8a5b8b807f"
-                      "afb8e0a3dfc737723ee6b4b7d93a2584ee6a649d060953748834b2454598394e"
-                      "e0aab12d7b61a51f527a9a41f6c1687fe2537298ca2a8f5946f8e5fd091dbdcb";
-static char str_e[] = "11"; /* 0x11 */
-static char str_p[] = "eecfae81b1b9b3c908810b10a1b5600199eb9f44aef4fda493b81a9e3d84f632"
-                      "124ef0236e5d1e3b7e28fae7aa040a2d5b252176459d1f397541ba2a58fb6599";
-static char str_q[] = "c97fb1f027f453f6341233eaaad1d9353f6c42d08866b1d05a0f2035028b9d86"
-                      "9840b41666b42e92ea0da3b43204b5cfce3352524d0416a5a441e700af461503";
-static char str_dP[] = "54494ca63eba0337e4e24023fcd69a5aeb07dddc0183a4d0ac9b54b051f2b13e"
-                       "d9490975eab77414ff59c1f7692e9a2e202b38fc910a474174adc93c1f67c981";
-static char str_dQ[] = "471e0290ff0af0750351b7f878864ca961adbd3a8a7e991c5c0556a94c3146a7"
-                       "f9803f8f6f8ae342e931fd8ae47a220d1b99a495849807fe39f9245a9836da3d";
+static char str_n[]    = "bbf82f090682ce9c2338ac2b9da871f7368d07eed41043a440d6b6f07454f51f"
+                         "b8dfbaaf035c02ab61ea48ceeb6fcd4876ed520d60e1ec4619719d8a5b8b807f"
+                         "afb8e0a3dfc737723ee6b4b7d93a2584ee6a649d060953748834b2454598394e"
+                         "e0aab12d7b61a51f527a9a41f6c1687fe2537298ca2a8f5946f8e5fd091dbdcb";
+static char str_e[]    = "11"; /* 0x11 */
+static char str_p[]    = "eecfae81b1b9b3c908810b10a1b5600199eb9f44aef4fda493b81a9e3d84f632"
+                         "124ef0236e5d1e3b7e28fae7aa040a2d5b252176459d1f397541ba2a58fb6599";
+static char str_q[]    = "c97fb1f027f453f6341233eaaad1d9353f6c42d08866b1d05a0f2035028b9d86"
+                         "9840b41666b42e92ea0da3b43204b5cfce3352524d0416a5a441e700af461503";
+static char str_dP[]   = "54494ca63eba0337e4e24023fcd69a5aeb07dddc0183a4d0ac9b54b051f2b13e"
+                         "d9490975eab77414ff59c1f7692e9a2e202b38fc910a474174adc93c1f67c981";
+static char str_dQ[]   = "471e0290ff0af0750351b7f878864ca961adbd3a8a7e991c5c0556a94c3146a7"
+                         "f9803f8f6f8ae342e931fd8ae47a220d1b99a495849807fe39f9245a9836da3d";
 static char str_qInv[] = "b06c4fdabb6301198d265bdbae9423b380f271f73453885093077fcd39e2119f"
                          "c98632154f5883b167a967bf402b4e9e2e0f9656e698ea3666edfb25798039f7";
 
@@ -62,4 +62,102 @@ TEST(RSAKEY, MiscTest)
     EXPECT_EQ(sizeof(buf_n), RSA_Modulus_Octet_Length(key.n));
 
     RSA_PublicKey_UnInit(&key);
+}
+
+TEST(RSAKEY, OctetLengthTest)
+{
+    /*
+     * 这里 str1 只有 255 个字符
+     * - 使用 mpz_set_str 可以获取正确的值，前面填充 0 (mpz_set_str) 是从最右侧最低位开始操作;
+     * - 使用 "xxd -r -ps" 命令获取的内容会不正确, 因为 "xxd -r -ps" 是从最左侧的最高位开始操作;
+     * 由于字符数是奇数, 因此结果 mpz_set_str 和 xxd 的结果刚好相差半个字节
+     */
+    /* 128 bytes */
+    char str1[] =  "71485fa4116382afe9142d7d5580d798a41e7b4f73f505618978002f137f5c2"
+                  "09fd1f377e824e7e0c4b3e44dc1f8e250272efdb715a48d434d8a01e3965c7b1"
+                  "f65aec349d963815d78998221fc2c3be3508cc69fa22b4fc3c9a2365309c5eae"
+                  "72094b2c22ae176704806a1994b7e4fe5109558a0bfad6964bd7d6c14cbda74b";
+
+    /* 128 bytes */
+    char str2[] = "1253e04dc0a5397bb44a7ab87e9bf2a039a33d1e996fc82a94ccd30074c95df7"
+                  "63722017069e5268da5d1c0b4f872cf653c11df82314a67968dfeae28def04bb"
+                  "6d84b1c31d654a1970e5783bd6eb96a024c2ca2f4a90fe9f2ef5c9c140e5bb48"
+                  "da9536ad8700c84fc9130adea74e558d51a74ddf85d8b50de96838d6063e0955";
+
+    /* 3 bytes */
+    char str3[] = "0000000000000000000000000000000000000000000000000000000000000000"
+                  "0000000000000000000000000000000000000000000000000000000000000000"
+                  "0000000000000000000000000000000000000000000000000000000000000000"
+                  "0000000000000000000000000000000000000000000000000000000000000000"
+                  "0000000000000000000000000000000000000000000000000000000000000000"
+                  "0000000000000000000000000000000000000000000000000000000000000000"
+                  "0000000000000000000000000000000000000000000000000000000000000000"
+                  "0000000000000000000000000000000000000000000000000000000000010001";
+
+    // char buf[256];
+    size_t count;
+    mpz_t n;
+
+    mpz_init(n);
+
+    mpz_set_str(n, str1, 16);
+    // mpz_export(buf, &count, 1, 1, 0, 0, n);
+    count = RSA_Modulus_Octet_Length(n);
+    EXPECT_EQ(128ul, count);
+
+    mpz_set_str(n, str2, 16);
+    //mpz_export(buf, &count, 1, 1, 0, 0, n);
+    count = RSA_Modulus_Octet_Length(n);
+    EXPECT_EQ(128ul, count);
+
+    mpz_set_str(n, str3, 16);
+    //mpz_export(buf, &count, 1, 1, 0, 0, n);
+    count = RSA_Modulus_Octet_Length(n);
+    EXPECT_EQ(3ul, count);
+
+    mpz_clear(n);
+}
+
+TEST(RSAKEY, BitLengthTest)
+{
+    /* 1019 bytes */
+    char str1[] =  "71485fa4116382afe9142d7d5580d798a41e7b4f73f505618978002f137f5c2"
+                  "09fd1f377e824e7e0c4b3e44dc1f8e250272efdb715a48d434d8a01e3965c7b1"
+                  "f65aec349d963815d78998221fc2c3be3508cc69fa22b4fc3c9a2365309c5eae"
+                  "72094b2c22ae176704806a1994b7e4fe5109558a0bfad6964bd7d6c14cbda74b";
+
+    /* 1021 bits */
+    char str2[] = "1253e04dc0a5397bb44a7ab87e9bf2a039a33d1e996fc82a94ccd30074c95df7"
+                  "63722017069e5268da5d1c0b4f872cf653c11df82314a67968dfeae28def04bb"
+                  "6d84b1c31d654a1970e5783bd6eb96a024c2ca2f4a90fe9f2ef5c9c140e5bb48"
+                  "da9536ad8700c84fc9130adea74e558d51a74ddf85d8b50de96838d6063e0955";
+
+    /* 17 bits */
+    char str3[] = "0000000000000000000000000000000000000000000000000000000000000000"
+                  "0000000000000000000000000000000000000000000000000000000000000000"
+                  "0000000000000000000000000000000000000000000000000000000000000000"
+                  "0000000000000000000000000000000000000000000000000000000000000000"
+                  "0000000000000000000000000000000000000000000000000000000000000000"
+                  "0000000000000000000000000000000000000000000000000000000000000000"
+                  "0000000000000000000000000000000000000000000000000000000000000000"
+                  "0000000000000000000000000000000000000000000000000000000000010001";
+
+    mpz_t n;
+    unsigned long modBits;
+
+    mpz_init(n);
+
+    mpz_set_str(n, str1, 16);
+    modBits = RSA_Modulus_Bit_Length(n);
+    EXPECT_EQ(1019ul, modBits);
+
+    mpz_set_str(n, str2, 16);
+    modBits = RSA_Modulus_Bit_Length(n);
+    EXPECT_EQ(1021ul, modBits);
+
+    mpz_set_str(n, str3, 16);
+    modBits = RSA_Modulus_Bit_Length(n);
+    EXPECT_EQ(17ul, modBits);
+
+    mpz_clear(n);
 }

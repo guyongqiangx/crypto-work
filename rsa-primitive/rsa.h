@@ -47,6 +47,7 @@ int RSA_PrivateKey_Init_MultiPrime(const char *p, const char *q, const char *dP,
 int RSA_PrivateKey_UnInit(RSAPrivateKey *key);
 
 unsigned long RSA_Modulus_Octet_Length(mpz_t n);
+unsigned long RSA_Modulus_Bit_Length(mpz_t n);
 
 /*
  * @description: I2OSP, Integer-to-Octet-String Primitive
