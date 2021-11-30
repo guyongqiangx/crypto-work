@@ -5,7 +5,7 @@
 #include "rand.h"
 
 /*
- * cc randtest.c rand.c -o randtest -I/public/ygu/cryptography/crypto-work.git/out/include
+ * cc randtest.c rand.c -o randtest -I../out/include
  */
 int main(int argc, char *argv[])
 {

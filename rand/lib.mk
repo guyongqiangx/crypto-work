@@ -24,9 +24,14 @@ SRCS    = rand.c
 OBJS    = $(SRCS:.c=.o)
 HDRS	= $(SRCS:.c=.h)
 
-LIB     = librand.a
+FAKE_SRCS = fakerand.c
+FAKE_OBJS = $(FAKE_SRCS:.c=.o)
+FAKE_HDRS = $(FAKE_SRCS:.c=.h)
 
-all: $(LIB)
+LIB     = librand.a
+FAKELIB = libfakerand.a
+
+all: $(LIB) $(FAKELIB)
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
@@ -34,10 +39,13 @@ all: $(LIB)
 $(LIB): $(OBJS)
 	$(AR) $(ARFLAGS) $@ $^
 
-install: $(LIB)
+$(FAKELIB): $(FAKE_OBJS)
+	$(AR) $(ARFLAGS) $@ $^
+
+install: all
 	mkdir -p $(INSTALL)/include $(INSTALL)/lib
-	cp -f $(LIB) $(INSTALL)/lib/$(LIB)
-	cp -f $(HDRS) $(INSTALL)/include/$(HDRS)
+	cp -f $(LIB)  $(FAKELIB)   $(INSTALL)/lib
+	cp -f $(HDRS) $(FAKE_HDRS) $(INSTALL)/include
 
 clean:
-	$(RM) $(RMFLAGS) $(OBJS) $(LIB)
+	$(RM) $(RMFLAGS) $(OBJS) $(LIB) $(FAKE_OBJS) $(FAKELIB)
