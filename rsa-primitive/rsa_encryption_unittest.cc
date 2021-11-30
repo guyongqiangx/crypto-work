@@ -1,25 +1,8 @@
 #include <stdio.h>
 #include "gtest/gtest.h"
 #include "gmp.h"
-#include "rand.h"
+#include "fakerand.h"
 #include "rsa.h"
-
-/*
- * 测试时，先调用 Set_Random_Data 设置伪随机数据，然后相关的库中就会通过 Get_Random_Bytes 获得预先设置的伪随机数，便于测试
- */
-static char seed_buffer[256];
-
-static void Set_Random_Data(char *buf, unsigned long len)
-{
-    memcpy(seed_buffer, buf, len);
-}
-
-int Get_Random_Bytes(char *buf, unsigned long len)
-{
-    memcpy(buf, seed_buffer, len);
-
-    return 0;
-}
 
 TEST(RSAES, OAEPEncryptTest)
 {
@@ -88,9 +71,9 @@ TEST(RSAES, OAEPDecryptTest)
 
 #if 0
     char str_c[] = "1253e04dc0a5397bb44a7ab87e9bf2a039a33d1e996fc82a94ccd30074c95df7"
-                    "63722017069e5268da5d1c0b4f872cf653c11df82314a67968dfeae28def04bb"
-                    "6d84b1c31d654a1970e5783bd6eb96a024c2ca2f4a90fe9f2ef5c9c140e5bb48"
-                    "da9536ad8700c84fc9130adea74e558d51a74ddf85d8b50de96838d6063e0955";
+                   "63722017069e5268da5d1c0b4f872cf653c11df82314a67968dfeae28def04bb"
+                   "6d84b1c31d654a1970e5783bd6eb96a024c2ca2f4a90fe9f2ef5c9c140e5bb48"
+                   "da9536ad8700c84fc9130adea74e558d51a74ddf85d8b50de96838d6063e0955";
 #else
     char cipher[] = {
         0x12, 0x53, 0xe0, 0x4d, 0xc0, 0xa5, 0x39, 0x7b, 0xb4, 0x4a, 0x7a, 0xb8, 0x7e, 0x9b, 0xf2, 0xa0,
