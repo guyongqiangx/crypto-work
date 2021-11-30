@@ -30,6 +30,9 @@ extern "C"
 
 /* RSAES-PKCS1-v1_5-Encrypt/Decrypt */
 
+/* RSASSA-PSS */
+#define ERR_RSA_INVALID_SIGNATURE   -43
+
 typedef struct RSAPrivateKey {
     int type; /* 0: unused; 1:(n, d); 2:(p, q, dP, dQ, qInv) */
     mpz_t n, d;
@@ -108,6 +111,9 @@ int RSAES_OAEP_Decrypt(RSAPrivateKey *key, char *C, unsigned long cLen, const ch
 
 int RSAES_PKCS1_v1_5_Encrypt(RSAPublicKey *key, char *M, unsigned long mLen, char *C, unsigned long cLen);
 int RSAES_PKCS1_v1_5_Decrypt(RSAPrivateKey *key, char *C, unsigned long cLen, char *M, unsigned long *mLen);
+
+int RSASSA_PSS_Sign(RSAPrivateKey *key, char *M, unsigned long mLen, HASH_ALG alg, char *S, unsigned long *sLen);
+int RSASSA_PSS_Verify(RSAPublicKey *key, char *M, unsigned long mLen, HASH_ALG alg, char *S, unsigned long sLen);
 
 #ifdef __cplusplus
 }

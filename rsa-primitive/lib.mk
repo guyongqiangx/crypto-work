@@ -20,7 +20,7 @@ INCLUDE = -I../out/gmp/include -I../out/include
 
 INSTALL ?= .
 
-SRCS    = rsa_primitive.c rsa_key.c rsa_encryption.c
+SRCS    = rsa_primitive.c rsa_key.c rsa_encryption.c rsa_signature.c
 OBJS    = $(SRCS:.c=.o)
 HDRS	= rsa.h
 
