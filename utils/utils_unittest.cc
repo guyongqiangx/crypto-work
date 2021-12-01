@@ -25,19 +25,19 @@ TEST(UTILS, DumpHexTest)
     for (i=10; i<=40; i+=3)
     {
         sprintf(tips, "dumphex %3d bytes:", i);
-        dumphex(data, i, tips, NULL, 16);
+        dumphex(tips, data, i, NULL, 16);
     }
 
-    dumphex(data, 30, NULL, "     ", 16);
-    dumphex(data, 60, "data:", "  ", 8);
-    dumphex(data, 60, "data:", "   ", 16);
-    dumphex(data, 60, "data:", "    ", 32);
+    dumphex(   NULL, data, 30, "     ", 16);
+    dumphex("data:", data, 60, "  ", 8);
+    dumphex("data:", data, 60, "   ", 16);
+    dumphex("data:", data, 60, "    ", 32);
 
     memset(tips, 0, sizeof(tips));
 
     for (i=20; i<=50; i++)
     {
         sprintf(tips, "dump %3d bytes:", i);
-        dump(data, i, tips);
+        dump(tips, data, i);
     }
 }

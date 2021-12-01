@@ -5,8 +5,8 @@ extern "C"
 {
 #endif
 
-void dumphex(const void *data, int data_size, const char *tips, const char *indent, int line_size);
-void dump(const void *data, int size, const char *tips);
+void dumphex(const char *tips, const void *data, int data_size, const char *indent, int line_size);
+void dump(const char *tips, const void *data, int size);
 
 #ifdef DISABLE_DUMP_FUNCTIONS
 #define dumphex(...)

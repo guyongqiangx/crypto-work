@@ -1,16 +1,23 @@
 #include <stdio.h>
+#include "string.h"
 #include "utils.h"
 
-void dumphex(const void *data, int data_size, const char *tips, const char *indent, int line_size)
+void dumphex(const char *tips, const void *data, int data_size, const char *indent, int line_size)
 {
     int i;
 
-    printf("%s%s", tips==NULL?"":(indent==NULL?"":indent), tips==NULL?"":tips);
+    /* tips line */
+    if ((NULL != tips) && (0 != strlen(tips)))
+    {
+        printf("%s%s\n", indent==NULL?"":indent, tips);
+    }
+
     for (i=0; i<data_size; i++)
     {
+        /* new line */
         if (i%line_size == 0)
         {
-            printf("\n%s", indent==NULL?"":indent);
+            printf("%s%s", i==0?"":"\n", indent==NULL?"":indent);
         }
 
         printf("%02x ", ((unsigned char *)data)[i]);
@@ -18,7 +25,7 @@ void dumphex(const void *data, int data_size, const char *tips, const char *inde
     printf("\n");
 }
 
-void dump(const void *data, int size, const char *tips)
+void dump(const char *tips, const void *data, int size)
 {
-    dumphex(data, size, tips, NULL, 16);
+    dumphex(tips, data, size, NULL, 16);
 }
