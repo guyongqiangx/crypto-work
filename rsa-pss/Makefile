@@ -17,7 +17,7 @@ CFLAGS += -Wno-narrowing
 
 INCLUDE = -I../out/gtest/include -I../out/include
 
-LDLIBS  = -L../out/gtest/lib -lgtest_main -lgtest -lpthread -L../out/lib -loaep -lmgf -lhash
+LDLIBS  = -L../out/gtest/lib -lgtest_main -lgtest -lpthread -L../out/lib -lutils -lfakerand -lpss -loaep -lmgf -lhash
 
 LIB     = libpss.a
 

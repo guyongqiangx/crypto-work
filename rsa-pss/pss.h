@@ -7,8 +7,8 @@ extern "C"
 
 #include "hash.h"
 
-int PSS_Encode(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, char *EM, unsigned long emLen, unsigned long emBits);
-int PSS_Verify(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, char *EM, unsigned long emLen, unsigned long emBits);
+int PSS_Encode(HASH_ALG alg, unsigned char *M, unsigned long mLen, unsigned long sLen, unsigned char *EM, unsigned long emLen, unsigned long emBits);
+int PSS_Verify(HASH_ALG alg, unsigned char *M, unsigned long mLen, unsigned long sLen, unsigned char *EM, unsigned long emLen, unsigned long emBits);
 
 #ifdef __cplusplus
 }

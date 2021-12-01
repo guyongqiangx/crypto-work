@@ -6,6 +6,8 @@
 #include "rand.h"
 #include "pss.h"
 
+#include "utils.h"
+
 #define PSS_BUF_SIZE 512 /* 4096 bits */
 
 /**
@@ -79,7 +81,7 @@ static int check_leftmost_bits(unsigned char *buf, unsigned long bit_count)
     while (bit_count > 0)
     {
         // 不为 0
-        if ( *buf && (0x01 << (8 - bit_count)))
+        if ( *buf & (0x01 << (8 - bit_count)))
         {
             return -1;
         }
@@ -204,14 +206,13 @@ static int check_leftmost_bits(unsigned char *buf, unsigned long bit_count)
  * @param {unsigned long} emBits, PSS 填充后的编码消息 EM 的长度(比特)
  * @return {*}, 填充成功返回 0, 失败返回 -1
  */
-int PSS_Encode(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, char *EM, unsigned long emLen, unsigned long emBits)
+int PSS_Encode(HASH_ALG alg, unsigned char *M, unsigned long mLen, unsigned long sLen, unsigned char *EM, unsigned long emLen, unsigned long emBits)
 {
     unsigned long hLen, psLen;
-    char buf[PSS_BUF_SIZE];
-    char *pMp, *pmHash, *psalt1;
-    char *pDB, *psalt2;
-    char *maskedDB, *H;
-    int i;
+    unsigned char buf[PSS_BUF_SIZE];
+    unsigned char *pMp, *pmHash, *psalt1;
+    unsigned char *pDB, *psalt2;
+    unsigned char *maskedDB, *H;
 
     //      pDb                 pMp
     //       |                   |
@@ -253,43 +254,12 @@ int PSS_Encode(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, ch
 
     // 计算 mHash = Hash(M), M'[8 - 8+hLen] = mhash
     HASH(alg, M, mLen, pmHash);
-    printf("mHash:\n");
-    for (i=0; i<hLen; i++)
-    {
-        printf("%02x ", ((unsigned char *)pmHash)[i]);
-        if (i % 16 == 15)
-        {
-            printf("\n");
-        }
-    }
-    printf("\n");
 
     // 生成 sLen 长度的随机字符串 salt, 如果 sLen 为 0, 则 salt 为空串
     if (sLen > 0)
     {
         Get_Random_Bytes(psalt1, sLen);
     }
-    printf("salt:\n");
-    for (i=0; i<sLen; i++)
-    {
-        printf("%02x ", ((unsigned char *)psalt1)[i]);
-        if (i % 16 == 15)
-        {
-            printf("\n");
-        }
-    }
-    printf("\n");
-
-    printf("M':\n");
-    for (i=0; i<8+hLen+sLen; i++)
-    {
-        printf("%02x ", ((unsigned char *)pMp)[i]);
-        if (i % 16 == 15)
-        {
-            printf("\n");
-        }
-    }
-    printf("\n");
 
     /*
      * 2. 构造 DB 数据块: DB = padding2 || salt
@@ -309,17 +279,6 @@ int PSS_Encode(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, ch
         memcpy(psalt2, psalt1, sLen);
     }
 
-    printf("DB:\n");
-    for (i=0; i<emLen-hLen-1; i++)
-    {
-        printf("%02x ", ((unsigned char *)pDB)[i]);
-        if (i % 16 == 15)
-        {
-            printf("\n");
-        }
-    }
-    printf("\n");
-
     /*
      * 3. 构造 EM 数据块: EM = maskedDB || H || 0xbc
      */
@@ -328,80 +287,17 @@ int PSS_Encode(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, ch
 
     // 生成 M' 的哈希, H = Hash(M')
     HASH(alg, pMp, 8 + hLen + sLen, H);
-    printf("HASH(M'):\n");
-    for (i=0; i<hLen; i++)
-    {
-        printf("%02x ", ((unsigned char *)H)[i]);
-        if (i % 16 == 15)
-        {
-            printf("\n");
-        }
-    }
-    printf("\n");
 
     // 生成 maskedDB
     MGF1(H, hLen, alg, emLen - hLen - 1, maskedDB);
-    printf("HASH(M')1:\n");
-    for (i=0; i<hLen; i++)
-    {
-        printf("%02x ", ((unsigned char *)H)[i]);
-        if (i % 16 == 15)
-        {
-            printf("\n");
-        }
-    }
-    printf("\n");
     xor(maskedDB, pDB, emLen - hLen - 1);
-
-    printf("HASH(M')2:\n");
-    for (i=0; i<hLen; i++)
-    {
-        printf("%02x ", ((unsigned char *)H)[i]);
-        if (i % 16 == 15)
-        {
-            printf("\n");
-        }
-    }
-    printf("\n");
-
-    printf("maskedDB:\n");
-    for (i=0; i<emLen-hLen-1; i++)
-    {
-        printf("%02x ", ((unsigned char *)maskedDB)[i]);
-        if (i % 16 == 15)
-        {
-            printf("\n");
-        }
-    }
-    printf("\n");
 
     // 设置 EM 最左侧的 8emLen - emBits 的 bits 为 0
     psLen = 8 * emLen - emBits;
     clear_leftmost_bits(EM, psLen);
 
-    printf("clear %lu bits:\n", psLen);
-    for (i=0; i<emLen-hLen-1; i++)
-    {
-        printf("%02x ", ((unsigned char *)maskedDB)[i]);
-        if (i % 16 == 15)
-        {
-            printf("\n");
-        }
-    }
-    printf("\n");
-
     // 填充 EM 末尾的 0xBC
     EM[emLen - 1] = 0xbc;
-    printf("EM:\n");
-    for (i=0; i<emLen; i++)
-    {
-        printf("%02x ", ((unsigned char *)EM)[i]);
-        if (i % 16 == 15)
-        {
-            printf("\n");
-        }
-    }
-    printf("\n");
 
     return 0;
 }
@@ -488,21 +384,35 @@ int PSS_Encode(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, ch
  * @param {unsigned long} emBits, 用于校验 PSS 填充消息 EM 的长度(比特)
  * @return {*}, 校验一致返回 0, 不一致返回 -1
  */
-int PSS_Verify(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, char *EM, unsigned long emLen, unsigned long emBits)
+int PSS_Verify(HASH_ALG alg, unsigned char *M, unsigned long mLen, unsigned long sLen, unsigned char *EM, unsigned long emLen, unsigned long emBits)
 {
     unsigned long hLen, psLen;
-    char buf[PSS_BUF_SIZE];
-    char *pMp, *pmHash, *psalt1;
-    char *pDB, *psalt2;
-    char *maskedDB, *H;
+    unsigned char buf[PSS_BUF_SIZE];
+    unsigned char *pMp, *pmHash, *psalt1;
+    unsigned char *pDB, *psalt2;
+    unsigned char *maskedDB, *H;
 
-    //      pDb                 pMp
-    //       |                   |
-    //       +-------- 256 ------+-------- 256 ------+
-    //       |                   |                   |
-    //       +-------------------+-------------------+
-    // buf = |          DB       |        M'         |
-    //       +-------------------+-------------------+
+    //      pDb                     pMp
+    //       |                       |
+    //       +-------- 256 ----------+-------- 256 ---------------------+
+    //       |                       |                                  |
+    //       +-------------------+---+------------------------------+---+
+    // buf = |         DB        |...|             M'               |...|
+    //       +-------------------+---+------------------------------+---+
+    //                               +--------+----------+----------+
+    //                          M' = |Padding1|  mHash   |   salt   |
+    //                               +--------+----------+----------+
+    //       +--------+----------+      V
+    //  DB = |Padding2|   salt   |    Hash
+    //       +--------+----------+      |
+    //                 |                |
+    //                 V                |
+    //                xor <--- MGF <----|
+    //                 |                |
+    //                 V                V
+    //       +-------------------+----------+--+
+    //  EM = |    maskedDB       |     H    |bc|
+    //       +-------------------+----------+--+
 
     // 检查参数
     if ((NULL == M) || (0 == mLen) ||
@@ -517,23 +427,39 @@ int PSS_Verify(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, ch
     pDB = buf;
     pMp = buf + PSS_BUF_SIZE / 2;
 
+    /*
+     * 0. 计算 M 的 Hash
+     */
     pmHash = pMp + 8;
-    psalt1 = pmHash + hLen;
 
+    // 计算 mHash = Hash(M)
+    HASH(alg, M, mLen, pmHash);
+
+    /*
+     * 1. 检查 emLen 和 EM[emLen-1]
+     *
+     *       |<-  emLen-hLen-1 ->|<- hLen ->|
+     *       +-------------------+----------+--+
+     * EM =  |    maskedDB       |     H    |bc|
+     *       +-------------------+----------+--+
+     */
+
+    // 检查 emLen
     if (emLen < hLen + sLen + 2)
     {
         printf("inconsistent\n");
         return -1;
     }
 
-    if (EM[emLen] != 0xbc)
+    // 检查 EM[emLen-1]
+    if (EM[emLen - 1] != 0xbc)
     {
         printf("inconsistent\n");
         return -1;
     }
 
     maskedDB = EM;
-    H = EM + emLen - hLen - 1;
+    H = maskedDB + emLen - hLen - 1;
 
     // 检查最左侧的 psLen bits
     psLen = 8 * emLen - emBits;
@@ -544,14 +470,27 @@ int PSS_Verify(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, ch
     }
 
     /*
-     * 1. 反向构造 DB 数据块: DB = padding2 || salt
+     * 2. 反向构造 DB 数据块: DB = padding2 || salt
+     *       +--------+----------+
+     *  DB = |Padding2|   salt   |
+     *       +--------+----------+
+     *                 Λ
+     *                 |
+     *                xor <--- MGF <----+
+     *                 Λ                Λ
+     *                 |                |
+     *       +-------------------+----------+--+
+     *  EM = |    maskedDB       |     H    |bc|
+     *       +-------------------+----------+--+
+     *       |<-  emLen-hLen-1 ->|
      */
 
-    // 生成 DB 数据
+    // 反向生成 DB 数据
     MGF1(H, hLen, alg, emLen - hLen - 1, pDB);
     xor(pDB, maskedDB, emLen - hLen - 1);
 
     // 设置 pDB 最左侧的 8emLen - emBits 的 bits 为 0
+    psLen = 8 * emLen - emBits;
     clear_leftmost_bits(pDB, psLen);
 
     // 检查 pDB 最左侧的 emLen - hLen - sLen - 2 的 bytes 为 0
@@ -563,12 +502,12 @@ int PSS_Verify(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, ch
     }
 
     // 检查 padding2 结束后的 0x01 标记
-    if (pDB[psLen + 1] != 0x01)
+    if (pDB[psLen] != 0x01)
     {
         printf("inconsistent\n");
         return -1;
     }
-    psalt2 = maskedDB + psLen + 2;
+    psalt2 = pDB + psLen + 1;
 
     /*
      * 2. 反向构造 M' 数据块: M' = padding1 || mHash || salt
@@ -577,21 +516,19 @@ int PSS_Verify(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, ch
     // 设置 padding1, 填充 8 个字节的 0x00
     memset(pMp, 0, psLen);
 
-    // 计算 mHash = Hash(M)
-    HASH(alg, M, mLen, pmHash);
+    // mHash 在一开始就已经计算好了
 
     // 复制 salt
+    psalt1 = pmHash + hLen;
     memcpy(psalt1, psalt2, sLen);
 
     // 临时计算 M' 的哈希存放到 DB 中, 并与 EM 中的哈希比较
     HASH(alg, pMp, 8 + hLen + sLen, pDB);
-    if (memcmp(pDB, H, hLen) != 0x00)
+    if (memcmp(pDB, H, hLen) != 0)
     {
         printf("inconsistent\n");
         return -1;
     }
-
-    printf("consistent\n");
 
     return 0;
 }
