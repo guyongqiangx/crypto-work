@@ -52,7 +52,7 @@
  */
 
 #define MGF1_BUF_SIZE 256
-int MGF1(const char *mgfSeed, unsigned int mgfSeedLen, HASH_ALG alg, unsigned int maskLen, char *mask)
+int MGF1(const unsigned char *mgfSeed, unsigned int mgfSeedLen, HASH_ALG alg, unsigned int maskLen, unsigned char *mask)
 {
     unsigned char buf[MGF1_BUF_SIZE], *p;
     unsigned char digest[64]; /* 最长支持 SHA-512 */
