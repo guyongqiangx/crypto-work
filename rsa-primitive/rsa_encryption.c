@@ -4,12 +4,12 @@
 #include "pkcs1-v1_5.h"
 #include "rsa.h"
 
-int RSAES_OAEP_Encrypt(RSAPublicKey *key, char *M, unsigned long mLen, const char *L, unsigned long lLen, HASH_ALG alg, char *C, unsigned long cLen)
+int RSAES_OAEP_Encrypt(RSAPublicKey *key, unsigned char *M, unsigned long mLen, const char *L, unsigned long lLen, HASH_ALG alg, unsigned char *C, unsigned long cLen)
 {
     mpz_t m, c;
     unsigned long k, hLen;
     int res = ERR_OK;
-    char buf[512];
+    unsigned char buf[512];
 
     if ((NULL == key) || (NULL == M) || (NULL == C))
     {
@@ -59,12 +59,12 @@ exit:
     return res;
 }
 
-int RSAES_OAEP_Decrypt(RSAPrivateKey *key, char *C, unsigned long cLen, const char *L, unsigned long lLen, HASH_ALG alg, char *M, unsigned long *mLen)
+int RSAES_OAEP_Decrypt(RSAPrivateKey *key, unsigned char *C, unsigned long cLen, const char *L, unsigned long lLen, HASH_ALG alg, unsigned char *M, unsigned long *mLen)
 {
     mpz_t m, c;
     unsigned long k, hLen;
     int res = ERR_OK;
-    char buf[512];
+    unsigned char buf[512];
 
     if ((NULL == key) || (NULL == C) || (NULL == M))
     {
@@ -124,11 +124,11 @@ exit:
     return res;
 }
 
-int RSAES_PKCS1_v1_5_Encrypt(RSAPublicKey *key, char *M, unsigned long mLen, char *C, unsigned long cLen)
+int RSAES_PKCS1_v1_5_Encrypt(RSAPublicKey *key, unsigned char *M, unsigned long mLen, unsigned char *C, unsigned long cLen)
 {
     mpz_t m, c;
     int res = ERR_OK;
-    char buf[256];
+    unsigned char buf[256];
     int k;
 
     if ((NULL == key) || (NULL == M) || (NULL == C))
@@ -173,11 +173,11 @@ exit:
     return res;
 }
 
-int RSAES_PKCS1_v1_5_Decrypt(RSAPrivateKey *key, char *C, unsigned long cLen, char *M, unsigned long *mLen)
+int RSAES_PKCS1_v1_5_Decrypt(RSAPrivateKey *key, unsigned char *C, unsigned long cLen, unsigned char *M, unsigned long *mLen)
 {
     mpz_t em, c;
     int res = ERR_OK;
-    char buf[256];
+    unsigned char buf[256];
     int k;
 
     if ((NULL == key) || (NULL == C) || (NULL == M))

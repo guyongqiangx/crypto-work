@@ -26,7 +26,7 @@
  * @param {unsigned char} *X, corresponding octet string of length xLen
  * @return {*} 0, OK; -1 Fail;
  */
-int I2OSP(mpz_t x, char *X, unsigned long xLen)
+int I2OSP(mpz_t x, unsigned char *X, unsigned long xLen)
 {
     int res;
     mpz_t max;
@@ -64,12 +64,12 @@ int I2OSP(mpz_t x, char *X, unsigned long xLen)
 
 /**
  * @description: OS2IP, Octet-String-to-Integer Primitive
- * @param {char} *X, octet string to be converted
+ * @param {unsigned char} *X, octet string to be converted
  * @param {unsigned long} xLen, length of octet string
  * @param {mpz_t} x, corresponding nonegative integer
  * @return {*} 0, OK; -1 Fail;
  */
-int OS2IP(const char *X, unsigned long xLen, mpz_t x)
+int OS2IP(const unsigned char *X, unsigned long xLen, mpz_t x)
 {
     if (NULL == X)
     {

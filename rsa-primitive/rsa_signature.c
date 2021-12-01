@@ -5,10 +5,10 @@
 #include "pkcs1-v1_5.h"
 #include "rsa.h"
 
-int RSASSA_PSS_Sign(RSAPrivateKey *key, char *M, unsigned long mLen, HASH_ALG alg, char *S, unsigned long *sLen)
+int RSASSA_PSS_Sign(RSAPrivateKey *key, unsigned char *M, unsigned long mLen, HASH_ALG alg, unsigned char *S, unsigned long *sLen)
 {
     mpz_t em, s;
-    char buf[256];
+    unsigned char buf[256];
     unsigned long k, modBits, emLen, saltLen;
     int res = ERR_OK;
     int i;
@@ -73,10 +73,10 @@ exit:
     return res;
 }
 
-int RSASSA_PSS_Verify(RSAPublicKey *key, char *M, unsigned long mLen, HASH_ALG alg, char *S, unsigned long sLen)
+int RSASSA_PSS_Verify(RSAPublicKey *key, unsigned char *M, unsigned long mLen, HASH_ALG alg, unsigned char *S, unsigned long sLen)
 {
     mpz_t em, s;
-    char buf[256];
+    unsigned char buf[256];
     unsigned long k, modBits, emLen, saltLen;
     int res = ERR_OK;
     int i;

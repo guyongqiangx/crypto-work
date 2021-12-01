@@ -59,16 +59,16 @@ unsigned long RSA_Modulus_Bit_Length(mpz_t n);
  * @param {unsigned char} *X, corresponding octet string of length xLen
  * @return {*} 0, OK; -1 Fail;
  */
-int I2OSP(mpz_t x, char *X, unsigned long xLen);
+int I2OSP(mpz_t x, unsigned char *X, unsigned long xLen);
 
 /**
  * @description: OS2IP, Octet-String-to-Integer Primitive
- * @param {char} *X, octet string to be converted
+ * @param {unsigned char} *X, octet string to be converted
  * @param {unsigned long} xLen, length of octet string
  * @param {mpz_t} x, corresponding nonegative integer
  * @return {*} 0, OK; -1 Fail;
  */
-int OS2IP(const char *X, unsigned long xLen, mpz_t x);
+int OS2IP(const unsigned char *X, unsigned long xLen, mpz_t x);
 
 /**
  * @description: RSAEP, RSA Encryption Primitive
@@ -106,14 +106,14 @@ int RSASP1(RSAPrivateKey *key, mpz_t em, mpz_t s);
  */
 int RSAVP1(RSAPublicKey *key, mpz_t s, mpz_t em);
 
-int RSAES_OAEP_Encrypt(RSAPublicKey *key, char *M, unsigned long mLen, const char *L, unsigned long lLen, HASH_ALG alg, char *C, unsigned long cLen);
-int RSAES_OAEP_Decrypt(RSAPrivateKey *key, char *C, unsigned long cLen, const char *L, unsigned long lLen, HASH_ALG alg, char *M, unsigned long *mLen);
+int RSAES_OAEP_Encrypt(RSAPublicKey *key, unsigned char *M, unsigned long mLen, const char *L, unsigned long lLen, HASH_ALG alg, unsigned char *C, unsigned long cLen);
+int RSAES_OAEP_Decrypt(RSAPrivateKey *key, unsigned char *C, unsigned long cLen, const char *L, unsigned long lLen, HASH_ALG alg, unsigned char *M, unsigned long *mLen);
 
-int RSAES_PKCS1_v1_5_Encrypt(RSAPublicKey *key, char *M, unsigned long mLen, char *C, unsigned long cLen);
-int RSAES_PKCS1_v1_5_Decrypt(RSAPrivateKey *key, char *C, unsigned long cLen, char *M, unsigned long *mLen);
+int RSAES_PKCS1_v1_5_Encrypt(RSAPublicKey *key, unsigned char *M, unsigned long mLen, unsigned char *C, unsigned long cLen);
+int RSAES_PKCS1_v1_5_Decrypt(RSAPrivateKey *key, unsigned char *C, unsigned long cLen, unsigned char *M, unsigned long *mLen);
 
-int RSASSA_PSS_Sign(RSAPrivateKey *key, char *M, unsigned long mLen, HASH_ALG alg, char *S, unsigned long *sLen);
-int RSASSA_PSS_Verify(RSAPublicKey *key, char *M, unsigned long mLen, HASH_ALG alg, char *S, unsigned long sLen);
+int RSASSA_PSS_Sign(RSAPrivateKey *key, unsigned char *M, unsigned long mLen, HASH_ALG alg, unsigned char *S, unsigned long *sLen);
+int RSASSA_PSS_Verify(RSAPublicKey *key, unsigned char *M, unsigned long mLen, HASH_ALG alg, unsigned char *S, unsigned long sLen);
 
 #ifdef __cplusplus
 }
