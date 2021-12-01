@@ -41,7 +41,7 @@ static unsigned long get_bit_length(unsigned char *data, unsigned long len)
     return count;
 }
 
-TEST(ESMA, PSSMiscTest)
+TEST(RSAESMA, PSSMiscTest)
 {
     /* 1019 bits */
     unsigned char n1[] = {
@@ -100,7 +100,7 @@ TEST(ESMA, PSSMiscTest)
 }
 
 // Test Vector: vectors\pkcs-1v2-1-vec\pss-int.txt
-TEST(EMSA, PSSEncodeVerifyTest)
+TEST(RSAEMSA, PSSEncodeVerifyTest)
 {
     /*
      * ../vectors/pkcs-1v2-1-vec/pss-int.txt
