@@ -115,6 +115,9 @@ int RSAES_PKCS1_v1_5_Decrypt(RSAPrivateKey *key, unsigned char *C, unsigned long
 int RSASSA_PSS_Sign(RSAPrivateKey *key, unsigned char *M, unsigned long mLen, HASH_ALG alg, unsigned char *S, unsigned long *sLen);
 int RSASSA_PSS_Verify(RSAPublicKey *key, unsigned char *M, unsigned long mLen, HASH_ALG alg, unsigned char *S, unsigned long sLen);
 
+int RSASSA_PKCS1_v1_5_Sign(RSAPrivateKey *key, unsigned char *M, unsigned long mLen, HASH_ALG alg, unsigned char *S, unsigned long *sLen);
+int RSASSA_PKCS1_v1_5_Verify(RSAPublicKey *key, unsigned char *M, unsigned long mLen, HASH_ALG alg, unsigned char *S, unsigned long sLen);
+
 #ifdef __cplusplus
 }
 #endif

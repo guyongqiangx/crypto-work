@@ -106,14 +106,17 @@ int RSASP1(RSAPrivateKey *key, mpz_t em, mpz_t s);
  */
 int RSAVP1(RSAPublicKey *key, mpz_t s, mpz_t em);
 
-int RSAES_OAEP_Encrypt(RSAPublicKey *key, unsigned char *M, unsigned long mLen, const unsigned char *L, unsigned long lLen, HASH_ALG alg, unsigned char *C, unsigned long cLen);
-int RSAES_OAEP_Decrypt(RSAPrivateKey *key, unsigned char *C, unsigned long cLen, const unsigned char *L, unsigned long lLen, HASH_ALG alg, unsigned char *M, unsigned long *mLen);
+int RSAES_OAEP_Encrypt(RSAPublicKey *key, unsigned char *M, unsigned long mLen, const char *L, unsigned long lLen, HASH_ALG alg, unsigned char *C, unsigned long cLen);
+int RSAES_OAEP_Decrypt(RSAPrivateKey *key, unsigned char *C, unsigned long cLen, const char *L, unsigned long lLen, HASH_ALG alg, unsigned char *M, unsigned long *mLen);
 
 int RSAES_PKCS1_v1_5_Encrypt(RSAPublicKey *key, unsigned char *M, unsigned long mLen, unsigned char *C, unsigned long cLen);
 int RSAES_PKCS1_v1_5_Decrypt(RSAPrivateKey *key, unsigned char *C, unsigned long cLen, unsigned char *M, unsigned long *mLen);
 
 int RSASSA_PSS_Sign(RSAPrivateKey *key, unsigned char *M, unsigned long mLen, HASH_ALG alg, unsigned char *S, unsigned long *sLen);
 int RSASSA_PSS_Verify(RSAPublicKey *key, unsigned char *M, unsigned long mLen, HASH_ALG alg, unsigned char *S, unsigned long sLen);
+
+int RSASSA_PKCS1_v1_5_Sign(RSAPrivateKey *key, unsigned char *M, unsigned long mLen, HASH_ALG alg, unsigned char *S, unsigned long *sLen);
+int RSASSA_PKCS1_v1_5_Verify(RSAPublicKey *key, unsigned char *M, unsigned long mLen, HASH_ALG alg, unsigned char *S, unsigned long sLen);
 
 #ifdef __cplusplus
 }
