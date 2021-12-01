@@ -1,60 +1,10 @@
-/*
- * $ gcc rsa-example.c -o rsatest -I/public/ygu/cryptography/crypto-work.git/out/gmp/include -L/public/ygu/cryptography/crypto-work.git/out/gmp/lib -lgmp
- */
-
-/*
- * A format specification is of the form
- * % [flags] [width] [.[precision]] [type] conv
- * GMP adds types ‘Z’, ‘Q’ and ‘F’ for mpz_t, mpq_t and mpf_t respectively,
- * ‘M’ for mp_limb_t, and ‘N’ for an mp_limb_t array.
- *
- * ‘Z’, ‘Q’, ‘M’ and ‘N’ behave like integers.
- * ‘Q’ will print a ‘/’ and a denominator, if needed.
- * ‘F’ behaves like a float.
- */
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 #include <gmp.h>
-
-/*
- * 1. 选择两个素数 p, q;
- * 2. 计算 n = p x q;
- * 3. 计算 Φ(n) = Φ(p) x Φ(q) = (p-1) x (q-1);
- * 4. 选择 e, 是的 e ∈ {0, 1, ..., Φ(n)-1}, 且 gcd(e, Φ(n)) = 1;
- * 5. 计算 d, 是的 ed ≡ 1 mod Φ(n);
- * Kpub(e, n), Kpr(d, n)
- * Y = X^e mod n, X = Y^d mod n
- *
- * ASN.1 key structures in DER:
- *
- * RSAPublicKey ::= SEQUENCE {
- *     modulus           INTEGER,  -- n
- *     publicExponent    INTEGER   -- e
- * }
- *
- * RSAPrivateKey ::= SEQUENCE {
- *   version           Version,
- *   modulus           INTEGER,  -- n
- *   publicExponent    INTEGER,  -- e
- *   privateExponent   INTEGER,  -- d
- *   prime1            INTEGER,  -- p
- *   prime2            INTEGER,  -- q
- *   exponent1         INTEGER,  -- d mod (p-1)
- *   exponent2         INTEGER,  -- d mod (q-1)
- *   coefficient       INTEGER,  -- (inverse of q) mod p
- *   otherPrimeInfos   OtherPrimeInfos OPTIONAL
- * }
- */
-
-/*
- * Export private key file to public key file:
- * $ openssl rsa -in rsa_private_key.txt -pubout | openssl rsa -pubin -text -out rsa_public_key.txt
- */
-
-#include <stdio.h>
-#include <stdarg.h>
-#include <gmp.h>
+#include "utils.h"
+#include "hash.h"
+#include "pss.h"
 
 /*
  * # From: 186-2rsatestvectors\SigGenPSS_186-2.txt
@@ -164,66 +114,44 @@ static char S2[] =
     0x28, 0x0d, 0x8e, 0x84, 0xf9, 0x63, 0xff, 0x88, 0x5e, 0xf5, 0x6d, 0xd3, 0xf5, 0x03, 0x81, 0xdb
 };
 #else
-static char *str_n = "bcb47b2e0dafcba81ff2a2b5cb115ca7e757184c9d72bcdcda707a146b3b4e29989ddc660bd694865b932b71ca24a335cf4d339c719183e6222e4c9ea6875acd528a49ba21863fe08147c3a47e41990b51a03f77d22137f8d74c43a5a45f4e9e18a2d15db051dc89385db9cf8374b63a8cc88113710e6d8179075b7dc79ee76b";
+static char *str_n = "bcb47b2e0dafcba81ff2a2b5cb115ca7e757184c9d72bcdcda707a146b3b4e29"
+                     "989ddc660bd694865b932b71ca24a335cf4d339c719183e6222e4c9ea6875acd"
+                     "528a49ba21863fe08147c3a47e41990b51a03f77d22137f8d74c43a5a45f4e9e"
+                     "18a2d15db051dc89385db9cf8374b63a8cc88113710e6d8179075b7dc79ee76b";
 
-static char *str_e = "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010001";
-static char *str_d = "383a6f19e1ea27fd08c7fbc3bfa684bd6329888c0bbe4c98625e7181f411cfd0853144a3039404dda41bce2e31d588ec57c0e148146f0fa65b39008ba5835f829ba35ae2f155d61b8a12581b99c927fd2f22252c5e73cba4a610db3973e019ee0f95130d4319ed413432f2e5e20d5215cdd27c2164206b3f80edee51938a25c1";
+static char *str_e = "0000000000000000000000000000000000000000000000000000000000000000"
+                     "0000000000000000000000000000000000000000000000000000000000000000"
+                     "0000000000000000000000000000000000000000000000000000000000000000"
+                     "0000000000000000000000000000000000000000000000000000000000010001";
+
+static char *str_d = "383a6f19e1ea27fd08c7fbc3bfa684bd6329888c0bbe4c98625e7181f411cfd0"
+                     "853144a3039404dda41bce2e31d588ec57c0e148146f0fa65b39008ba5835f82"
+                     "9ba35ae2f155d61b8a12581b99c927fd2f22252c5e73cba4a610db3973e019ee"
+                     "0f95130d4319ed413432f2e5e20d5215cdd27c2164206b3f80edee51938a25c1";
 
 // SHAAlg = SHA1
 static char *str_salt = "6f2841166a64471d4f0b8ed0dbb7db32161da13b";
 
-static char *str_m1 = "1248f62a4389f42f7b4bb131053d6c88a994db2075b912ccbe3ea7dc611714f14e075c104858f2f6e6cfd6abdedf015a821d03608bf4eba3169a6725ec422cd9069498b5515a9608ae7cc30e3d2ecfc1db6825f3e996ce9a5092926bc1cf61aa42d7f240e6f7aa0edb38bf81aa929d66bb5d890018088458720d72d569247b0c";
-static char *str_s1 = "682cf53c1145d22a50caa9eb1a9ba70670c5915e0fdfde6457a765de2a8fe12de9794172a78d14e668d498acedad616504bb1764d094607070080592c3a69c343d982bd77865873d35e24822caf43443cc10249af6a1e26ef344f28b9ef6f14e09ad839748e5148bcceb0fd2aa63709cb48975cbf9c7b49abc66a1dc6cb5b31a";
+static char *str_m1 = "1248f62a4389f42f7b4bb131053d6c88a994db2075b912ccbe3ea7dc611714f1"
+                      "4e075c104858f2f6e6cfd6abdedf015a821d03608bf4eba3169a6725ec422cd9"
+                      "069498b5515a9608ae7cc30e3d2ecfc1db6825f3e996ce9a5092926bc1cf61aa"
+                      "42d7f240e6f7aa0edb38bf81aa929d66bb5d890018088458720d72d569247b0c";
 
-static char *str_m2 = "9968809a557bb4f892039ff2b6a0efcd06523624bc3b9ad359a7cf143c4942e874c797b9d37a563d436fe19d5db1aad738caa2617f87f50fc7fcf4361fc85212e89a9465e7f4c361982f64c8c5c0aa5258b9e94f6e934e8dac2ace7cd6095c909de85fe7b973632c384d0ebb165556050d28f236aee70e16b13a432d8a94c62b";
-static char *str_s2 = "8f5ea7037367e0db75670504085790acd6d97d96f51e76df916a0c2e4cd66e1ab51c4cd8e2c3e4ef781f638ad65dc49c8d6d7f6930f80b6ae199ea283a8924925a50edab79bb3f34861ffa8b2f96fdf9f8cad3d3f8f025478c81f316da61b0d6a7f71b9068efdfb33c21983a922f4669280d8e84f963ff885ef56dd3f50381db";
+static char *str_s1 = "682cf53c1145d22a50caa9eb1a9ba70670c5915e0fdfde6457a765de2a8fe12d"
+                      "e9794172a78d14e668d498acedad616504bb1764d094607070080592c3a69c34"
+                      "3d982bd77865873d35e24822caf43443cc10249af6a1e26ef344f28b9ef6f14e"
+                      "09ad839748e5148bcceb0fd2aa63709cb48975cbf9c7b49abc66a1dc6cb5b31a";
+
+static char *str_m2 = "9968809a557bb4f892039ff2b6a0efcd06523624bc3b9ad359a7cf143c4942e8"
+                      "74c797b9d37a563d436fe19d5db1aad738caa2617f87f50fc7fcf4361fc85212"
+                      "e89a9465e7f4c361982f64c8c5c0aa5258b9e94f6e934e8dac2ace7cd6095c90"
+                      "9de85fe7b973632c384d0ebb165556050d28f236aee70e16b13a432d8a94c62b";
+
+static char *str_s2 = "8f5ea7037367e0db75670504085790acd6d97d96f51e76df916a0c2e4cd66e1a"
+                      "b51c4cd8e2c3e4ef781f638ad65dc49c8d6d7f6930f80b6ae199ea283a892492"
+                      "5a50edab79bb3f34861ffa8b2f96fdf9f8cad3d3f8f025478c81f316da61b0d6"
+                      "a7f71b9068efdfb33c21983a922f4669280d8e84f963ff885ef56dd3f50381db";
 #endif
-
-#if 0
-// $ gcc pss-example.c -o psstest -I../out/gmp/include -L../out/gmp/lib -lgmp
-int main(int argc, char *argv[])
-{
-    int i, len;
-    mpz_t n, e, d;
-    mpz_t m1, s1, em1;
-    //mpz_t m2, s2, em2;
-
-    len = 1024;
-
-    //mpz_inits(n, e, d);
-    //mpz_inits(m1, s1, em1);
-    mpz_init(em1);
-
-    mpz_init_set_str(n, str_n, 16);
-    mpz_init_set_str(e, str_e, 16);
-    mpz_init_set_str(d, str_d, 16);
-
-    mpz_init_set_str(m1, str_m1, 16);
-    mpz_init_set_str(s1, str_s1, 16);
-
-    gmp_printf("  n: %Zx\n", n);
-    gmp_printf("  e: %Zx\n", e);
-    gmp_printf("  d: %Zx\n", d);
-    gmp_printf(" m1: %Zx\n", m1);
-    gmp_printf(" s1: %Zx\n", s1);
-
-    mpz_powm(em1, s1, d, n); /* em1 = s1 ^ d mod n */
-    gmp_printf("em1: %Zx\n", em1);
-
-    mpz_clear(m1);
-    mpz_clear(s1);
-    mpz_clear(em1);
-    mpz_clear(n);
-    mpz_clear(e);
-    mpz_clear(d);
-
-    printf("done!\n");
-
-    return 0;
-}
-#else
-#include "hash.h"
-#include "pss.h"
 
 static char Salt[] =
 {
@@ -267,41 +195,72 @@ int Get_Random_Bytes(char *buf, unsigned long len)
     return 0;
 }
 
-static void test_pss_encoding(void)
+static void test_pss_encode(void)
 {
-    // int PSS_Encode(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, char *EM, unsigned long emLen, unsigned long emBits);
-    // int PSS_Verify(HASH_ALG alg, char *M, unsigned long mLen, unsigned long sLen, char *EM, unsigned long emLen, unsigned long emBits);
     char em[256];
     unsigned long mLen, sLen;
-    int i;
+    int res;
 
     mLen = sizeof(M1)/sizeof(M1[0]);
     sLen = 20;
 
-    printf("Message:\n");
-    for (i=0; i<mLen; i++)
+    dump("  Message:", M1, mLen);
+
+    res = PSS_Encode(HASH_ALG_SHA1, M1, mLen, sLen, em, 128, 1024-1);
+    if (0 != res)
     {
-        printf("%02x ", ((unsigned char *)M1)[i]);
-        if (i % 16 == 15)
-        {
-            printf("\n");
-        }
+        printf("PSS Encode OK!\n");
+    }
+    else
+    {
+        printf("PSS Encode OK!\n");
     }
 
-    PSS_Encode(HASH_ALG_SHA1, M1, mLen, sLen, em, 128, 1024);
-    printf("Encoding:\n");
-    for (i=0; i<mLen; i++)
-    {
-        printf("%02x ", ((unsigned char *)em)[i]);
-        if (i % 16 == 15)
-        {
-            printf("\n");
-        }
-    }
-    printf("\n\n");
+    dump(" Encoding:", em, mLen);
+    dump("Expecting:", M1, mLen);
 }
 
-// cc pss-example.c pss.c -o psstest -I../out/gmp/include -I../out/include  -L../out/gmp/lib -lgmp -L../out/lib -lhash -lmgf
+static void test_pss_verify(void)
+{
+    mpz_t n, e, s1, em1;
+    char em[256];
+    size_t count;
+    unsigned long mLen, sLen;
+    int res;
+
+    mLen = sizeof(M1)/sizeof(M1[0]);
+    sLen = 20;
+
+    dump("       Message:", M1, mLen);
+
+    mpz_inits(n, e, s1, em1, NULL);
+    mpz_set_str(n, str_n, 16);
+    mpz_set_str(e, str_e, 16);
+    mpz_set_str(s1, str_s1, 16);
+
+    mpz_powm(em1, s1, e, n); /* decode: em1 = s1 ^ e mod n */
+
+    gmp_printf(" s1: %Zx\n", s1);
+    gmp_printf("em1: %Zx\n", em1);
+
+    mpz_export(em, &count, 1, 1, 0, 0, em1);
+
+    dump("Encode Message:", em, count);
+
+    res = PSS_Verify(HASH_ALG_SHA1, M1, mLen, sLen, em, count, 1024-1);
+    if (0 != res)
+    {
+        printf("PSS Verify Failed!\n");
+    }
+    else
+    {
+        printf("PSS Verify OK!\n");
+    }
+
+    mpz_clears(n, e, s1, em1, NULL);
+}
+
+// cc pss-example.c pss.c -o psstest -I../out/gmp/include -I../out/include  -L../out/gmp/lib -lgmp -L../out/lib -lutils -lhash -lmgf
 int main(int argc, char *argv[])
 {
     int i, len;
@@ -340,143 +299,11 @@ int main(int argc, char *argv[])
 
     printf("done!\n");
 
-    test_pss_encoding();
+    printf("\nPSS Encoding Test...\n");
+    test_pss_encode();
+
+    printf("\nPSS Verification Test...\n");
+    test_pss_verify();
 
     return 0;
 }
-#endif
-
-#if 0
-// mpz_mod(mpz_t r, const mpz_t n, const mpz_t d)
-// mpz_powm_ui(mpz_t rop, const mpz_t base, unsigned long int exp, const mpz_t mod)
-
-static int generate_prime_integer(unsigned long int bits, gmp_randstate_t state, mpz_t big_int);
-
-// Fast Exponentiation, rop = n ^ exp
-void fast_exp(mpz_t rop, mpz_t x, unsigned long int exp, const mpz_t n)
-{
-    int i;
-    unsigned long int temp;
-    mpz_t m;
-
-    mpz_init(m);
-
-    // 1. 找到最高为 1 的位
-    temp = exp;
-    i = -1;
-    while (temp)
-    {
-        temp >>= 1;
-        i ++;
-    }
-
-    // rop = x;
-    mpz_set(rop, x);
-    i --;
-
-    while (i > 0)
-    {
-        // square
-        mpz_mul(m, rop, rop); // m = rop ^ 2;
-        mpz_mod(m, m, n);     // m = m mod n;
-
-        // multiple
-        if (exp & (0x1 << i))
-        {
-            mpz_mul(m, m, x);  // m = m * x;
-            mpz_mod(m, m, n);  // m = m mod n;
-        }
-
-        mpz_set(rop, m);
-
-        i --;
-    }
-
-    mpz_clear(m);
-}
-
-int main(int argc, char *argv[])
-{
-    int i, len;
-    gmp_randstate_t state;
-    mpz_t p, q, n, fn, e, d;
-
-    mpz_t plain, cipher;
-
-    len = 1024;
-
-    gmp_randinit_default(state);
-
-    mpz_inits(p, q, n, fn, e, d, plain, cipher, NULL);
-
-    generate_prime_integer(len, state, p);
-    gmp_printf("P: %Zx\n", p);
-
-    generate_prime_integer(len, state, q);
-    gmp_printf("Q: %Zx\n", q);
-
-    mpz_mul(n, p, q);     // n = p x q
-    gmp_printf("N: %Zx\n", fn);
-
-    mpz_sub_ui(p, p, 1);  // p = p - 1
-    mpz_sub_ui(q, q, 1);  // q = q - 1
-    mpz_mul(fn, p, q);    // Φ(N) = Φ(p) x Φ(q) = (p-1) x (q-1)
-    gmp_printf("Φ(N): %Zx\n", fn);
-
-    // void mpz_gcd (mpz_t rop, const mpz_t op1, const mpz_t op2)
-    // void mpz_gcd_ui (mpz_t rop, const mpz_t op1, unsigned long int op2)
-    mpz_gcd_ui(e, fn, 65537);
-    gmp_printf("gcd(e, Φ(N))= %Zd\n", e);
-
-    mpz_set_ui(e, 65537);
-    gmp_printf("e: %Zd\n", e);
-
-    mpz_invert(d, e, fn);
-    gmp_printf("d: %Zx\n", d);
-
-    char *msg = "54f7edd9153c3b3ac14ac664e254e50a42556933713c086574e2d82aa76"
-                "50ebe03534beb607f4027734eb27cb7dc44c8cc792054dffc148dbd8fa6"
-                "a6b2c655bf424e697a71b29efad04b053e3dff253bb10436fb33a9dd1d9"
-                "6adecfdea0dbd5327f44f0a718159f68b576357965c7c5b06995589d886"
-                "0bd4f945a11a3a2a265c5be0910d0458539740b3807ee87bf688ceb3c8b"
-                "81a1272253525b3f66203b1304068d7977ebcbec9e709bb0b5ec764f91e"
-                "1daa135e8c8a1640f48027658410947bc389a638b5c92dda0676a7064b5"
-                "6b07843e84ae26872d30fee06dddd8e9";
-    mpz_init_set_str(plain, msg, 16);
-    gmp_printf("plain: %Zx\n", plain);
-
-    //fast_exp(cipher, plain, 65537, n);
-    mpz_powm(cipher, plain, e, n);
-    gmp_printf("cipher: %Zx\n", cipher);
-
-    mpz_powm(plain, cipher, d, n);
-    gmp_printf("plain: %Zx\n", plain);
-
-    mpz_inits(p, q, n, fn, e, d, plain, cipher, NULL);
-
-    gmp_randclear(state);
-
-    return 0;
-}
-
-static int generate_prime_integer(unsigned long int bits, gmp_randstate_t state, mpz_t big_int)
-{
-    int i;
-
-    mpz_urandomb(big_int, state, bits); /* mp_bitcnt_t is unsigned long int */
-    //gmp_printf("%d bits: %Zx\n", bits, big_int);
-
-    // 检查随机数是否为素数
-    i = mpz_probab_prime_p (big_int, 25);
-    if (0 == i) // 如果不是素数，则生成一个紧挨着的素数
-    {
-        mpz_nextprime(big_int, big_int);
-        //gmp_printf("%d bits: %Zx\n", bits, big_int);
-
-        // 检查随机数是否为素数
-        i = mpz_probab_prime_p(big_int, 25);
-    }
-
-    return i;
-}
-#endif
