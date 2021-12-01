@@ -249,7 +249,7 @@ static unsigned char der_sha512_256[] = {
 
 static struct hash_encoding {
     HASH_ALG alg;
-    char *encoding;
+    unsigned char *encoding;
     unsigned long len;
 } hTable[] = {
     {HASH_ALG_MD2,        der_md2,        sizeof(der_md2)/sizeof(der_md2[0])},
@@ -280,9 +280,8 @@ static struct hash_encoding *get_der_hash_encoding(HASH_ALG alg)
 
 int EMSA_PKCS1_v1_5_Encode(HASH_ALG alg, unsigned char *M, unsigned long mLen, unsigned long emLen, unsigned char *EM)
 {
-    unsigned char buf[PKCS_V1_5_BUF_SIZE];
     struct hash_encoding *pEncoding;
-    unsigned long digestLen, digestPrefixLen, tLen, psLen;
+    unsigned long digestLen, tLen, psLen;
 
     pEncoding = get_der_hash_encoding(alg);
     if (NULL == pEncoding)
