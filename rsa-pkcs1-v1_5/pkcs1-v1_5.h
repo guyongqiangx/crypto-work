@@ -5,10 +5,10 @@ extern "C"
 {
 #endif
 
-int EME_PKCS1_v1_5_Encode(unsigned long k, char *M, unsigned long mLen, char *EM);
-int EME_PKCS1_v1_5_Decode(unsigned long k, char *EM, char *M, unsigned long *mLen);
+int EME_PKCS1_v1_5_Encode(unsigned long k, unsigned char *M, unsigned long mLen, unsigned char *EM);
+int EME_PKCS1_v1_5_Decode(unsigned long k, unsigned char *EM, unsigned char *M, unsigned long *mLen);
 
-int EMSA_PKCS1_v1_5_Encode(HASH_ALG alg, char *M, unsigned long mLen, unsigned long emLen, char *EM);
+int EMSA_PKCS1_v1_5_Encode(HASH_ALG alg, unsigned char *M, unsigned long mLen, unsigned long emLen, unsigned char *EM);
 
 #ifdef __cplusplus
 }

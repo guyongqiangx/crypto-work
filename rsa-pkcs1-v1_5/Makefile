@@ -14,7 +14,7 @@ RMFLAGS = -rf
 CFLAGS  = -Wall -g -O2 -Wno-narrowing
 INCLUDE = -I../out/gtest/include -I../out/include
 
-LDLIBS  = -L../out/gtest/lib -lgtest_main -lgtest -lpthread -L../out/lib -lmgf -lhash
+LDLIBS  = -L../out/gtest/lib -lgtest_main -lgtest -lpthread -L../out/lib -lutils -lmgf -lhash
 
 LIB     = libpkcs1-v1_5.a
 
