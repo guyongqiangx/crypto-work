@@ -11,7 +11,6 @@ int RSASSA_PSS_Sign(RSAPrivateKey *key, unsigned char *M, unsigned long mLen, HA
     unsigned char buf[256];
     unsigned long k, modBits, emLen, saltLen;
     int res = ERR_OK;
-    int i;
 
     saltLen = HASH_GetDigestSize(alg, 0);
 
@@ -25,48 +24,27 @@ int RSASSA_PSS_Sign(RSAPrivateKey *key, unsigned char *M, unsigned long mLen, HA
         return res;
     }
 
-    printf("-->EM:");
-    for (i=0; i<emLen; i++)
-    {
-        if (i%16 == 0)
-            printf("\n");
-        printf("%02x ", ((unsigned char *)buf)[i]);
-    }
-    printf("\n");
-
     mpz_inits(em, s, NULL);
 
     res = OS2IP(buf, emLen, em);
     if (ERR_OK != res)
     {
-        printf("1ERR: res=%d\n", res);
         goto exit;
     }
 
     res = RSASP1(key, em, s);
     if (ERR_OK != res)
     {
-        printf("2ERR: res=%d\n", res);
         goto exit;
     }
 
     res = I2OSP(s, S, k);
     if (ERR_OK != res)
     {
-        printf("3ERR: res=%d\n", res);
         goto exit;
     }
 
     *sLen = k;
-
-    printf("-->Signature:");
-    for (i=0; i<k; i++)
-    {
-        if (i%16 == 0)
-            printf("\n");
-        printf("%02x ", ((unsigned char *)S)[i]);
-    }
-    printf("\n");
 
 exit:
     mpz_clears(em, s, NULL);
@@ -79,7 +57,6 @@ int RSASSA_PSS_Verify(RSAPublicKey *key, unsigned char *M, unsigned long mLen, H
     unsigned char buf[256];
     unsigned long k, modBits, emLen, saltLen;
     int res = ERR_OK;
-    int i;
 
     saltLen = HASH_GetDigestSize(alg, 0);
 
@@ -97,7 +74,6 @@ int RSASSA_PSS_Verify(RSAPublicKey *key, unsigned char *M, unsigned long mLen, H
     res = OS2IP(S, sLen, s);
     if (ERR_OK != res)
     {
-        printf("1ERR: res=%d\n", res);
         res = ERR_RSA_INVALID_SIGNATURE;
         goto exit;
     }
@@ -105,7 +81,6 @@ int RSASSA_PSS_Verify(RSAPublicKey *key, unsigned char *M, unsigned long mLen, H
     res = RSAVP1(key, s, em);
     if (ERR_OK != res)
     {
-        printf("2ERR: res=%d\n", res);
         res = ERR_RSA_INVALID_SIGNATURE;
         goto exit;
     }
@@ -113,19 +88,9 @@ int RSASSA_PSS_Verify(RSAPublicKey *key, unsigned char *M, unsigned long mLen, H
     res = I2OSP(em, buf, emLen);
     if (ERR_OK != res)
     {
-        printf("3ERR: res=%d\n", res);
         res = ERR_RSA_INVALID_SIGNATURE;
         goto exit;
     }
-
-    printf("-->Encode Message:");
-    for (i=0; i<emLen; i++)
-    {
-        if (i%16 == 0)
-            printf("\n");
-        printf("%02x ", ((unsigned char *)buf)[i]);
-    }
-    printf("\n");
 
     res = PSS_Verify(alg, M, mLen, saltLen, buf, emLen, modBits-1);
     if (ERR_OK != res)
