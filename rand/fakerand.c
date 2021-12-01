@@ -6,19 +6,19 @@
  */
 static char seed_buffer[256];
 
-void Set_Random_Data(char *buf, unsigned long len)
+void Set_Random_Data(unsigned char *buf, unsigned long len)
 {
     memcpy(seed_buffer, buf, len);
 }
 
-int Get_Random_Bytes(char *buf, unsigned long len)
+int Get_Random_Bytes(unsigned char *buf, unsigned long len)
 {
     memcpy(buf, seed_buffer, len);
 
     return 0;
 }
 
-int Get_Random_NonZero_Bytes(char *buf, unsigned long len)
+int Get_Random_NonZero_Bytes(unsigned char *buf, unsigned long len)
 {
     memcpy(buf, seed_buffer, len);
 

@@ -41,7 +41,7 @@ static int rc4_initialize(uint8_t S[256], uint8_t *K, uint32_t len)
     return ERR_OK;
 }
 
-static int rc4_key_generation(uint8_t S[256], char *out, uint32_t out_size)
+static int rc4_key_generation(uint8_t S[256], unsigned char *out, uint32_t out_size)
 {
     int i, j, t;
 
@@ -77,7 +77,7 @@ static int rc4_key_generation(uint8_t S[256], char *out, uint32_t out_size)
 /*
  * !!! This is a fake implementation, just use RC4 alorithm to generate some pesudo random bytes
  */
-int Get_Random_Bytes(char *buf, unsigned long len)
+int Get_Random_Bytes(unsigned char *buf, unsigned long len)
 {
     uint8_t key[256], key_size;
     uint8_t S[256];
@@ -105,12 +105,12 @@ int Get_Random_Bytes(char *buf, unsigned long len)
     return 0;
 }
 
-int Get_Random_NonZero_Bytes(char *buf, unsigned long len)
+int Get_Random_NonZero_Bytes(unsigned char *buf, unsigned long len)
 {
     uint8_t key[256], key_size;
     uint8_t S[256];
     int i;
-    char x;
+    unsigned char x;
 
     time_t t;
 

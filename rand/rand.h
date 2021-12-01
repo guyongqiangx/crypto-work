@@ -5,8 +5,8 @@ extern "C"
 {
 #endif
 
-int Get_Random_Bytes(char *buf, unsigned long len);
-int Get_Random_NonZero_Bytes(char *buf, unsigned long len);
+int Get_Random_Bytes(unsigned char *buf, unsigned long len);
+int Get_Random_NonZero_Bytes(unsigned char *buf, unsigned long len);
 
 #ifdef __cplusplus
 }
