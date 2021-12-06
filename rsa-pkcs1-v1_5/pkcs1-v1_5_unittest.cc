@@ -2,15 +2,316 @@
 #include <string.h>
 #include "gtest/gtest.h"
 #include "gmp.h"
-#include "rand.h"
 #include "hash.h"
 #include "pkcs1-v1_5.h"
 
 #include "utils.h"
+#include "fakerand.h"
 
-TEST(RSAES, PKCS1_v1_5Test)
+/*
+$ openssl rsa -in rsa_pub.pem -pubin
+writing RSA key
+-----BEGIN PUBLIC KEY-----
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCXh69W619L67QmhT2aiRHgp/TP
+QBEBjPsa+/VAeI3OgjBcsj89u1+ihe+sk2nvGd2M8cV68tyESRgVAkZKqdwts70H
+E1Rj33iQCXteCc+6Of24k4JWJWUyoDfBcII0JI6nvc/p5RZzMluvJY3Hw4E8d/q4
+YPQ2W5M51rKibpXTuQIDAQAB
+-----END PUBLIC KEY-----
+$
+$ openssl rsa -in rsa_pub.pem -pubin -noout -modulus
+Modulus=9787AF56EB5F4BEBB426853D9A8911E0A7F4CF4011018CFB1AFBF540788DCE82305CB23F3DBB5FA285EFAC9369EF19DD8CF1C57AF2DC8449181502464AA9DC2DB3BD07135463DF7890097B5E09CFBA39FDB8938256256532A037C1708234248EA7BDCFE9E51673325BAF258DC7C3813C77FAB860F4365B9339D6B2A26E95D3B9
+$
+$ openssl rsa -in rsa_priv.pem
+writing RSA key
+-----BEGIN RSA PRIVATE KEY-----
+MIICXQIBAAKBgQCXh69W619L67QmhT2aiRHgp/TPQBEBjPsa+/VAeI3OgjBcsj89
+u1+ihe+sk2nvGd2M8cV68tyESRgVAkZKqdwts70HE1Rj33iQCXteCc+6Of24k4JW
+JWUyoDfBcII0JI6nvc/p5RZzMluvJY3Hw4E8d/q4YPQ2W5M51rKibpXTuQIDAQAB
+AoGAVtIJZrXpnihoygFhsJ+EvMG/BNhiZg8O+QEQHmZ0abQyXYpLreUkAIzZLHoy
+Iishw9XrHmz0aF8xCyiIedMlMbCkiSwxezAY1v52K//eE5OxHoSD6gy1pJdR8gmC
+LLdxxqzVO8+MlnC33THoOyxVmIfpyhgEHA9LeJ9c+GaP5gECQQDIbpPwVAyI5a01
++YNnvCLE3rLWk6AqcEb9PdItfxT2oJNwMNBf/fqd9wslLECx+iIpeGl2z+4u3k7G
+sqGH5NLZAkEAwYpZqUocj1YzwW7Geub3siy17xffHQF7svd4lcouC1kPVfr/CPxX
+feuaGprzljhFpH13vVXRY6VcbuBNq5S74QJBALCKXXoYvfWyv69D+A9d8g4Pzdwc
+qb3XqV+TnVX/knptE5CFHnT+o0mR+NokMVPSa1a1vcct/LCBlUeEvayRy3kCQBrS
+C17UcGTEs2No8IRzoXvFimjZzAd+/x9r///yBrN34hIuOE2MeqtujOqG8p6sqaoD
+4SYR0HSYo9iRqPHQKMECQQDFW1rEsCvc/oUvh9uJuQqhw/WbMiBzQlmQ4XsXHES0
+AJIpleE8OCnzsSqFRe1CVvrCn0DrApdnJiVoXEKhdoQj
+-----END RSA PRIVATE KEY-----
+$
+$ openssl rsa -in rsa_priv.pem -outform DER -out rsa_priv.der
+$
+$ openssl asn1parse -in rsa_priv.der -inform DER
+    0:d=0  hl=4 l= 605 cons: SEQUENCE
+    4:d=1  hl=2 l=   1 prim: INTEGER           :00
+    7:d=1  hl=3 l= 129 prim: INTEGER           :9787AF56EB5F4BEBB426853D9A8911E0A7F4CF4011018CFB1AFBF540788DCE82305CB23F3DBB5FA285EFAC9369EF19DD8CF1C57AF2DC8449181502464AA9DC2DB3BD07135463DF7890097B5E09CFBA39FDB8938256256532A037C1708234248EA7BDCFE9E51673325BAF258DC7C3813C77FAB860F4365B9339D6B2A26E95D3B9
+  139:d=1  hl=2 l=   3 prim: INTEGER           :010001
+  144:d=1  hl=3 l= 128 prim: INTEGER           :56D20966B5E99E2868CA0161B09F84BCC1BF04D862660F0EF901101E667469B4325D8A4BADE524008CD92C7A32222B21C3D5EB1E6CF4685F310B288879D32531B0A4892C317B3018D6FE762BFFDE1393B11E8483EA0CB5A49751F209822CB771C6ACD53BCF8C9670B7DD31E83B2C559887E9CA18041C0F4B789F5CF8668FE601
+  275:d=1  hl=2 l=  65 prim: INTEGER           :C86E93F0540C88E5AD35F98367BC22C4DEB2D693A02A7046FD3DD22D7F14F6A0937030D05FFDFA9DF70B252C40B1FA2229786976CFEE2EDE4EC6B2A187E4D2D9
+  342:d=1  hl=2 l=  65 prim: INTEGER           :C18A59A94A1C8F5633C16EC67AE6F7B22CB5EF17DF1D017BB2F77895CA2E0B590F55FAFF08FC577DEB9A1A9AF3963845A47D77BD55D163A55C6EE04DAB94BBE1
+  409:d=1  hl=2 l=  65 prim: INTEGER           :B08A5D7A18BDF5B2BFAF43F80F5DF20E0FCDDC1CA9BDD7A95F939D55FF927A6D1390851E74FEA34991F8DA243153D26B56B5BDC72DFCB081954784BDAC91CB79
+  476:d=1  hl=2 l=  64 prim: INTEGER           :1AD20B5ED47064C4B36368F08473A17BC58A68D9CC077EFF1F6BFFFFF206B377E2122E384D8C7AAB6E8CEA86F29EACA9AA03E12611D07498A3D891A8F1D028C1
+  542:d=1  hl=2 l=  65 prim: INTEGER           :C55B5AC4B02BDCFE852F87DB89B90AA1C3F59B322073425990E17B171C44B400922995E13C3829F3B12A8545ED4256FAC29F40EB0297672625685C42A1768423
+$
+$ hexdump -Cv data.bin
+00000000  49 20 4c 6f 76 65 20 43  68 69 6e 61 21           |I Love China!|
+0000000d
+$ openssl rsautl -encrypt -in data.bin -inkey rsa_pub.pem -pubin -out data.bin.enc
+$
+$ hexdump -Cv data.bin.enc
+00000000  91 4a 4b b8 17 00 a2 45  a9 00 51 b5 55 04 a3 07  |.JK....E..Q.U...|
+00000010  fd 54 fa a6 6a 62 b9 5a  c6 d8 be 7c 9d 3e 37 17  |.T..jb.Z...|.>7.|
+00000020  a0 39 e0 c8 f3 33 b2 cb  df 53 07 0b fc bd 57 98  |.9...3...S....W.|
+00000030  d1 ed 70 7c 32 c4 f1 7c  32 a0 5b 6d ce cd f9 b2  |..p|2..|2.[m....|
+00000040  69 44 16 37 a4 77 2f ec  54 f1 3b 59 97 79 5f 79  |iD.7.w/.T.;Y.y_y|
+00000050  8d 0c ed 6f 12 2d af 2b  25 67 3b db 9c 7f 65 ea  |...o.-.+%g;...e.|
+00000060  74 57 94 91 49 07 5f 2d  e5 14 dc 2b 87 9d 71 37  |tW..I._-...+..q7|
+00000070  99 d7 5d 54 63 21 61 9e  7f 8f 2f cf c6 04 76 19  |..]Tc!a.../...v.|
+00000080
+$
+$ openssl rsautl -decrypt -in data.bin.enc -inkey rsa_pub.pem -pubin -hexdump
+A private key is needed for this operation
+$ openssl rsautl -decrypt -in data.bin.enc -inkey rsa_priv.pem -hexdump
+0000 - 49 20 4c 6f 76 65 20 43-68 69 6e 61 21            I Love China!
+$ openssl rsautl -decrypt -in data.bin.enc -inkey rsa_priv.pem -out data.bin.dec
+$ hexdump -Cv data.bin.dec
+00000000  49 20 4c 6f 76 65 20 43  68 69 6e 61 21           |I Love China!|
+0000000d
+*/
+
+TEST(RSAES, PKCS1_v1_5Test1)
 {
-    printf("No PKCS1_v1_5Test!\n");
+    char str_n[]    = "9787af56eb5f4bebb426853d9a8911e0a7f4cf4011018cfb1afbf540788dce82"
+                      "305cb23f3dbb5fa285efac9369ef19dd8cf1c57af2dc8449181502464aa9dc2d"
+                      "b3bd07135463df7890097b5e09cfba39fdb8938256256532a037c1708234248e"
+                      "a7bdcfe9e51673325baf258dc7c3813c77fab860f4365b9339d6b2a26e95d3b9";
+    char str_e[]    = "010001";
+    char str_d[]    = "56d20966b5e99e2868ca0161b09f84bcc1bf04d862660f0ef901101e667469b4"
+                      "325d8a4bade524008cd92c7a32222b21c3d5eb1e6cf4685f310b288879d32531"
+                      "b0a4892c317b3018d6fe762bffde1393b11e8483ea0cb5a49751f209822cb771"
+                      "c6acd53bcf8c9670b7dd31e83b2c559887e9ca18041c0f4b789f5cf8668fe601";
+    char str_p[]    = "c86e93f0540c88e5ad35f98367bc22c4deb2d693a02a7046fd3dd22d7f14f6a0"
+                      "937030d05ffdfa9df70b252c40b1fa2229786976cfee2ede4ec6b2a187e4d2d9";
+    char str_q[]    = "C18A59A94A1C8F5633C16EC67AE6F7B22CB5EF17DF1D017BB2F77895CA2E0B59"
+                      "0F55FAFF08FC577DEB9A1A9AF3963845A47D77BD55D163A55C6EE04DAB94BBE1";
+    char str_dP[]   = "B08A5D7A18BDF5B2BFAF43F80F5DF20E0FCDDC1CA9BDD7A95F939D55FF927A6D"
+                      "1390851E74FEA34991F8DA243153D26B56B5BDC72DFCB081954784BDAC91CB79";
+    char str_dQ[]   = "1AD20B5ED47064C4B36368F08473A17BC58A68D9CC077EFF1F6BFFFFF206B377"
+                      "E2122E384D8C7AAB6E8CEA86F29EACA9AA03E12611D07498A3D891A8F1D028C1";
+    char str_qInv[] = "C55B5AC4B02BDCFE852F87DB89B90AA1C3F59B322073425990E17B171C44B400"
+                      "922995E13C3829F3B12A8545ED4256FAC29F40EB0297672625685C42A1768423";
+
+    // char message[] = "I Love China!";
+    unsigned char message[] = {
+        0x49, 0x20, 0x4c, 0x6f, 0x76, 0x65, 0x20, 0x43, 0x68, 0x69, 0x6e, 0x61, 0x21
+    };
+
+    unsigned char cipher[] = {
+        0x91, 0x4a, 0x4b, 0xb8, 0x17, 0x00, 0xa2, 0x45, 0xa9, 0x00, 0x51, 0xb5, 0x55, 0x04, 0xa3, 0x07,
+        0xfd, 0x54, 0xfa, 0xa6, 0x6a, 0x62, 0xb9, 0x5a, 0xc6, 0xd8, 0xbe, 0x7c, 0x9d, 0x3e, 0x37, 0x17,
+        0xa0, 0x39, 0xe0, 0xc8, 0xf3, 0x33, 0xb2, 0xcb, 0xdf, 0x53, 0x07, 0x0b, 0xfc, 0xbd, 0x57, 0x98,
+        0xd1, 0xed, 0x70, 0x7c, 0x32, 0xc4, 0xf1, 0x7c, 0x32, 0xa0, 0x5b, 0x6d, 0xce, 0xcd, 0xf9, 0xb2,
+        0x69, 0x44, 0x16, 0x37, 0xa4, 0x77, 0x2f, 0xec, 0x54, 0xf1, 0x3b, 0x59, 0x97, 0x79, 0x5f, 0x79,
+        0x8d, 0x0c, 0xed, 0x6f, 0x12, 0x2d, 0xaf, 0x2b, 0x25, 0x67, 0x3b, 0xdb, 0x9c, 0x7f, 0x65, 0xea,
+        0x74, 0x57, 0x94, 0x91, 0x49, 0x07, 0x5f, 0x2d, 0xe5, 0x14, 0xdc, 0x2b, 0x87, 0x9d, 0x71, 0x37,
+        0x99, 0xd7, 0x5d, 0x54, 0x63, 0x21, 0x61, 0x9e, 0x7f, 0x8f, 0x2f, 0xcf, 0xc6, 0x04, 0x76, 0x19
+    };
+
+    unsigned char seed[] = {
+                    0x15, 0x50, 0x02, 0xce, 0x3a, 0x08, 0x2e, 0x5e, 0x49, 0xc5, 0xdd, 0x79, 0x39, 0xde,
+        0xc8, 0x6d, 0x75, 0x64, 0xaa, 0x02, 0xa5, 0x08, 0xc1, 0x3c, 0xce, 0xe7, 0x18, 0xbe, 0xf8, 0xc1,
+        0x3f, 0x94, 0x9b, 0x7e, 0x38, 0x9a, 0x7f, 0x74, 0xd1, 0xfc, 0x4f, 0xf3, 0x7d, 0x3d, 0xbe, 0x98,
+        0xba, 0xbd, 0x04, 0xa6, 0x84, 0x42, 0x88, 0x6d, 0x92, 0x59, 0x5e, 0x33, 0xa4, 0x46, 0xb0, 0x13,
+        0x50, 0x46, 0xae, 0xbf, 0x47, 0x4d, 0x58, 0x32, 0x2e, 0xa8, 0x34, 0xc5, 0x49, 0xcf, 0xe6, 0x3f,
+        0xe8, 0xe3, 0xc3, 0x32, 0xf6, 0x05, 0xae, 0x83, 0xbe, 0xbf, 0xaf, 0x6e, 0x63, 0x58, 0xd0, 0xf5,
+        0xca, 0x53, 0x8c, 0x20, 0xdd, 0xa0, 0xc1, 0xb8, 0x24, 0xd5, 0xef, 0xec, 0x63, 0xa3, 0xaf, 0xe6,
+        0xb9, 0x8d,
+    };
+
+    unsigned char encode_message[] = {
+        0x00, 0x02, 0x15, 0x50, 0x02, 0xce, 0x3a, 0x08, 0x2e, 0x5e, 0x49, 0xc5, 0xdd, 0x79, 0x39, 0xde,
+        0xc8, 0x6d, 0x75, 0x64, 0xaa, 0x02, 0xa5, 0x08, 0xc1, 0x3c, 0xce, 0xe7, 0x18, 0xbe, 0xf8, 0xc1,
+        0x3f, 0x94, 0x9b, 0x7e, 0x38, 0x9a, 0x7f, 0x74, 0xd1, 0xfc, 0x4f, 0xf3, 0x7d, 0x3d, 0xbe, 0x98,
+        0xba, 0xbd, 0x04, 0xa6, 0x84, 0x42, 0x88, 0x6d, 0x92, 0x59, 0x5e, 0x33, 0xa4, 0x46, 0xb0, 0x13,
+        0x50, 0x46, 0xae, 0xbf, 0x47, 0x4d, 0x58, 0x32, 0x2e, 0xa8, 0x34, 0xc5, 0x49, 0xcf, 0xe6, 0x3f,
+        0xe8, 0xe3, 0xc3, 0x32, 0xf6, 0x05, 0xae, 0x83, 0xbe, 0xbf, 0xaf, 0x6e, 0x63, 0x58, 0xd0, 0xf5,
+        0xca, 0x53, 0x8c, 0x20, 0xdd, 0xa0, 0xc1, 0xb8, 0x24, 0xd5, 0xef, 0xec, 0x63, 0xa3, 0xaf, 0xe6,
+        0xb9, 0x8d, 0x00, 0x49, 0x20, 0x4c, 0x6f, 0x76, 0x65, 0x20, 0x43, 0x68, 0x69, 0x6e, 0x61, 0x21
+    };
+
+    unsigned char EM[128], buf[128];
+    unsigned long k, count, mLen;
+
+    mpz_t n, e, d, p, q, dP, dQ, qInv, m, em, c;
+
+    mpz_inits(n, e, d, p, q, dP, dQ, qInv, m, em, c, NULL);
+    mpz_set_str(   n,    str_n, 16);
+    mpz_set_str(   e,    str_e, 16);
+    mpz_set_str(   d,    str_d, 16);
+    mpz_set_str(   p,    str_p, 16);
+    mpz_set_str(   q,    str_q, 16);
+    mpz_set_str(  dP,   str_dP, 16);
+    mpz_set_str(  dQ,   str_dQ, 16);
+    mpz_set_str(qInv, str_qInv, 16);
+
+    mpz_import(c, 128, 1, 1, 0, 0, cipher);
+    gmp_printf("cipher: %Zx\n", c);
+
+    mpz_powm(em, c, d, n);
+    gmp_printf("    em: %Zx\n", em);
+
+    EM[0] = 0x00; // EM = 0x00 || 0x02 || PS || 0x00 || M, mpz_export doesn't export leading 0s.
+    mpz_export(EM+1, &count, 1, 1, 0, 0, em);
+    dump("Decrypt EM:", EM, count+1);
+
+    EME_PKCS1_v1_5_Decode(128, EM, buf, &mLen);
+    dump("Decode MSG:", buf, mLen);
+
+    EXPECT_EQ(0, memcmp(buf, message, mLen));
+
+    Set_Random_Data(seed, sizeof(seed));
+
+    k = 128; /* length in octets of modulus n, 1024 bits = 128 bytes here */
+    EME_PKCS1_v1_5_Encode(k, message, sizeof(message), buf);
+    dump(" Encode EM:", buf, k);
+
+    EXPECT_EQ(0, memcmp(buf, encode_message, 128));
+
+    mpz_clears(n, e, d, p, q, dP, dQ, qInv, m, em, c, NULL);
+}
+
+/* 2048 bit
+$ openssl rsa -in key.pem
+writing RSA key
+-----BEGIN RSA PRIVATE KEY-----
+MIIEpAIBAAKCAQEAyWXfa7UgA2JdjwyNHMBqteDngS60Jq0Gz1Lc9UQS1yu3FwvL
+ZLx0HTg8ZgDZFEwcc0rCbighGUIDLorQofXMddyymHbnhlSgaP2iUpl5/nGr6r9o
+fWpnsTzaf8+Ap0fhqPSs3xBluCqGFfeyh5yQspkDUOljUzL19pc0s9jeVHBL2pLb
+hW8Po8jlE40NJmhmb/4iN22it8Vk0V9ZKgQaWVGplDihQhGzH5HkklhyU8Z8LlM+
+Umd88MDMd2wmHFm5vdws2KUxI7MQNoH6mhuVtUnuq+3FDIz0Bytc7YEzFYcwStW6
+8SJuX8EZnuyugwbQvhV2oztbkfKaZZwPga4OVQIDAQABAoIBACA4iS8dMjr4YMmD
+E4x3CFuC2OblBvNtGTrQIgOnWXBNUSSBwY+jStxl49vZ5OEHcEHNwx+Gkg0Nb57h
+nJFc1tJAdd5In6/xGBzT/0VBwq+/leafquLtxBsqBjcOhqG8sVCrnICvieaV/w/C
+qjBiDxBTxKEMRdTIwWsrM8ZWOvO9HuRxvhH4Eu/5fHIOJvQFVtvaHXw4CzhazeR7
+Jiz9yd5NDPFzSGIBht5GRo2T5Rz5Lq1paFx9VqbNHiSEEQSOmdInHdl29Wotvhaz
+nbES1e1LCLjwJWwOSSpPfTSLLA/pIRCcbWHk2nw+MDYSfCkuzajQSY9Ur+idbIZh
+etb8+8ECgYEA6m4ccADHrly25HpzquyCvfukXfgYGiuCzT5uwdp/Vk3Yv4i7c/dr
+u5biXj+JYD67YWRsv4o1fCrDkansXfNu8K1TR3ZaSp5k+ztmPzmt9E/IL3/WzDHm
+52fNbe6OQct2rVZS0vYpCI3u+UCYIs/SzVF7UpPGjsFujPpTPm7OvrECgYEA2+20
+WbOgWbtgg23kmLGTjO7k8/jhq2dqgYT/UnqdCd81WYPtP+nwfLPl7Wkjb1RYrqku
+W0itw2/6U1l+ko1Gh+edhwCoicL5vj65FRaIdqQopywRiwCZFEAIEy3qdJh7xVkd
+8mXo6GSkI+1EmLKFOWq/cGsCdHI8+Xnijsw3muUCgYBmfl/GhEDJNdXsjLD3gNIk
+l9mkD+0RvAZDD9HCxXG43O4vx2sVZ45dhLlRtXutbZ/lE9AL6jQ6JkQ88kraRK0z
+YsQvUUpmp1vFD5JDgEdSsnL2eXEC86pdb9+7+XmOwJMRc9VgUKleCRf7N8eMKMqk
+Y8SENQGxtlZMIsG0YSPY8QKBgQCdYvrRxs5V6NYkuBwDefERxlRqlA1LUHLTxY3C
+RKTlT6sqKFM8jfngBA3jXH5TSZU9SS03fkd7uUL3KvB9iESVNZdx6XKzQ6jeEJz7
+DmkSHmBJYiwbwY3LBBfDQfSrBARvMltQAMYwqPUeEMoqTHcyo8XkeXAETUx9bFBJ
+yLNyUQKBgQC+3wmTkZ6sHLMNHVt5ORfJN/iyUA1Jm8ewTodfS+OPqGcj3bpg2xTz
+lFmG1rQXMUkWSwtpZg5PLsFjum+Y6vTgVknwshpQh8H0A/x8ViBFwvTqiJ/dXT/p
+5sQsJ1z0RsAWLQPpvXbAraNiCdQgA4ObzUlNnzmxS8PD4LaqO+YR6w==
+-----END RSA PRIVATE KEY-----
+$ openssl asn1parse -in key.pem
+    0:d=0  hl=4 l=1188 cons: SEQUENCE
+    4:d=1  hl=2 l=   1 prim: INTEGER           :00
+    7:d=1  hl=4 l= 257 prim: INTEGER           :C965DF6BB52003625D8F0C8D1CC06AB5E0E7812EB426AD06CF52DCF54412D72BB7170BCB64BC741D383C6600D9144C1C734AC26E28211942032E8AD0A1F5CC75DCB29876E78654A068FDA2529979FE71ABEABF687D6A67B13CDA7FCF80A747E1A8F4ACDF1065B82A8615F7B2879C90B2990350E9635332F5F69734B3D8DE54704BDA92DB856F0FA3C8E5138D0D2668666FFE22376DA2B7C564D15F592A041A5951A99438A14211B31F91E492587253C67C2E533E52677CF0C0CC776C261C59B9BDDC2CD8A53123B3103681FA9A1B95B549EEABEDC50C8CF4072B5CED81331587304AD5BAF1226E5FC1199EECAE8306D0BE1576A33B5B91F29A659C0F81AE0E55
+  268:d=1  hl=2 l=   3 prim: INTEGER           :010001
+  273:d=1  hl=4 l= 256 prim: INTEGER           :2038892F1D323AF860C983138C77085B82D8E6E506F36D193AD02203A759704D512481C18FA34ADC65E3DBD9E4E1077041CDC31F86920D0D6F9EE19C915CD6D24075DE489FAFF1181CD3FF4541C2AFBF95E69FAAE2EDC41B2A06370E86A1BCB150AB9C80AF89E695FF0FC2AA30620F1053C4A10C45D4C8C16B2B33C6563AF3BD1EE471BE11F812EFF97C720E26F40556DBDA1D7C380B385ACDE47B262CFDC9DE4D0CF17348620186DE46468D93E51CF92EAD69685C7D56A6CD1E248411048E99D2271DD976F56A2DBE16B39DB112D5ED4B08B8F0256C0E492A4F7D348B2C0FE921109C6D61E4DA7C3E3036127C292ECDA8D0498F54AFE89D6C86617AD6FCFBC1
+  533:d=1  hl=3 l= 129 prim: INTEGER           :EA6E1C7000C7AE5CB6E47A73AAEC82BDFBA45DF8181A2B82CD3E6EC1DA7F564DD8BF88BB73F76BBB96E25E3F89603EBB61646CBF8A357C2AC391A9EC5DF36EF0AD5347765A4A9E64FB3B663F39ADF44FC82F7FD6CC31E6E767CD6DEE8E41CB76AD5652D2F629088DEEF9409822CFD2CD517B5293C68EC16E8CFA533E6ECEBEB1
+  665:d=1  hl=3 l= 129 prim: INTEGER           :DBEDB459B3A059BB60836DE498B1938CEEE4F3F8E1AB676A8184FF527A9D09DF355983ED3FE9F07CB3E5ED69236F5458AEA92E5B48ADC36FFA53597E928D4687E79D8700A889C2F9BE3EB915168876A428A72C118B0099144008132DEA74987BC5591DF265E8E864A423ED4498B285396ABF706B0274723CF979E28ECC379AE5
+  797:d=1  hl=3 l= 128 prim: INTEGER           :667E5FC68440C935D5EC8CB0F780D22497D9A40FED11BC06430FD1C2C571B8DCEE2FC76B15678E5D84B951B57BAD6D9FE513D00BEA343A26443CF24ADA44AD3362C42F514A66A75BC50F9243804752B272F6797102F3AA5D6FDFBBF9798EC0931173D56050A95E0917FB37C78C28CAA463C4843501B1B6564C22C1B46123D8F1
+  928:d=1  hl=3 l= 129 prim: INTEGER           :9D62FAD1C6CE55E8D624B81C0379F111C6546A940D4B5072D3C58DC244A4E54FAB2A28533C8DF9E0040DE35C7E5349953D492D377E477BB942F72AF07D884495359771E972B343A8DE109CFB0E69121E6049622C1BC18DCB0417C341F4AB04046F325B5000C630A8F51E10CA2A4C7732A3C5E47970044D4C7D6C5049C8B37251
+ 1060:d=1  hl=3 l= 129 prim: INTEGER           :BEDF0993919EAC1CB30D1D5B793917C937F8B2500D499BC7B04E875F4BE38FA86723DDBA60DB14F3945986D6B4173149164B0B69660E4F2EC163BA6F98EAF4E05649F0B21A5087C1F403FC7C562045C2F4EA889FDD5D3FE9E6C42C275CF446C0162D03E9BD76C0ADA36209D42003839BCD494D9F39B14BC3C3E0B6AA3BE611EB
+*/
+TEST(RSAES, PKCS1_v1_5Test2)
+{
+    char str_n[] = "c965df6bb52003625d8f0c8d1cc06ab5e0e7812eb426ad06cf52dcf54412d72b"
+                   "b7170bcb64bc741d383c6600d9144c1c734ac26e28211942032e8ad0a1f5cc75"
+                   "dcb29876e78654a068fda2529979fe71abeabf687d6a67b13cda7fcf80a747e1"
+                   "a8f4acdf1065b82a8615f7b2879c90b2990350e9635332f5f69734b3d8de5470"
+                   "4bda92db856f0fa3c8e5138d0d2668666ffe22376da2b7c564d15f592a041a59"
+                   "51a99438a14211b31f91e492587253c67c2e533e52677cf0c0cc776c261c59b9"
+                   "bddc2cd8a53123b3103681fa9a1b95b549eeabedc50c8cf4072b5ced81331587"
+                   "304ad5baf1226e5fc1199eecae8306d0be1576a33b5b91f29a659c0f81ae0e55";
+    char str_e[] = "010001";
+    char str_d[] = "2038892f1d323af860c983138c77085b82d8e6e506f36d193ad02203a759704d"
+                   "512481c18fa34adc65e3dbd9e4e1077041cdc31f86920d0d6f9ee19c915cd6d2"
+                   "4075de489faff1181cd3ff4541c2afbf95e69faae2edc41b2a06370e86a1bcb1"
+                   "50ab9c80af89e695ff0fc2aa30620f1053c4a10c45d4c8c16b2b33c6563af3bd"
+                   "1ee471be11f812eff97c720e26f40556dbda1d7c380b385acde47b262cfdc9de"
+                   "4d0cf17348620186de46468d93e51cf92ead69685c7d56a6cd1e248411048e99"
+                   "d2271dd976f56a2dbe16b39db112d5ed4b08b8f0256c0e492a4f7d348b2c0fe9"
+                   "21109c6d61e4da7c3e3036127c292ecda8d0498f54afe89d6c86617ad6fcfbc1";
+
+    // char message[] = "I Love My Country!";
+    unsigned char message[] = {
+        0x49, 0x20, 0x4c, 0x6f, 0x76, 0x65, 0x20, 0x4d, 0x79, 0x20, 0x43, 0x6f, 0x75, 0x6e, 0x74, 0x72,
+        0x79, 0x21
+    };
+
+    unsigned char encode_message[] = {
+        0x00, 0x02, 0xc0, 0xa6, 0x7b, 0x31, 0x1a, 0x0e, 0x62, 0xe5, 0x72, 0x2d, 0x3c, 0xa6, 0x19, 0x5e,
+        0x5d, 0x78, 0xaf, 0x69, 0x7e, 0xbd, 0x0c, 0xdd, 0x07, 0x0a, 0x7b, 0x4a, 0xde, 0xd7, 0x65, 0xd7,
+        0x85, 0x78, 0x7a, 0xbb, 0x11, 0x70, 0xb7, 0xe1, 0x99, 0x55, 0x26, 0x4c, 0x57, 0x71, 0xec, 0x71,
+        0x98, 0x1c, 0x86, 0x62, 0x83, 0xd9, 0xb2, 0xd0, 0x86, 0x80, 0xfa, 0xef, 0x86, 0xfa, 0xff, 0x5c,
+        0x56, 0x07, 0x42, 0xaa, 0xa9, 0x5c, 0xf8, 0x81, 0x35, 0xad, 0xfb, 0x82, 0x4b, 0x75, 0x2d, 0x3e,
+        0xdf, 0x77, 0xb2, 0xc0, 0xdb, 0x5d, 0x05, 0xb8, 0xc7, 0x73, 0xed, 0xef, 0x73, 0x44, 0x24, 0x88,
+        0x44, 0x1e, 0x67, 0x93, 0xc1, 0x5e, 0xd6, 0xa0, 0x62, 0x9d, 0x9a, 0x2b, 0xba, 0x64, 0xca, 0x87,
+        0x44, 0x2d, 0xf6, 0xa1, 0x07, 0x1b, 0xe2, 0xab, 0x3b, 0x77, 0x79, 0x98, 0x45, 0x46, 0xe9, 0xe9,
+        0x50, 0x1c, 0x87, 0x1e, 0xd7, 0xa2, 0xae, 0x23, 0x93, 0x37, 0xff, 0x34, 0x80, 0xa3, 0x18, 0x83,
+        0x0f, 0x23, 0x2e, 0xe7, 0x13, 0xc6, 0x72, 0x33, 0xdf, 0x83, 0x9b, 0x1b, 0x29, 0x20, 0x9c, 0x88,
+        0xce, 0x7d, 0x7b, 0xab, 0x47, 0x49, 0x76, 0x2d, 0xd4, 0x95, 0xd9, 0x55, 0xb5, 0x37, 0xa5, 0x8f,
+        0xdf, 0x4f, 0x71, 0x9a, 0xb9, 0x79, 0x5a, 0xcb, 0xc0, 0x9b, 0x07, 0x5c, 0x6e, 0xd2, 0x34, 0x97,
+        0x18, 0xe1, 0x90, 0x6f, 0x7f, 0x39, 0x5f, 0x0f, 0x1c, 0xe3, 0xa2, 0xeb, 0xf8, 0x0e, 0x7e, 0xb0,
+        0x7d, 0x0e, 0x59, 0x33, 0x76, 0x53, 0xc2, 0x63, 0xeb, 0xd0, 0x44, 0x87, 0x42, 0xf2, 0x5f, 0x22,
+        0x3e, 0x89, 0xdc, 0x96, 0xad, 0xc8, 0xc1, 0x20, 0xba, 0x6d, 0x08, 0xf5, 0xc9, 0x00, 0x49, 0x20,
+        0x4c, 0x6f, 0x76, 0x65, 0x20, 0x4d, 0x79, 0x20, 0x43, 0x6f, 0x75, 0x6e, 0x74, 0x72, 0x79, 0x21
+    };
+
+    unsigned char cipher[] = {
+        0x6b, 0xa9, 0x0f, 0x4a, 0x17, 0x55, 0xf8, 0x9d, 0x14, 0x0d, 0x4e, 0x40, 0x94, 0x14, 0x44, 0xfd,
+        0x7a, 0xa6, 0x8f, 0x28, 0xad, 0x1e, 0x75, 0x26, 0x39, 0xf9, 0xb0, 0x28, 0x13, 0xcf, 0x7d, 0x3c,
+        0x97, 0xbb, 0xb0, 0x15, 0x97, 0x21, 0x0e, 0x80, 0x1c, 0x12, 0x25, 0x5e, 0xd9, 0x37, 0x9b, 0x21,
+        0x26, 0x28, 0x32, 0x25, 0xd5, 0x01, 0xdc, 0x98, 0x43, 0x13, 0x94, 0xd9, 0x3a, 0x95, 0x03, 0x56,
+        0xc8, 0xa1, 0x1a, 0x0d, 0x40, 0x75, 0x25, 0x4e, 0x15, 0x47, 0x10, 0x2f, 0x06, 0xd8, 0xb5, 0x99,
+        0x29, 0xd7, 0x17, 0x40, 0x5c, 0xae, 0xce, 0xaa, 0xe5, 0xcb, 0x4c, 0x62, 0x5a, 0xa3, 0xc0, 0x7b,
+        0x85, 0xb1, 0x13, 0xd6, 0xd2, 0x07, 0x33, 0x56, 0x4b, 0x11, 0xc0, 0x3d, 0xe5, 0x93, 0xcf, 0x38,
+        0xf3, 0xe6, 0xb1, 0xa0, 0x93, 0xf7, 0x33, 0xdc, 0x84, 0x1d, 0xa1, 0x7a, 0x3d, 0x25, 0xed, 0x83,
+        0x10, 0x27, 0x8e, 0x64, 0xe1, 0x72, 0x55, 0xfa, 0xcd, 0x99, 0xc7, 0x1a, 0x1d, 0xab, 0x31, 0x0f,
+        0xf0, 0xb5, 0x02, 0x1f, 0xdf, 0xa4, 0x4e, 0x5a, 0x5c, 0x7a, 0x3a, 0xc9, 0xaa, 0x19, 0x32, 0x14,
+        0x9f, 0x75, 0xaf, 0x02, 0xc7, 0x04, 0x43, 0x54, 0xc5, 0xb3, 0xe6, 0x40, 0x94, 0x1e, 0x25, 0xd2,
+        0x03, 0x35, 0x94, 0xc2, 0x71, 0xe1, 0x35, 0x42, 0xe7, 0xf8, 0xd4, 0x2f, 0x48, 0x2b, 0x2e, 0xda,
+        0x96, 0x29, 0x1f, 0x80, 0x77, 0xab, 0xc5, 0xce, 0x88, 0xa7, 0x2f, 0x37, 0x89, 0x26, 0x8a, 0x43,
+        0x52, 0x36, 0x15, 0x8e, 0xa5, 0x39, 0x12, 0xf0, 0x43, 0x42, 0x37, 0x65, 0xc1, 0x22, 0x5c, 0x54,
+        0x3c, 0xcc, 0x8e, 0x30, 0x58, 0x17, 0xd4, 0xc7, 0x64, 0x9a, 0xf0, 0x84, 0x40, 0xf9, 0xda, 0x0d,
+        0x79, 0x15, 0xaf, 0x11, 0x4b, 0x34, 0x52, 0x33, 0x69, 0xf3, 0x1a, 0x82, 0xa2, 0xf2, 0x67, 0x3c
+    };
+
+    unsigned char EM[256], buf[256];
+    unsigned long count, mLen;
+    int res;
+    mpz_t n, e, d, m, em, c;
+
+    mpz_inits(n, e, d, m, em, c, NULL);
+    mpz_set_str(n, str_n, 16);
+    mpz_set_str(e, str_e, 16);
+    mpz_set_str(d, str_d, 16);
+    mpz_import(c, 256, 1, 1, 0, 0, cipher);
+
+    mpz_powm(em, c, d, n);
+    gmp_printf("EM: %Zx\n", em);
+
+    EM[0] = 0x00; // EM = 0x00 || 0x02 || PS || 0x00 || M, mpz_export doesn't export leading 0s.
+    mpz_export(EM+1, &count, 1, 1, 0, 0, em);
+    dump("Decrypt EM:", EM, count+1);
+    EXPECT_EQ(0, memcmp(EM, encode_message, sizeof(encode_message)));
+
+    res = EME_PKCS1_v1_5_Decode(256, EM, buf, &mLen);
+    EXPECT_EQ(0, res);
+
+    dump("Decrypt MSG:", buf, mLen);
+    EXPECT_EQ(0, memcmp(buf, message, mLen));
+
+    mpz_clears(n, e, d, m, em, c, NULL);
 }
 
 // Test Vector: vectors\186-2rsatestvectors\SigGen15_186-2.txt
