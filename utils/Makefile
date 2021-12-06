@@ -18,7 +18,7 @@ LDLIBS  = -L../out/gtest/lib -lgtest_main -lgtest -lpthread -L../out/lib -lutils
 
 LIB     = libutils.a
 
-SRCS    = utils_unittest.cc
+SRCS    = utils_dump_unittest.cc utils_str2bytes_unittest.cc
 OBJS    = $(SRCS:.cc=.o)
 
 TARGET  = utils_unittest
