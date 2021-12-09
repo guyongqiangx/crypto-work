@@ -66,40 +66,29 @@ static int int_inv(int a, int b)
     return ia;
 }
 
-static int get_slope_by_tangent(int p, int a, int x1, int y1)
+struct point {
+    int x;
+    int y;
+};
+
+static int get_slope_by_tangent(int p, int a, struct point *p1)
 {
     int x, y;
 
-    x = mod(3 * x1 * x1 + a, p); //x = (3 * x1 * x1 + a) % p;
-    y = int_inv(2*y1, p);
+    x = mod(3 * p1->x * p1->x + a, p);
+    y = int_inv(2 * p1->y, p);
 
-    return x * y % p;
+    return mod(x * y, p);
 }
 
-int ecc_points_double(int p, int a, int x1, int y1, int *x, int *y)
-{
-    int s;
-    int x3, y3;
-
-    s = get_slope_by_tangent(p, a, x1, y1);
-
-    x3 = mod(s * s - 2 * x1, p);
-    y3 = mod(s * (x1 - x3) - y1, p);
-
-    *x = x3;
-    *y = y3;
-
-    return 0;
-}
-
-int get_slope_by_line(int p, int x1, int y1, int x2, int y2)
+static int get_slope_by_points(int p, struct point *p1, struct point *p2)
 {
     int x, y;
 
-    y = mod(y2 - y1, p);
+    y = mod(p2->y - p1->y, p);
 
-    x = x2 - x1;
-    while (x < 0)
+    x = p2->x - p1->x;
+    while (x < 0) /* 确保求 inverse 时始终是非负数，否则失败 */
     {
         x += p;
     }
@@ -108,18 +97,25 @@ int get_slope_by_line(int p, int x1, int y1, int x2, int y2)
     return mod(y * x, p);
 }
 
-int ecc_points_add(int p, int x1, int y1, int x2, int y2, int *x, int *y)
+int ecc_points_add(int p, int a, struct point *p1, struct point *p2, struct point *p3)
 {
     int s;
     int x3, y3;
 
-    s = get_slope_by_line(p, x1, y1, x2, y2);
+    if (p1 == p2) /* 相同点 */
+    {
+        s = get_slope_by_tangent(p, a, p1);
+    }
+    else /* 不同点 */
+    {
+        s = get_slope_by_points(p, p1, p2);
+    }
 
-    x3 = mod(s * s - x1 - x2, p);
-    y3 = mod(s * (x1 - x3) - y1, p);
+    x3 = mod(s * s - p1->x - p2->x, p);
+    y3 = mod(s * (p1->x - x3) - p1->y, p);
 
-    *x = x3;
-    *y = y3;
+    p3->x = x3;
+    p3->y = y3;
 
     return 0;
 }
@@ -127,7 +123,7 @@ int ecc_points_add(int p, int x1, int y1, int x2, int y2, int *x, int *y)
 int main(int argc, char *argv)
 {
     int p, a, b;
-    int x1, y1, x2, y2, x, y;
+    struct point p1, p2, p3;
     int i;
 
     /*
@@ -137,22 +133,22 @@ int main(int argc, char *argv)
      */
     printf("Elliptic Curve: y^2 = x^3 + 2x + 2 mod 17, Base Point (5, 1)\n");
     p = 17; a = 2; b = 2;
-    x1 = 5; y1 = 1;
+    p1.x = 5; p1.y = 1;
 
     i = 1;
-    printf("%4dP(%4d, %4d)\n", i, x1, y1);
+    printf("%4dP(%4d, %4d)\n", i, p1.x, p1.y);
 
     i++;
-    ecc_points_double(p, a, x1, y1, &x2, &y2);
-    printf("%4dP(%4d, %4d)\n", i, x2, y2);
+    ecc_points_add(p, a, &p1, &p1, &p2);
+    printf("%4dP(%4d, %4d)\n", i, p2.x, p2.y);
 
-    while (x2 != x1)
+    while (p2.x != p1.x)
     {
         i++;
-        ecc_points_add(p, x1, y1, x2, y2, &x, &y);
-        printf("%4dP(%4d, %4d)\n", i, x, y);
-        x2 = x;
-        y2 = y;
+        ecc_points_add(p, a, &p1, &p2, &p3);
+        printf("%4dP(%4d, %4d)\n", i, p3.x, p3.y);
+        p2.x = p3.x;
+        p2.y = p3.y;
     }
 
     /*
@@ -162,23 +158,23 @@ int main(int argc, char *argv)
      */
     printf("Elliptic Curve: y^2 = x^3 + 3x + 2 mod 7, Base Point (2, 4)\n");
     p = 7; a = 3; b = 2;
-    // x1 = 2; y1 = 4;
-    x1 = 0; y1 = 3;
+    p1.x = 0;
+    p1.y = 3;
 
     i = 1;
-    printf("%4dP(%4d, %4d)\n", i, x1, y1);
+    printf("%4dP(%4d, %4d)\n", i, p1.x, p1.y);
 
     i++;
-    ecc_points_double(p, a, x1, y1, &x2, &y2);
-    printf("%4dP(%4d, %4d)\n", i, x2, y2);
+    ecc_points_add(p, a, &p1, &p1, &p2);
+    printf("%4dP(%4d, %4d)\n", i, p2.x, p2.y);
 
-    while (x2 != x1)
+    while (p2.x != p1.x)
     {
         i++;
-        ecc_points_add(p, x1, y1, x2, y2, &x, &y);
-        printf("%4dP(%4d, %4d)\n", i, x, y);
-        x2 = x;
-        y2 = y;
+        ecc_points_add(p, a, &p1, &p2, &p3);
+        printf("%4dP(%4d, %4d)\n", i, p3.x, p3.y);
+        p2.x = p3.x;
+        p2.y = p3.y;
     }
 
     /*
@@ -188,22 +184,23 @@ int main(int argc, char *argv)
      */
     printf("Elliptic Curve: y^2 = x^3 + 4x + 20 mod 29, Base Point (8, 10)\n");
     p = 29; a = 4; b = 20;
-    x1 = 8; y1 = 10;
+    p1.x = 8;
+    p1.y = 10;
 
     i = 1;
-    printf("%4dP(%4d, %4d)\n", i, x1, y1);
+    printf("%4dP(%4d, %4d)\n", i, p1.x, p1.y);
 
     i++;
-    ecc_points_double(p, a, x1, y1, &x2, &y2);
-    printf("%4dP(%4d, %4d)\n", i, x2, y2);
+    ecc_points_add(p, a, &p1, &p1, &p2);
+    printf("%4dP(%4d, %4d)\n", i, p2.x, p2.y);
 
-    while (x2 != x1)
+    while (p2.x != p1.x)
     {
         i++;
-        ecc_points_add(p, x1, y1, x2, y2, &x, &y);
-        printf("%4dP(%4d, %4d)\n", i, x, y);
-        x2 = x;
-        y2 = y;
+        ecc_points_add(p, a, &p1, &p2, &p3);
+        printf("%4dP(%4d, %4d)\n", i, p3.x, p3.y);
+        p2.x = p3.x;
+        p2.y = p3.y;
     }
 
     /*
@@ -213,21 +210,23 @@ int main(int argc, char *argv)
      */
     printf("Elliptic Curve: y^2 = x^3 + x + 6 mod 11, Base Point (5, 9)\n");
     p = 11; a = 1; b = 6;
-    x1 = 5; y1 = 9;
+    p1.x = 5;
+    p1.y = 9;
 
     i = 1;
-    printf("%4dP(%4d, %4d)\n", i, x1, y1);
+    printf("%4dP(%4d, %4d)\n", i, p1.x, p1.y);
 
     i++;
-    ecc_points_double(p, a, x1, y1, &x2, &y2);
-    printf("%4dP(%4d, %4d)\n", i, x2, y2);
+    ecc_points_add(p, a, &p1, &p1, &p2);
+    printf("%4dP(%4d, %4d)\n", i, p2.x, p2.y);
 
-    while (i++<6)
+    while (p2.x != p1.x)
     {
-        ecc_points_add(p, x1, y1, x2, y2, &x, &y);
-        printf("%4dP(%4d, %4d)\n", i, x, y);
-        x2 = x;
-        y2 = y;
+        i++;
+        ecc_points_add(p, a, &p1, &p2, &p3);
+        printf("%4dP(%4d, %4d)\n", i, p3.x, p3.y);
+        p2.x = p3.x;
+        p2.y = p3.y;
     }
 
     /*
@@ -237,22 +236,23 @@ int main(int argc, char *argv)
      */
     printf("Elliptic Curve: y^2 = x^3 + 9x + 17 mod 23, Base Point (16, 5)\n");
     p = 23; a = 9; b = 17;
-    x1 = 16; y1 = 5;
+    p1.x = 16;
+    p1.y = 5;
 
     i = 1;
-    printf("%4dP(%4d, %4d)\n", i, x1, y1);
+    printf("%4dP(%4d, %4d)\n", i, p1.x, p1.y);
 
     i++;
-    ecc_points_double(p, a, x1, y1, &x2, &y2);
-    printf("%4dP(%4d, %4d)\n", i, x2, y2);
+    ecc_points_add(p, a, &p1, &p1, &p2);
+    printf("%4dP(%4d, %4d)\n", i, p2.x, p2.y);
 
-    while (x2 != x1)
+    while (p2.x != p1.x)
     {
         i++;
-        ecc_points_add(p, x1, y1, x2, y2, &x, &y);
-        printf("%4dP(%4d, %4d)\n", i, x, y);
-        x2 = x;
-        y2 = y;
+        ecc_points_add(p, a, &p1, &p2, &p3);
+        printf("%4dP(%4d, %4d)\n", i, p3.x, p3.y);
+        p2.x = p3.x;
+        p2.y = p3.y;
     }
 
     /*
@@ -262,22 +262,23 @@ int main(int argc, char *argv)
      */
     printf("Elliptic Curve: Elliptic Curve: y^2 = x^3 - 4 mod 211, Base Point (2, 2)\n");
     p = 211; a = 0; b = -4;
-    x1 = 2; y1 = 2;
+    p1.x = 2;
+    p1.y = 2;
 
     i = 1;
-    printf("%4dP(%4d, %4d)\n", i, x1, y1);
+    printf("%4dP(%4d, %4d)\n", i, p1.x, p1.y);
 
     i++;
-    ecc_points_double(p, a, x1, y1, &x2, &y2);
-    printf("%4dP(%4d, %4d)\n", i, x2, y2);
+    ecc_points_add(p, a, &p1, &p1, &p2);
+    printf("%4dP(%4d, %4d)\n", i, p2.x, p2.y);
 
-    while (x2 != x1)
+    while (p2.x != p1.x)
     {
         i++;
-        ecc_points_add(p, x1, y1, x2, y2, &x, &y);
-        printf("%4dP(%4d, %4d)\n", i, x, y);
-        x2 = x;
-        y2 = y;
+        ecc_points_add(p, a, &p1, &p2, &p3);
+        printf("%4dP(%4d, %4d)\n", i, p3.x, p3.y);
+        p2.x = p3.x;
+        p2.y = p3.y;
     }
 
     return 0;
