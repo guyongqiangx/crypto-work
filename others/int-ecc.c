@@ -146,7 +146,7 @@ int ecc_point_mul(int p, int a, unsigned long x, const struct point *p1, struct 
     p2->x = p1->x;
     p2->y = p1->y;
 
-    for (i=pos-1; i>0; i--)
+    for (i=pos-1; i>=0; i--)
     {
         ecc_point_add(p, a, p2, p2, &p3);    /* p3 = p2 * 2 */
         if ((x >> i) & 0x01)
@@ -161,7 +161,7 @@ int ecc_point_mul(int p, int a, unsigned long x, const struct point *p1, struct 
     return 0;
 }
 
-int ecc_point_is_valid(int p, int a, int b, struct point *p1)
+int ecc_point_on_curve(int p, int a, int b, const struct point *p1)
 {
     int l, r;
 
@@ -176,11 +176,61 @@ int ecc_point_is_valid(int p, int a, int b, struct point *p1)
     return 0;
 }
 
+int ecc_point_order(int p, int a, int b, const struct point *p1)
+{
+    int i;
+    struct point p2;
+
+    if (!ecc_point_on_curve(p, a, b, p1))
+    {
+        return 0;
+    }
+
+    i = 2;
+    ecc_point_add(p, a, p1, p1, &p2);
+    while (p2.x != p1->x)
+    {
+        i++;
+        ecc_point_add(p, a, p1, &p2, &p2);
+    }
+
+    return i + 1; /* + Identity Element */
+}
+
+void ecc_point_show_group(int p, int a, int b, const struct point *p1)
+{
+    int i;
+    struct point p2;
+
+    if (!ecc_point_on_curve(p, a, b, p1))
+    {
+        return;
+    }
+
+    i = 1;
+    printf("%4dP(%4d, %4d)\n", i, p1->x, p1->y);
+
+    i++;
+    ecc_point_add(p, a, p1, p1, &p2);
+    printf("%4dP(%4d, %4d)\n", i, p2.x, p2.y);
+    while (p2.x != p1->x)
+    {
+        i++;
+        ecc_point_add(p, a, p1, &p2, &p2);
+        printf("%4dP(%4d, %4d)\n", i, p2.x, p2.y);
+    }
+
+    printf("%4dP = O\n", i+1);
+
+    return;
+}
+
 int main(int argc, char *argv)
 {
     int p, a, b;
-    struct point p1, p2, p3;
-    int i;
+    struct point p1, p2, p3, p4;
+    int i, order;
+    unsigned long n;
 
     /*
      * 深入浅出密码学, p232
@@ -191,21 +241,10 @@ int main(int argc, char *argv)
     p = 17; a = 2; b = 2;
     p1.x = 5; p1.y = 1;
 
-    i = 1;
-    printf("%4dP(%4d, %4d)\n", i, p1.x, p1.y);
+    order = ecc_point_order(p, a, b, &p1);
+    printf("Order P(%d, %d) = %d\n", p1.x, p1.y, order);
 
-    i++;
-    ecc_point_add(p, a, &p1, &p1, &p2);
-    printf("%4dP(%4d, %4d)\n", i, p2.x, p2.y);
-
-    while (p2.x != p1.x)
-    {
-        i++;
-        ecc_point_add(p, a, &p1, &p2, &p3);
-        printf("%4dP(%4d, %4d)\n", i, p3.x, p3.y);
-        p2.x = p3.x;
-        p2.y = p3.y;
-    }
+    ecc_point_show_group(p, a, b, &p1);
 
     /*
      * 深入浅出密码学, p242, Q9.5
@@ -217,21 +256,10 @@ int main(int argc, char *argv)
     p1.x = 0;
     p1.y = 3;
 
-    i = 1;
-    printf("%4dP(%4d, %4d)\n", i, p1.x, p1.y);
+    order = ecc_point_order(p, a, b, &p1);
+    printf("Order P(%d, %d) = %d\n", p1.x, p1.y, order);
 
-    i++;
-    ecc_point_add(p, a, &p1, &p1, &p2);
-    printf("%4dP(%4d, %4d)\n", i, p2.x, p2.y);
-
-    while (p2.x != p1.x)
-    {
-        i++;
-        ecc_point_add(p, a, &p1, &p2, &p3);
-        printf("%4dP(%4d, %4d)\n", i, p3.x, p3.y);
-        p2.x = p3.x;
-        p2.y = p3.y;
-    }
+    ecc_point_show_group(p, a, b, &p1);
 
     /*
      * 深入浅出密码学, p242, Q9.7
@@ -243,21 +271,10 @@ int main(int argc, char *argv)
     p1.x = 8;
     p1.y = 10;
 
-    i = 1;
-    printf("%4dP(%4d, %4d)\n", i, p1.x, p1.y);
+    order = ecc_point_order(p, a, b, &p1);
+    printf("Order P(%d, %d) = %d\n", p1.x, p1.y, order);
 
-    i++;
-    ecc_point_add(p, a, &p1, &p1, &p2);
-    printf("%4dP(%4d, %4d)\n", i, p2.x, p2.y);
-
-    while (p2.x != p1.x)
-    {
-        i++;
-        ecc_point_add(p, a, &p1, &p2, &p3);
-        printf("%4dP(%4d, %4d)\n", i, p3.x, p3.y);
-        p2.x = p3.x;
-        p2.y = p3.y;
-    }
+    ecc_point_show_group(p, a, b, &p1);
 
     /*
      * 深入浅出密码学, p243, Q9.9
@@ -269,21 +286,10 @@ int main(int argc, char *argv)
     p1.x = 5;
     p1.y = 9;
 
-    i = 1;
-    printf("%4dP(%4d, %4d)\n", i, p1.x, p1.y);
+    order = ecc_point_order(p, a, b, &p1);
+    printf("Order P(%d, %d) = %d\n", p1.x, p1.y, order);
 
-    i++;
-    ecc_point_add(p, a, &p1, &p1, &p2);
-    printf("%4dP(%4d, %4d)\n", i, p2.x, p2.y);
-
-    while (p2.x != p1.x)
-    {
-        i++;
-        ecc_point_add(p, a, &p1, &p2, &p3);
-        printf("%4dP(%4d, %4d)\n", i, p3.x, p3.y);
-        p2.x = p3.x;
-        p2.y = p3.y;
-    }
+    ecc_point_show_group(p, a, b, &p1);
 
     /*
      * 密码编码学与网络安全, 7th, section 10.4, p226
@@ -295,21 +301,10 @@ int main(int argc, char *argv)
     p1.x = 16;
     p1.y = 5;
 
-    i = 1;
-    printf("%4dP(%4d, %4d)\n", i, p1.x, p1.y);
+    order = ecc_point_order(p, a, b, &p1);
+    printf("Order P(%d, %d) = %d\n", p1.x, p1.y, order);
 
-    i++;
-    ecc_point_add(p, a, &p1, &p1, &p2);
-    printf("%4dP(%4d, %4d)\n", i, p2.x, p2.y);
-
-    while (p2.x != p1.x)
-    {
-        i++;
-        ecc_point_add(p, a, &p1, &p2, &p3);
-        printf("%4dP(%4d, %4d)\n", i, p3.x, p3.y);
-        p2.x = p3.x;
-        p2.y = p3.y;
-    }
+    ecc_point_show_group(p, a, b, &p1);
 
     /*
      * 密码编码学与网络安全, 7th, section 10.4.1, p227
@@ -321,21 +316,22 @@ int main(int argc, char *argv)
     p1.x = 2;
     p1.y = 2;
 
-    i = 1;
-    printf("%4dP(%4d, %4d)\n", i, p1.x, p1.y);
+    order = ecc_point_order(p, a, b, &p1);
+    printf("Order P(%d, %d) = %d\n", p1.x, p1.y, order);
 
-    i++;
-    ecc_point_add(p, a, &p1, &p1, &p2);
-    printf("%4dP(%4d, %4d)\n", i, p2.x, p2.y);
+    ecc_point_show_group(p, a, b, &p1);
 
-    while (p2.x != p1.x)
-    {
-        i++;
-        ecc_point_add(p, a, &p1, &p2, &p3);
-        printf("%4dP(%4d, %4d)\n", i, p3.x, p3.y);
-        p2.x = p3.x;
-        p2.y = p3.y;
-    }
+    printf("Point Multiple Test:\n");
+    n = 20;
+    ecc_point_mul(p, a, n, &p1, &p4);
+    printf("%4luP(%4d, %4d)\n", n, p4.x, p4.y);
 
+    n = 200;
+    ecc_point_mul(p, a, n, &p1, &p4);
+    printf("%4luP(%4d, %4d)\n", n, p4.x, p4.y);
+
+    n = 240;
+    ecc_point_mul(p, a, n, &p1, &p4);
+    printf("%4luP(%4d, %4d)\n", n, p4.x, p4.y);
     return 0;
 }
