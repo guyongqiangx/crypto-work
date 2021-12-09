@@ -71,7 +71,7 @@ struct point {
     int y;
 };
 
-static int get_slope_by_tangent(int p, int a, struct point *p1)
+static int get_slope_by_tangent(int p, int a, const struct point *p1)
 {
     int x, y;
 
@@ -81,7 +81,7 @@ static int get_slope_by_tangent(int p, int a, struct point *p1)
     return mod(x * y, p);
 }
 
-static int get_slope_by_points(int p, struct point *p1, struct point *p2)
+static int get_slope_by_points(int p, const struct point *p1, const struct point *p2)
 {
     int x, y;
 
@@ -97,7 +97,7 @@ static int get_slope_by_points(int p, struct point *p1, struct point *p2)
     return mod(y * x, p);
 }
 
-int ecc_points_add(int p, int a, struct point *p1, struct point *p2, struct point *p3)
+int ecc_point_add(int p, int a, const struct point *p1, const struct point *p2, struct point *p3)
 {
     int s;
     int x3, y3;
@@ -116,6 +116,62 @@ int ecc_points_add(int p, int a, struct point *p1, struct point *p2, struct poin
 
     p3->x = x3;
     p3->y = y3;
+
+    return 0;
+}
+
+/*
+ * 获取最高位为 1 的位置(从 0 开始)
+ */
+static int get_msb1_pos(int x)
+{
+    int i;
+
+    i = -1;
+    while (x)
+    {
+        x >>= 1;
+        i ++;
+    }
+
+    return i;
+}
+
+int ecc_point_mul(int p, int a, unsigned long x, const struct point *p1, struct point *p2)
+{
+    int i, pos;
+    struct point p3;
+
+    pos = get_msb1_pos(x);
+    p2->x = p1->x;
+    p2->y = p1->y;
+
+    for (i=pos-1; i>0; i--)
+    {
+        ecc_point_add(p, a, p2, p2, &p3);    /* p3 = p2 * 2 */
+        if ((x >> i) & 0x01)
+        {
+            ecc_point_add(p, a, &p3, p1, &p3); /* p3 = p3 + p1 = p2 * 2 + p1 */
+        }
+
+        p2->x = p3.x;
+        p2->y = p3.y;
+    }
+
+    return 0;
+}
+
+int ecc_point_is_valid(int p, int a, int b, struct point *p1)
+{
+    int l, r;
+
+    l = mod(p1->y * p1->y, p);
+    r = mod(p1->x * p1->x * p1->x + a * p1->x + b, p);
+
+    if (l == r)
+    {
+        return 1;
+    }
 
     return 0;
 }
@@ -139,13 +195,13 @@ int main(int argc, char *argv)
     printf("%4dP(%4d, %4d)\n", i, p1.x, p1.y);
 
     i++;
-    ecc_points_add(p, a, &p1, &p1, &p2);
+    ecc_point_add(p, a, &p1, &p1, &p2);
     printf("%4dP(%4d, %4d)\n", i, p2.x, p2.y);
 
     while (p2.x != p1.x)
     {
         i++;
-        ecc_points_add(p, a, &p1, &p2, &p3);
+        ecc_point_add(p, a, &p1, &p2, &p3);
         printf("%4dP(%4d, %4d)\n", i, p3.x, p3.y);
         p2.x = p3.x;
         p2.y = p3.y;
@@ -165,13 +221,13 @@ int main(int argc, char *argv)
     printf("%4dP(%4d, %4d)\n", i, p1.x, p1.y);
 
     i++;
-    ecc_points_add(p, a, &p1, &p1, &p2);
+    ecc_point_add(p, a, &p1, &p1, &p2);
     printf("%4dP(%4d, %4d)\n", i, p2.x, p2.y);
 
     while (p2.x != p1.x)
     {
         i++;
-        ecc_points_add(p, a, &p1, &p2, &p3);
+        ecc_point_add(p, a, &p1, &p2, &p3);
         printf("%4dP(%4d, %4d)\n", i, p3.x, p3.y);
         p2.x = p3.x;
         p2.y = p3.y;
@@ -191,13 +247,13 @@ int main(int argc, char *argv)
     printf("%4dP(%4d, %4d)\n", i, p1.x, p1.y);
 
     i++;
-    ecc_points_add(p, a, &p1, &p1, &p2);
+    ecc_point_add(p, a, &p1, &p1, &p2);
     printf("%4dP(%4d, %4d)\n", i, p2.x, p2.y);
 
     while (p2.x != p1.x)
     {
         i++;
-        ecc_points_add(p, a, &p1, &p2, &p3);
+        ecc_point_add(p, a, &p1, &p2, &p3);
         printf("%4dP(%4d, %4d)\n", i, p3.x, p3.y);
         p2.x = p3.x;
         p2.y = p3.y;
@@ -217,13 +273,13 @@ int main(int argc, char *argv)
     printf("%4dP(%4d, %4d)\n", i, p1.x, p1.y);
 
     i++;
-    ecc_points_add(p, a, &p1, &p1, &p2);
+    ecc_point_add(p, a, &p1, &p1, &p2);
     printf("%4dP(%4d, %4d)\n", i, p2.x, p2.y);
 
     while (p2.x != p1.x)
     {
         i++;
-        ecc_points_add(p, a, &p1, &p2, &p3);
+        ecc_point_add(p, a, &p1, &p2, &p3);
         printf("%4dP(%4d, %4d)\n", i, p3.x, p3.y);
         p2.x = p3.x;
         p2.y = p3.y;
@@ -243,13 +299,13 @@ int main(int argc, char *argv)
     printf("%4dP(%4d, %4d)\n", i, p1.x, p1.y);
 
     i++;
-    ecc_points_add(p, a, &p1, &p1, &p2);
+    ecc_point_add(p, a, &p1, &p1, &p2);
     printf("%4dP(%4d, %4d)\n", i, p2.x, p2.y);
 
     while (p2.x != p1.x)
     {
         i++;
-        ecc_points_add(p, a, &p1, &p2, &p3);
+        ecc_point_add(p, a, &p1, &p2, &p3);
         printf("%4dP(%4d, %4d)\n", i, p3.x, p3.y);
         p2.x = p3.x;
         p2.y = p3.y;
@@ -269,13 +325,13 @@ int main(int argc, char *argv)
     printf("%4dP(%4d, %4d)\n", i, p1.x, p1.y);
 
     i++;
-    ecc_points_add(p, a, &p1, &p1, &p2);
+    ecc_point_add(p, a, &p1, &p1, &p2);
     printf("%4dP(%4d, %4d)\n", i, p2.x, p2.y);
 
     while (p2.x != p1.x)
     {
         i++;
-        ecc_points_add(p, a, &p1, &p2, &p3);
+        ecc_point_add(p, a, &p1, &p2, &p3);
         printf("%4dP(%4d, %4d)\n", i, p3.x, p3.y);
         p2.x = p3.x;
         p2.y = p3.y;
