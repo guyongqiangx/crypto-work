@@ -2,7 +2,7 @@
 #include "int-ecc.h"
 
 /* a = b * q + r, 0 < r < |b| */
-static int mod(int a, int b)
+static int int_mod(int a, int b)
 {
     int r;
 
@@ -32,7 +32,7 @@ static int int_gcd_ex(int a, int b, int *ia, int *ib)
         return a;
     }
 
-    r = int_gcd_ex(b, mod(a, b), &x, &y);
+    r = int_gcd_ex(b, int_mod(a, b), &x, &y);
 
     *ia = y;
     *ib = x - a / b * y;
@@ -71,17 +71,17 @@ static int get_slope_by_tangent(int p, int a, const struct point *p1)
 {
     int x, y;
 
-    x = mod(3 * p1->x * p1->x + a, p);
+    x = int_mod(3 * p1->x * p1->x + a, p);
     y = int_inv(2 * p1->y, p);
 
-    return mod(x * y, p);
+    return int_mod(x * y, p);
 }
 
 static int get_slope_by_points(int p, const struct point *p1, const struct point *p2)
 {
     int x, y;
 
-    y = mod(p2->y - p1->y, p);
+    y = int_mod(p2->y - p1->y, p);
 
     x = p2->x - p1->x;
     while (x < 0) /* 确保求 inverse 时始终是非负数，否则失败 */
@@ -90,7 +90,7 @@ static int get_slope_by_points(int p, const struct point *p1, const struct point
     }
     x = int_inv(x, p);
 
-    return mod(y * x, p);
+    return int_mod(y * x, p);
 }
 
 int ecc_point_add(int p, int a, const struct point *p1, const struct point *p2, struct point *p3)
@@ -107,8 +107,8 @@ int ecc_point_add(int p, int a, const struct point *p1, const struct point *p2, 
         s = get_slope_by_points(p, p1, p2);
     }
 
-    x3 = mod(s * s - p1->x - p2->x, p);
-    y3 = mod(s * (p1->x - x3) - p1->y, p);
+    x3 = int_mod(s * s - p1->x - p2->x, p);
+    y3 = int_mod(s * (p1->x - x3) - p1->y, p);
 
     p3->x = x3;
     p3->y = y3;
@@ -133,7 +133,7 @@ static int get_msb1_pos(int x)
     return i;
 }
 
-int ecc_point_mul(int p, int a, unsigned long x, const struct point *p1, struct point *p2)
+int ecc_point_mul(int p, int a, int x, const struct point *p1, struct point *p2)
 {
     int i, pos;
     struct point p3;
@@ -161,8 +161,8 @@ int ecc_point_on_curve(int p, int a, int b, const struct point *p1)
 {
     int l, r;
 
-    l = mod(p1->y * p1->y, p);
-    r = mod(p1->x * p1->x * p1->x + a * p1->x + b, p);
+    l = int_mod(p1->y * p1->y, p);
+    r = int_mod(p1->x * p1->x * p1->x + a * p1->x + b, p);
 
     if (l == r)
     {

@@ -1,12 +1,14 @@
 #include <stdio.h>
 #include "int-ecc.h"
 
+/*
+ * gcc int-ecc.c int-ecc-test.c -o int-ecc
+ */
 int main(int argc, char *argv)
 {
     int p, a, b;
     struct point p1, p2, p3, p4;
-    int i, order;
-    unsigned long n;
+    int i, n, order;
 
     /*
      * 深入浅出密码学, p232
@@ -100,14 +102,14 @@ int main(int argc, char *argv)
     printf("Point Multiple Test:\n");
     n = 20;
     ecc_point_mul(p, a, n, &p1, &p4);
-    printf("%4luP(%4d, %4d)\n", n, p4.x, p4.y);
+    printf("%4dP(%4d, %4d)\n", n, p4.x, p4.y);
 
     n = 200;
     ecc_point_mul(p, a, n, &p1, &p4);
-    printf("%4luP(%4d, %4d)\n", n, p4.x, p4.y);
+    printf("%4dP(%4d, %4d)\n", n, p4.x, p4.y);
 
     n = 240;
     ecc_point_mul(p, a, n, &p1, &p4);
-    printf("%4luP(%4d, %4d)\n", n, p4.x, p4.y);
+    printf("%4dP(%4d, %4d)\n", n, p4.x, p4.y);
     return 0;
 }
