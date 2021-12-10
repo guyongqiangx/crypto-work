@@ -94,17 +94,50 @@ int main(int argc, char *argv)
 
     ec_point_show_group(&param, &p1);
 
-    printf("Point Multiple Test:\n");
-    n = 20;
+    n = 121;
     ec_point_mul(&param, n, &p1, &p4);
-    printf("%4dP(%4d, %4d)\n", n, p4.x, p4.y);
+    printf("Private Key A: %d\n", n);
+    printf("Public  Key A:\n");
+    printf("%4dP(%4d, %4d) = (%4d, %4d)\n", n, p1.x, p1.y, p4.x, p4.y);
 
-    n = 200;
+    n = 203;
     ec_point_mul(&param, n, &p1, &p4);
-    printf("%4dP(%4d, %4d)\n", n, p4.x, p4.y);
+    printf("Private Key B: %d\n", n);
+    printf("Public  Key B:\n");
+    printf("%4dP(%4d, %4d) = (%4d, %4d)\n", n, p1.x, p1.y, p4.x, p4.y);
 
-    n = 240;
-    ec_point_mul(&param, n, &p1, &p4);
-    printf("%4dP(%4d, %4d)\n", n, p4.x, p4.y);
+    n = 121;
+    ec_point_mul(&param, n, &p4, &p1);
+    printf("Shared  Key AB:\n");
+    printf("%4dP(%4d, %4d) = (%4d, %4d)\n", n, p4.x, p4.y, p1.x, p1.y);
+
+    /*
+     * 密码编码学与网络安全, 7th, section 10.4.2, p228
+     * Elliptic Curve: y^2 = x^3 - 4 mod 257
+     * Base Point (2, 2)
+     */
+    printf("Elliptic Curve: y^2 = x^3 - 4 mod 257, Base Point (2, 2)\n");
+    param.p = 257; param.a = 0; param.b = -4;
+    p1.x = 2; p1.y = 2;
+
+    order = ec_point_order(&param, &p1);
+    printf("Order P(%d, %d) = %d\n", p1.x, p1.y, order);
+
+    n = 101;
+    ec_point_mul(&param, n, &p1, &p2);
+    printf("Private Key B: %d\n", n);
+    printf("Public  Key B:\n");
+    printf("%4dP(%4d, %4d) = (%4d, %4d)\n", n, p1.x, p1.y, p2.x, p2.y);
+
+    n = 41;
+    ec_point_mul(&param, n, &p1, &p3);
+    printf(" k: %d\n", n);
+    printf("kG:\n");
+    printf("%4dP(%4d, %4d) = (%4d, %4d)\n", n, p1.x, p1.y, p3.x, p3.y);
+
+    n = 41;
+    ec_point_mul(&param, n, &p2, &p4);
+    printf("kPB:\n");
+    printf("%4dP(%4d, %4d) = (%4d, %4d)\n", n, p2.x, p2.y, p4.x, p4.y);
     return 0;
 }

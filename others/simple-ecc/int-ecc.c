@@ -67,7 +67,7 @@ static int int_inv(int a, int b)
     return ia;
 }
 
-static int get_slope_by_tangent(struct ec_param *param, const struct point *p1)
+static int get_slope_by_tangent(const struct ec_param *param, const struct point *p1)
 {
     int p, a;
     int x, y;
@@ -81,7 +81,7 @@ static int get_slope_by_tangent(struct ec_param *param, const struct point *p1)
     return int_mod(x * y, p);
 }
 
-static int get_slope_by_points(struct ec_param *param, const struct point *p1, const struct point *p2)
+static int get_slope_by_points(const struct ec_param *param, const struct point *p1, const struct point *p2)
 {
     int p;
     int x, y;
@@ -100,7 +100,7 @@ static int get_slope_by_points(struct ec_param *param, const struct point *p1, c
     return int_mod(y * x, p);
 }
 
-int ec_point_add(struct ec_param *param, const struct point *p1, const struct point *p2, struct point *p3)
+int ec_point_add(const struct ec_param *param, const struct point *p1, const struct point *p2, struct point *p3)
 {
     int s;
     int x3, y3;
@@ -140,7 +140,7 @@ static int get_msb1_pos(int x)
     return i;
 }
 
-int ec_point_mul(struct ec_param *param, int x, const struct point *p1, struct point *p2)
+int ec_point_mul(const struct ec_param *param, int x, const struct point *p1, struct point *p2)
 {
     int i, pos;
     struct point p3;
@@ -164,7 +164,7 @@ int ec_point_mul(struct ec_param *param, int x, const struct point *p1, struct p
     return 0;
 }
 
-int ec_point_on_curve(struct ec_param *param, const struct point *p1)
+int ec_point_on_curve(const struct ec_param *param, const struct point *p1)
 {
     int l, r;
 
@@ -179,7 +179,7 @@ int ec_point_on_curve(struct ec_param *param, const struct point *p1)
     return 0;
 }
 
-int ec_point_order(struct ec_param *param, const struct point *p1)
+int ec_point_order(const struct ec_param *param, const struct point *p1)
 {
     int i;
     struct point p2;
@@ -200,7 +200,7 @@ int ec_point_order(struct ec_param *param, const struct point *p1)
     return i + 1; /* + Identity Element */
 }
 
-void ec_point_show_group(struct ec_param *param, const struct point *p1)
+void ec_point_show_group(const struct ec_param *param, const struct point *p1)
 {
     int i;
     struct point p2;
