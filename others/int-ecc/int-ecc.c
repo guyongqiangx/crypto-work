@@ -93,7 +93,7 @@ static int get_slope_by_points(int p, const struct point *p1, const struct point
     return int_mod(y * x, p);
 }
 
-int ecc_point_add(int p, int a, const struct point *p1, const struct point *p2, struct point *p3)
+int ec_point_add(int p, int a, const struct point *p1, const struct point *p2, struct point *p3)
 {
     int s;
     int x3, y3;
@@ -133,7 +133,7 @@ static int get_msb1_pos(int x)
     return i;
 }
 
-int ecc_point_mul(int p, int a, int x, const struct point *p1, struct point *p2)
+int ec_point_mul(int p, int a, int x, const struct point *p1, struct point *p2)
 {
     int i, pos;
     struct point p3;
@@ -144,10 +144,10 @@ int ecc_point_mul(int p, int a, int x, const struct point *p1, struct point *p2)
 
     for (i=pos-1; i>=0; i--)
     {
-        ecc_point_add(p, a, p2, p2, &p3);    /* p3 = p2 * 2 */
+        ec_point_add(p, a, p2, p2, &p3);    /* p3 = p2 * 2 */
         if ((x >> i) & 0x01)
         {
-            ecc_point_add(p, a, &p3, p1, &p3); /* p3 = p3 + p1 = p2 * 2 + p1 */
+            ec_point_add(p, a, &p3, p1, &p3); /* p3 = p3 + p1 = p2 * 2 + p1 */
         }
 
         p2->x = p3.x;
@@ -157,7 +157,7 @@ int ecc_point_mul(int p, int a, int x, const struct point *p1, struct point *p2)
     return 0;
 }
 
-int ecc_point_on_curve(int p, int a, int b, const struct point *p1)
+int ec_point_on_curve(int p, int a, int b, const struct point *p1)
 {
     int l, r;
 
@@ -172,33 +172,33 @@ int ecc_point_on_curve(int p, int a, int b, const struct point *p1)
     return 0;
 }
 
-int ecc_point_order(int p, int a, int b, const struct point *p1)
+int ec_point_order(int p, int a, int b, const struct point *p1)
 {
     int i;
     struct point p2;
 
-    if (!ecc_point_on_curve(p, a, b, p1))
+    if (!ec_point_on_curve(p, a, b, p1))
     {
         return 0;
     }
 
     i = 2;
-    ecc_point_add(p, a, p1, p1, &p2);
+    ec_point_add(p, a, p1, p1, &p2);
     while (p2.x != p1->x)
     {
         i++;
-        ecc_point_add(p, a, p1, &p2, &p2);
+        ec_point_add(p, a, p1, &p2, &p2);
     }
 
     return i + 1; /* + Identity Element */
 }
 
-void ecc_point_show_group(int p, int a, int b, const struct point *p1)
+void ec_point_show_group(int p, int a, int b, const struct point *p1)
 {
     int i;
     struct point p2;
 
-    if (!ecc_point_on_curve(p, a, b, p1))
+    if (!ec_point_on_curve(p, a, b, p1))
     {
         return;
     }
@@ -207,12 +207,12 @@ void ecc_point_show_group(int p, int a, int b, const struct point *p1)
     printf("%4dP(%4d, %4d)\n", i, p1->x, p1->y);
 
     i++;
-    ecc_point_add(p, a, p1, p1, &p2);
+    ec_point_add(p, a, p1, p1, &p2);
     printf("%4dP(%4d, %4d)\n", i, p2.x, p2.y);
     while (p2.x != p1->x)
     {
         i++;
-        ecc_point_add(p, a, p1, &p2, &p2);
+        ec_point_add(p, a, p1, &p2, &p2);
         printf("%4dP(%4d, %4d)\n", i, p2.x, p2.y);
     }
 

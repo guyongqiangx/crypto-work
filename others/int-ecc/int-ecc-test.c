@@ -19,10 +19,10 @@ int main(int argc, char *argv)
     p = 17; a = 2; b = 2;
     p1.x = 5; p1.y = 1;
 
-    order = ecc_point_order(p, a, b, &p1);
+    order = ec_point_order(p, a, b, &p1);
     printf("Order P(%d, %d) = %d\n", p1.x, p1.y, order);
 
-    ecc_point_show_group(p, a, b, &p1);
+    ec_point_show_group(p, a, b, &p1);
 
     /*
      * 深入浅出密码学, p242, Q9.5
@@ -34,10 +34,10 @@ int main(int argc, char *argv)
     p1.x = 0;
     p1.y = 3;
 
-    order = ecc_point_order(p, a, b, &p1);
+    order = ec_point_order(p, a, b, &p1);
     printf("Order P(%d, %d) = %d\n", p1.x, p1.y, order);
 
-    ecc_point_show_group(p, a, b, &p1);
+    ec_point_show_group(p, a, b, &p1);
 
     /*
      * 深入浅出密码学, p242, Q9.7
@@ -49,10 +49,10 @@ int main(int argc, char *argv)
     p1.x = 8;
     p1.y = 10;
 
-    order = ecc_point_order(p, a, b, &p1);
+    order = ec_point_order(p, a, b, &p1);
     printf("Order P(%d, %d) = %d\n", p1.x, p1.y, order);
 
-    ecc_point_show_group(p, a, b, &p1);
+    ec_point_show_group(p, a, b, &p1);
 
     /*
      * 深入浅出密码学, p243, Q9.9
@@ -64,10 +64,10 @@ int main(int argc, char *argv)
     p1.x = 5;
     p1.y = 9;
 
-    order = ecc_point_order(p, a, b, &p1);
+    order = ec_point_order(p, a, b, &p1);
     printf("Order P(%d, %d) = %d\n", p1.x, p1.y, order);
 
-    ecc_point_show_group(p, a, b, &p1);
+    ec_point_show_group(p, a, b, &p1);
 
     /*
      * 密码编码学与网络安全, 7th, section 10.4, p226
@@ -79,10 +79,10 @@ int main(int argc, char *argv)
     p1.x = 16;
     p1.y = 5;
 
-    order = ecc_point_order(p, a, b, &p1);
+    order = ec_point_order(p, a, b, &p1);
     printf("Order P(%d, %d) = %d\n", p1.x, p1.y, order);
 
-    ecc_point_show_group(p, a, b, &p1);
+    ec_point_show_group(p, a, b, &p1);
 
     /*
      * 密码编码学与网络安全, 7th, section 10.4.1, p227
@@ -94,22 +94,22 @@ int main(int argc, char *argv)
     p1.x = 2;
     p1.y = 2;
 
-    order = ecc_point_order(p, a, b, &p1);
+    order = ec_point_order(p, a, b, &p1);
     printf("Order P(%d, %d) = %d\n", p1.x, p1.y, order);
 
-    ecc_point_show_group(p, a, b, &p1);
+    ec_point_show_group(p, a, b, &p1);
 
     printf("Point Multiple Test:\n");
     n = 20;
-    ecc_point_mul(p, a, n, &p1, &p4);
+    ec_point_mul(p, a, n, &p1, &p4);
     printf("%4dP(%4d, %4d)\n", n, p4.x, p4.y);
 
     n = 200;
-    ecc_point_mul(p, a, n, &p1, &p4);
+    ec_point_mul(p, a, n, &p1, &p4);
     printf("%4dP(%4d, %4d)\n", n, p4.x, p4.y);
 
     n = 240;
-    ecc_point_mul(p, a, n, &p1, &p4);
+    ec_point_mul(p, a, n, &p1, &p4);
     printf("%4dP(%4d, %4d)\n", n, p4.x, p4.y);
     return 0;
 }
