@@ -67,9 +67,13 @@ static int int_inv(int a, int b)
     return ia;
 }
 
-static int get_slope_by_tangent(int p, int a, const struct point *p1)
+static int get_slope_by_tangent(struct ec_param *param, const struct point *p1)
 {
+    int p, a;
     int x, y;
+
+    p = param->p;
+    a = param->a;
 
     x = int_mod(3 * p1->x * p1->x + a, p);
     y = int_inv(2 * p1->y, p);
@@ -77,9 +81,12 @@ static int get_slope_by_tangent(int p, int a, const struct point *p1)
     return int_mod(x * y, p);
 }
 
-static int get_slope_by_points(int p, const struct point *p1, const struct point *p2)
+static int get_slope_by_points(struct ec_param *param, const struct point *p1, const struct point *p2)
 {
+    int p;
     int x, y;
+
+    p = param->p;
 
     y = int_mod(p2->y - p1->y, p);
 
@@ -93,22 +100,22 @@ static int get_slope_by_points(int p, const struct point *p1, const struct point
     return int_mod(y * x, p);
 }
 
-int ec_point_add(int p, int a, const struct point *p1, const struct point *p2, struct point *p3)
+int ec_point_add(struct ec_param *param, const struct point *p1, const struct point *p2, struct point *p3)
 {
     int s;
     int x3, y3;
 
     if (p1 == p2) /* 相同点 */
     {
-        s = get_slope_by_tangent(p, a, p1);
+        s = get_slope_by_tangent(param, p1);
     }
     else /* 不同点 */
     {
-        s = get_slope_by_points(p, p1, p2);
+        s = get_slope_by_points(param, p1, p2);
     }
 
-    x3 = int_mod(s * s - p1->x - p2->x, p);
-    y3 = int_mod(s * (p1->x - x3) - p1->y, p);
+    x3 = int_mod(s * s - p1->x - p2->x, param->p);
+    y3 = int_mod(s * (p1->x - x3) - p1->y, param->p);
 
     p3->x = x3;
     p3->y = y3;
@@ -133,7 +140,7 @@ static int get_msb1_pos(int x)
     return i;
 }
 
-int ec_point_mul(int p, int a, int x, const struct point *p1, struct point *p2)
+int ec_point_mul(struct ec_param *param, int x, const struct point *p1, struct point *p2)
 {
     int i, pos;
     struct point p3;
@@ -144,10 +151,10 @@ int ec_point_mul(int p, int a, int x, const struct point *p1, struct point *p2)
 
     for (i=pos-1; i>=0; i--)
     {
-        ec_point_add(p, a, p2, p2, &p3);    /* p3 = p2 * 2 */
+        ec_point_add(param, p2, p2, &p3);    /* p3 = p2 * 2 */
         if ((x >> i) & 0x01)
         {
-            ec_point_add(p, a, &p3, p1, &p3); /* p3 = p3 + p1 = p2 * 2 + p1 */
+            ec_point_add(param, &p3, p1, &p3); /* p3 = p3 + p1 = p2 * 2 + p1 */
         }
 
         p2->x = p3.x;
@@ -157,12 +164,12 @@ int ec_point_mul(int p, int a, int x, const struct point *p1, struct point *p2)
     return 0;
 }
 
-int ec_point_on_curve(int p, int a, int b, const struct point *p1)
+int ec_point_on_curve(struct ec_param *param, const struct point *p1)
 {
     int l, r;
 
-    l = int_mod(p1->y * p1->y, p);
-    r = int_mod(p1->x * p1->x * p1->x + a * p1->x + b, p);
+    l = int_mod(p1->y * p1->y, param->p);
+    r = int_mod(p1->x * p1->x * p1->x + param->a * p1->x + param->b, param->p);
 
     if (l == r)
     {
@@ -172,33 +179,33 @@ int ec_point_on_curve(int p, int a, int b, const struct point *p1)
     return 0;
 }
 
-int ec_point_order(int p, int a, int b, const struct point *p1)
+int ec_point_order(struct ec_param *param, const struct point *p1)
 {
     int i;
     struct point p2;
 
-    if (!ec_point_on_curve(p, a, b, p1))
+    if (!ec_point_on_curve(param, p1))
     {
         return 0;
     }
 
     i = 2;
-    ec_point_add(p, a, p1, p1, &p2);
+    ec_point_add(param, p1, p1, &p2);
     while (p2.x != p1->x)
     {
         i++;
-        ec_point_add(p, a, p1, &p2, &p2);
+        ec_point_add(param, p1, &p2, &p2);
     }
 
     return i + 1; /* + Identity Element */
 }
 
-void ec_point_show_group(int p, int a, int b, const struct point *p1)
+void ec_point_show_group(struct ec_param *param, const struct point *p1)
 {
     int i;
     struct point p2;
 
-    if (!ec_point_on_curve(p, a, b, p1))
+    if (!ec_point_on_curve(param, p1))
     {
         return;
     }
@@ -207,12 +214,12 @@ void ec_point_show_group(int p, int a, int b, const struct point *p1)
     printf("%4dP(%4d, %4d)\n", i, p1->x, p1->y);
 
     i++;
-    ec_point_add(p, a, p1, p1, &p2);
+    ec_point_add(param, p1, p1, &p2);
     printf("%4dP(%4d, %4d)\n", i, p2.x, p2.y);
     while (p2.x != p1->x)
     {
         i++;
-        ec_point_add(p, a, p1, &p2, &p2);
+        ec_point_add(param, p1, &p2, &p2);
         printf("%4dP(%4d, %4d)\n", i, p2.x, p2.y);
     }
 
