@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include "utils.h"
 #include "base64.h"
 
 /*
@@ -34,13 +35,37 @@ static char CharCode[64] = {
 
 static unsigned char Padding = '=';
 
-static unsigned char HexCode[] = {
-
+/*
+ * Setup Look Up Table for Base64 chars:
+ * static void Fill_HexCode(void)
+ * {
+ *     int i;
+ *
+ *     for (i=0; i<64; i++)
+ *     {
+ *         HexCode[CharCode[i]] = i;
+ *     }
+ * }
+ */
+static unsigned char HexCode[128] = {
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3e, 0x00, 0x00, 0x00, 0x3f,
+    0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e,
+    0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28,
+    0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x32, 0x33, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
+/*
+ * Encoding: 3 bytes (24 bits) to 4 chars (24 bits)
+ * 1. "Man" --> "TWFu";
+ * 2. "Ma"  --> "TWE=";
+ * 3. "M"   --> "TQ==";
+ */
 static void h2s(const unsigned char *hex, int len, char *out)
 {
-    //printf("[%02x-%02x-%02x-%02x]->", hex[0], hex[1], hex[2], hex[3]);
     switch(len)
     {
     case 3:
@@ -62,7 +87,47 @@ static void h2s(const unsigned char *hex, int len, char *out)
         out[3] = Padding;
         break;
     }
-    //printf("%c%c%c%c[%02x-%02x-%02x-%02x]\n", out[0], out[1], out[2], out[3], out[0], out[1], out[2], out[3]);
+}
+
+#define H(i) HexCode[str[i]]
+
+/*
+ * Decoding: 4 chars (24 bits) --> 3 bytes (24 bits)
+ * 1. "TWFu" --> "Man";
+ * 2. "TWE=" --> "Ma" ;
+ * 3. "TQ==" --> "M"  ;
+ */
+static void s2h(const unsigned char *str, unsigned char *out, int *len)
+{
+    int count;
+
+    count = 3;
+    if (str[3] == '=')
+    {
+        count --;
+    }
+    if (str[2] == '=')
+    {
+        count --;
+    }
+
+    switch (count)
+    {
+    case 3:
+        out[0] = ( H(0) << 2)         | ((H(1) >> 4) & 0x03);
+        out[1] = ((H(1) & 0x0f) << 4) | ((H(2) & 0x3c) >> 2);
+        out[2] = ((H(2) & 0x03) << 6) |   H(3);
+        break;
+    case 2:
+        out[0] = ( H(0) << 2)         | ((H(1) >> 4) & 0x03);
+        out[1] = ((H(1) & 0x0f) << 4) | ((H(2) & 0x3c) >> 2);
+        break;
+    case 1:
+        out[0] = ( H(0) << 2)         | ((H(1) >> 4) & 0x03);
+        break;
+    }
+
+    *len = count;
 }
 
 /*
@@ -91,6 +156,36 @@ int Base64Encode(const unsigned char *data, int data_len, char *out, int *out_le
     return *out_len;
 }
 
+int Base64Decode(const char *str, int str_len, unsigned char *out, int *out_len)
+{
+    int count;
+
+    *out_len = 0;
+
+    /*
+     * 理论上，正常的 Base64 解码字符串长度应该为 4 字符的整数倍
+     * 如果不是 4 字符整数倍，则只处理 4 字符整数倍的部分，其余丢弃
+     */
+
+    /*
+     * 按照 4 字符一个单元进行处理
+     */
+    while (str_len >= 4)
+    {
+        s2h(str, out, &count);
+        out += count;
+        *out_len += count;
+
+        str += 4;
+        str_len -= 4;
+    }
+
+    return *out_len;
+}
+
+/*
+ * $ gcc base64.c -I../out/include -L../out/lib -lutils -o base64
+ */
 int main(int argc, char *argv[])
 {
     //unsigned char data[] = {
@@ -99,15 +194,19 @@ int main(int argc, char *argv[])
     unsigned char data[27] = "Many hands make light work.";
     unsigned char result[] = "TWFueSBoYW5kcyBtYWtlIGxpZ2h0IHdvcmsu";
 
-    char buf[512];
-    int len;
+    char buf[128], dec[128];
+    int len, count;
+
+    printf("Origin: %s\n", data);
 
     memset(buf, 0, sizeof(buf));
-
     Base64Encode(data, sizeof(data), buf, &len);
 
     printf("Expect: %s\n", result);
     printf("Encode: %s\n", buf);
+
+    Base64Decode(result, strlen(result), dec, &count);
+    dump("Decode: ", dec, count);
 
     {
         int i;
@@ -128,12 +227,17 @@ int main(int argc, char *argv[])
         printf("\n");
         for (i=0; i<sizeof(temp)/sizeof(temp[0]); i++)
         {
+            printf("Origin: %s\n", temp[i]);
+
             memset(buf, 0, sizeof(buf));
             Base64Encode(temp[i], strlen(temp[i]), buf, &len);
+
             printf("Expect: %s\n", expect[i]);   
             printf("Encode: %s\n", buf);
-        }
 
+            Base64Decode(buf, len, dec, &count);
+            dump("Decode: ", dec, count);
+        }
     }
 
     return 0;
