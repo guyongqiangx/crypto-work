@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <string.h>
-#include "utils.h"
 #include "base64.h"
 
 /*
@@ -89,7 +88,7 @@ static void h2s(const unsigned char *hex, int len, char *out)
     }
 }
 
-#define H(i) HexCode[str[i]]
+#define H(i) HexCode[(int)str[i]]
 
 /*
  * Decoding: 4 chars (24 bits) --> 3 bytes (24 bits)
@@ -97,7 +96,7 @@ static void h2s(const unsigned char *hex, int len, char *out)
  * 2. "TWE=" --> "Ma" ;
  * 3. "TQ==" --> "M"  ;
  */
-static void s2h(const unsigned char *str, unsigned char *out, int *len)
+static void s2h(const char *str, unsigned char *out, int *len)
 {
     int count;
 
@@ -183,62 +182,3 @@ int Base64Decode(const char *str, int str_len, unsigned char *out, int *out_len)
     return *out_len;
 }
 
-/*
- * $ gcc base64.c -I../out/include -L../out/lib -lutils -o base64
- */
-int main(int argc, char *argv[])
-{
-    //unsigned char data[] = {
-    //    0x62, 0x61, 0x73, 0x65, 0x36, 0x34, 0x2e, 0x63
-    //};
-    unsigned char data[27] = "Many hands make light work.";
-    unsigned char result[] = "TWFueSBoYW5kcyBtYWtlIGxpZ2h0IHdvcmsu";
-
-    char buf[128], dec[128];
-    int len, count;
-
-    printf("Origin: %s\n", data);
-
-    memset(buf, 0, sizeof(buf));
-    Base64Encode(data, sizeof(data), buf, &len);
-
-    printf("Expect: %s\n", result);
-    printf("Encode: %s\n", buf);
-
-    Base64Decode(result, strlen(result), dec, &count);
-    dump("Decode: ", dec, count);
-
-    {
-        int i;
-        unsigned char *temp[] = {
-            "light work.",
-            "light work",
-            "light wor",
-            "light wo",
-            "light w"
-        };
-        unsigned char *expect[] = {
-            "bGlnaHQgd29yay4=",
-            "bGlnaHQgd29yaw==",
-            "bGlnaHQgd29y",
-            "bGlnaHQgd28=",
-            "bGlnaHQgdw==",
-        };
-        printf("\n");
-        for (i=0; i<sizeof(temp)/sizeof(temp[0]); i++)
-        {
-            printf("Origin: %s\n", temp[i]);
-
-            memset(buf, 0, sizeof(buf));
-            Base64Encode(temp[i], strlen(temp[i]), buf, &len);
-
-            printf("Expect: %s\n", expect[i]);   
-            printf("Encode: %s\n", buf);
-
-            Base64Decode(buf, len, dec, &count);
-            dump("Decode: ", dec, count);
-        }
-    }
-
-    return 0;
-}
