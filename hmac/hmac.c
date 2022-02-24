@@ -44,8 +44,11 @@ int HMAC_Init(HMAC_CTX *ctx, HASH_ALG alg, const void *key, unsigned int key_len
     ctx->block_size = HMAC_GetBlockSize(alg);
     ctx->digest_size = HMAC_GetDigestSize(alg, 0);
 
-    /* prepare kp and kp_len */
-    if (key_len > ctx->digest_size)
+    /*
+     * prepare kp and kp_len
+     */
+    /* if K > B, hash K to obtain an L byte string, will append 0 later. (i.e., K0 = H(K) || 00...00). */
+    if (key_len > ctx->block_size)
     {
         kp_len = ctx->digest_size;
         kp = (unsigned char *)malloc(kp_len);
@@ -57,7 +60,7 @@ int HMAC_Init(HMAC_CTX *ctx, HASH_ALG alg, const void *key, unsigned int key_len
         }
         HASH(ctx->alg, key, key_len, kp);
     }
-    else
+    else /* if K <= B, will append 0 directly. (i.e., K0 = K || 00...00). */
     {
         kp_len = key_len;
         kp = (unsigned char *)key;
@@ -72,6 +75,7 @@ int HMAC_Init(HMAC_CTX *ctx, HASH_ALG alg, const void *key, unsigned int key_len
         goto clean;
     }
 
+    /* copy kp and append 0 */
     memcpy(S, kp, kp_len);
     memset(&S[kp_len], 0, ctx->block_size-kp_len);
     for (i=0; i<ctx->block_size; i++)
@@ -227,8 +231,11 @@ int HMAC_Init_Ex(HMAC_CTX *ctx, HASH_ALG alg, const void *key, unsigned int key_
     ctx->block_size = HMAC_GetBlockSize(alg);
     ctx->digest_size = HMAC_GetDigestSize(alg, ext);
 
-    /* prepare kp and kp_len */
-    if (key_len > ctx->digest_size)
+    /*
+     * prepare kp and kp_len
+     */
+    /* if K > B, hash K to obtain an L byte string, then append 0. (i.e., K0 = H(K) || 00...00). */
+    if (key_len > ctx->block_size)
     {
         kp_len = ctx->digest_size;
         kp = (unsigned char *)malloc(kp_len);
@@ -240,7 +247,7 @@ int HMAC_Init_Ex(HMAC_CTX *ctx, HASH_ALG alg, const void *key, unsigned int key_
         }
         HASH_Ex(ctx->alg, key, key_len, kp, ext);
     }
-    else
+    else /* if K <= B, append 0 directly. (i.e., K0 = K || 00...00). */
     {
         kp_len = key_len;
         kp = (unsigned char *)key;
